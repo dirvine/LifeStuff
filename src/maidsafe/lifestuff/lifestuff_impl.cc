@@ -33,6 +33,7 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
@@ -48,78 +49,96 @@ namespace lifestuff {
 const int kRetryLimit(10);
 const NonEmptyString kDriveLogo("Lifestuff Drive");
 
-LifeStuffImpl::LifeStuffImpl()
+void CheckSlots(Slots& slot_functions) {
+  if (!slot_functions.chat_slot)
+    throw std::exception();
+  if (!slot_functions.file_success_slot)
+    throw std::exception();
+  if (!slot_functions.file_failure_slot)
+    throw std::exception();
+  if (!slot_functions.new_contact_slot)
+    throw std::exception();
+  if (!slot_functions.confirmed_contact_slot)
+    throw std::exception();
+  if (!slot_functions.profile_picture_slot)
+    throw std::exception();
+  if (!slot_functions.contact_presence_slot)
+    throw std::exception();
+  if (!slot_functions.contact_deletion_slot)
+    throw std::exception();
+  if (!slot_functions.lifestuff_card_update_slot)
+    throw std::exception();
+  if (!slot_functions.network_health_slot)
+    throw std::exception();
+  if (!slot_functions.immediate_quit_required_slot)
+    throw std::exception();
+  if (!slot_functions.update_available_slot)
+    throw std::exception();
+  if (!slot_functions.operation_progress_slot)
+    throw std::exception();
+}
+
+struct LifeStuffImpl::LoggedInComponents {
+  LoggedInComponents(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
+                     Session& session,
+                     boost::asio::io_service& service);
+  PublicId public_id;
+  MessageHandler message_handler;
+  UserStorage storage;
+};
+
+LifeStuffImpl::LoggedInComponents::LoggedInComponents(
+    priv::chunk_store::RemoteChunkStore& remote_chunk_store,
+    Session& session,
+    boost::asio::io_service& service)
+    : public_id(remote_chunk_store, session, service),
+      message_handler(remote_chunk_store, session, service),
+      storage(remote_chunk_store) {}
+
+
+LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory)
     : thread_count_(kThreads),
       buffered_path_(),
-      simulation_path_(),
       interval_(kSecondsInterval),
       asio_service_(thread_count_),
+      network_health_signal_(),
+      session_(),
       remote_chunk_store_(),
       client_controller_(),
       client_node_(),
       routings_handler_(),
-      network_health_signal_(),
-      session_(),
       user_credentials_(),
-      user_storage_(),
-      public_id_(),
-      message_handler_(),
-      slots_(),
+      logged_in_components_(),
+      slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
       immediate_quit_required_signal_(),
-      bootstrap_endpoints_() {}
-
-LifeStuffImpl::~LifeStuffImpl() {}
-
-int LifeStuffImpl::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                              const fs::path& base_directory,
-                              bool /*vault_cheat*/) {
-  if (state_ != kZeroth) {
-    LOG(kError) << "Make sure that object is in the original Zeroth state. Asimov rules.";
-    return kWrongState;
-  }
-
-  if (!software_update_available_function) {
-    LOG(kError) << "No function provided for SW update. Unacceptable. Good day!";
-    return kInitialiseUpdateFunctionFailure;
-  }
+      bootstrap_endpoints_() {
+  CheckSlots(slots_);
 
   // Initialisation
   asio_service_.Start();
 
-  fs::path base_path, buffered_chunk_store_path, network_simulation_path;
   if (base_directory.empty()) {
     // Not a test: everything in $HOME/.lifestuff
-    base_path = GetHomeDir() / kAppHomeDirectory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    boost::system::error_code error_code;
-    network_simulation_path = fs::temp_directory_path(error_code) / "lifestuff_simulation";
+    buffered_path_ =  GetHomeDir() / kAppHomeDirectory / RandomAlphaNumericString(16);
   } else {
     // Presumably a test
-    base_path = base_directory;
-    buffered_chunk_store_path = base_path / RandomAlphaNumericString(16);
-    network_simulation_path = base_path / "simulated_network";
+    buffered_path_ = base_directory / RandomAlphaNumericString(16);
   }
+
 
   int counter(0);
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_ = std::make_shared<priv::lifestuff_manager::ClientController>(
-                             software_update_available_function);
+                             slots_.update_available_slot);
     if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
       counter = kRetryLimit;
     else
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
-  if (bootstrap_endpoints_.empty()) {
-    LOG(kWarning) << "No bootstrap contacts from lifestuff_manager.";
-  }
-
-  buffered_path_ = buffered_chunk_store_path;
-  state_ = kInitialised;
-
-  return kSuccess;
+  state_ = kConnected;
 }
 
 int LifeStuffImpl::MakeAnonymousComponents() {
@@ -132,11 +151,10 @@ int LifeStuffImpl::MakeAnonymousComponents() {
     return kInitialiseChunkStoreFailure;
   }
 
-
   routings_handler_ = std::make_shared<RoutingsHandler>(
                           *remote_chunk_store_,
                           session_,
-                          [&] (const NonEmptyString& message, std::string& response) {
+                          [this] (const NonEmptyString& message, std::string& response) {
                             return HandleRoutingsHandlerMessage(message, response);
                           });
   user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
@@ -147,124 +165,41 @@ int LifeStuffImpl::MakeAnonymousComponents() {
   return kSuccess;
 }
 
-int LifeStuffImpl::ConnectToSignals(
-    const bool& set_slots,
-    const ChatFunction& chat_slot,
-    const FileTransferSuccessFunction& file_success_slot,
-    const FileTransferFailureFunction& file_failure_slot,
-    const NewContactFunction& new_contact_slot,
-    const ContactConfirmationFunction& confirmed_contact_slot,
-    const ContactProfilePictureFunction& profile_picture_slot,
-    const ContactPresenceFunction& contact_presence_slot,
-    const ContactDeletionFunction& contact_deletion_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const NetworkHealthFunction& network_health_function,
-    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
-  if (state_ != kInitialised) {
-    LOG(kError) << "Make sure that object is initialised";
-    return kWrongState;
-  }
-
-  if (set_slots) {
-    uint32_t connects(0);
-    if (chat_slot) {
-      ++connects;
-      slots_.chat_slot = chat_slot;
-    }
-    if (file_success_slot) {
-      ++connects;
-      slots_.file_success_slot = file_success_slot;
-    }
-    if (file_failure_slot) {
-      ++connects;
-      slots_.file_failure_slot = file_failure_slot;
-    }
-    if (new_contact_slot) {
-      ++connects;
-      slots_.new_contact_slot = new_contact_slot;
-    }
-    if (confirmed_contact_slot) {
-      ++connects;
-      slots_.confirmed_contact_slot = confirmed_contact_slot;
-    }
-    if (profile_picture_slot) {
-      ++connects;
-      slots_.profile_picture_slot = profile_picture_slot;
-    }
-    if (contact_presence_slot) {
-      ++connects;
-      slots_.contact_presence_slot = contact_presence_slot;
-    }
-    if (contact_deletion_function) {
-      ++connects;
-      slots_.contact_deletion_function = contact_deletion_function;
-    }
-    if (lifestuff_card_update_function) {
-      ++connects;
-      slots_.lifestuff_card_update_function = lifestuff_card_update_function;
-    }
-    if (network_health_function) {
-      ++connects;
-      slots_.network_health_function = network_health_function;
-    }
-    if (immediate_quit_required_function) {
-      ++connects;
-      slots_.immediate_quit_required_function = immediate_quit_required_function;
-    }
-    if (connects == 0) {
-      LOG(kError) << "No signals connected.";
-      return kSetSlotsFailure;
-    }
-    state_ = kConnected;
-    return kSuccess;
-  }
-
-  if (!message_handler_ || !public_id_ || !user_storage_) {
-    LOG(kError) << "Unable to connect to signals.";
-    return kConnectSignalsFailure;
-  }
-
-  message_handler_->ConnectToChatSignal(chat_slot);
-  message_handler_->ConnectToFileTransferSuccessSignal(file_success_slot);
-  message_handler_->ConnectToFileTransferFailureSignal(file_failure_slot);
-  public_id_->ConnectToNewContactSignal(new_contact_slot);
-  public_id_->ConnectToContactConfirmedSignal(confirmed_contact_slot);
-  message_handler_->ConnectToContactProfilePictureSignal(profile_picture_slot);
-  message_handler_->ConnectToContactPresenceSignal(contact_presence_slot);
-  public_id_->ConnectToContactDeletionProcessedSignal(contact_deletion_function);
-  public_id_->ConnectToLifestuffCardUpdatedSignal(lifestuff_card_update_function);
-  immediate_quit_required_signal_.connect(immediate_quit_required_function);
-  public_id_->ConnectToContactDeletionReceivedSignal([&] (const NonEmptyString& own_public_id,
-                                                          const NonEmptyString& contact_public_id,
-                                                          const std::string& removal_message,
-                                                          const NonEmptyString& /*timestamp*/) {
-                                                       int result(RemoveContact(own_public_id,
-                                                                                contact_public_id,
-                                                                                removal_message,
-                                                                                false));
-                                                       if (result != kSuccess)
-                                                         LOG(kError) << "Failed to remove contact "
-                                                                        "after receiving contact "
-                                                                        "deletion signal!";
-                                                     });
-  return kSuccess;
-}
-
-int LifeStuffImpl::Finalise() {
-  if (state_ != kConnected) {
-    LOG(kError) << "Need to be connected to finalise.";
-    return kWrongState;
-  }
-
+LifeStuffImpl::~LifeStuffImpl() {
   boost::system::error_code error_code;
   fs::remove_all(buffered_path_, error_code);
   if (error_code)
     LOG(kWarning) << "Failed to remove buffered chunk store path.";
 
   asio_service_.Stop();
-  state_ = kZeroth;
+}
 
-  return kSuccess;
+void LifeStuffImpl::ConnectToSignals() {
+  logged_in_components_->message_handler.ConnectToChatSignal(slots_.chat_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(
+      slots_.file_success_slot);
+  logged_in_components_->message_handler.ConnectToFileTransferFailureSignal(
+      slots_.file_failure_slot);
+  logged_in_components_->public_id.ConnectToNewContactSignal(slots_.new_contact_slot);
+  logged_in_components_->public_id.ConnectToContactConfirmedSignal(slots_.confirmed_contact_slot);
+  logged_in_components_->message_handler.ConnectToContactProfilePictureSignal(
+      slots_.profile_picture_slot);
+  logged_in_components_->message_handler.ConnectToContactPresenceSignal(
+      slots_.contact_presence_slot);
+  logged_in_components_->public_id.ConnectToContactDeletionProcessedSignal(
+      slots_.contact_deletion_slot);
+  logged_in_components_->public_id.ConnectToLifestuffCardUpdatedSignal(
+      slots_.lifestuff_card_update_slot);
+  immediate_quit_required_signal_.connect(slots_.immediate_quit_required_slot);
+  logged_in_components_->public_id.ConnectToContactDeletionReceivedSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const std::string& removal_message,
+           const NonEmptyString& /*timestamp*/) {
+         int result(RemoveContact(own_public_id, contact_public_id, removal_message, false));
+         if (result != kSuccess)
+           LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+     });
 }
 
 /// Credential operations
@@ -287,12 +222,14 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create anonymous components with result: " << result;
     return result;
   }
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kCreateUserCredentials);
   result = user_credentials_->CreateUser(keyword, pin, password);
   if (result != kSuccess) {
     if (result == kKeywordSizeInvalid || result == kKeywordPatternInvalid ||
@@ -308,6 +245,7 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
   }
 
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kCreateVault);
   result = CreateVaultInLocalMachine(chunk_store);
   if (result != kSuccess)  {
     LOG(kError) << "Failed to create vault. No LifeStuff for you! (Result: " << result << ")";
@@ -316,6 +254,7 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
     LOG(kInfo) << "CreateVaultInLocalMachine success.";
   }
 
+  slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kInitialiseClientComponents);
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
@@ -340,7 +279,7 @@ int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   if (session_.PublicIdentities().empty())
     first_public_id = true;
 
-  result = public_id_->CreatePublicId(public_id, true);
+  result = logged_in_components_->public_id.CreatePublicId(public_id, true);
   if (result != kSuccess) {
     if (result == kPublicIdEmpty ||
         result == kPublicIdLengthInvalid ||
@@ -354,8 +293,8 @@ int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   }
 
   if (first_public_id) {
-    public_id_->StartUp(interval_);
-    message_handler_->StartUp(interval_);
+    logged_in_components_->public_id.StartUp(interval_);
+    logged_in_components_->message_handler.StartUp(interval_);
     if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
       logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
     }
@@ -384,12 +323,14 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
   }
   session_.Reset();
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());
   if (result != kSuccess) {
     LOG(kError) << "Failed to create anonymous components with result: " << result;
     return result;
   }
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kRetrieveUserCredentials);
   int login_result(user_credentials_->LogIn(keyword, pin, password));
   if (login_result != kSuccess) {
     if (login_result == kKeywordSizeInvalid ||
@@ -409,6 +350,7 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
     }
   }
 
+  slots_.operation_progress_slot(Operation::kLogIn, SubTask::kInitialiseClientComponents);
   result = SetValidPmidAndInitialisePublicComponents();
   if (result != kSuccess)  {
     LOG(kError) << "Failed to set valid PMID with result: " << result;
@@ -437,17 +379,20 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
     return kWrongLoggedInState;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kStoreUserCredentials);
   int result(user_credentials_->Logout());
   if (result != kSuccess) {
     LOG(kError) << "Failed to log out with result " << result;
     return kLogoutCredentialsFailure;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kWaitForNetworkOperations);
   if (!remote_chunk_store_->WaitForCompletion()) {
     LOG(kError) << "Failed complete chunk operations.";
     return kLogoutCompleteChunkFailure;
   }
 
+  slots_.operation_progress_slot(Operation::kLogOut, SubTask::kCleanUp);
   client_node_->set_on_network_status(nullptr);
   client_node_->Stop();
   if (clear_maid_routing) {
@@ -489,11 +434,11 @@ int LifeStuffImpl::MountDrive() {
     }
   }
 
-  user_storage_->MountDrive(buffered_path_ / "encryption_drive_chunks",
+  logged_in_components_->storage.MountDrive(buffered_path_ / "encryption_drive_chunks",
                             mount_dir,
                             &session_,
                             kDriveLogo);
-  if (!user_storage_->mount_status()) {
+  if (!logged_in_components_->storage.mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
   }
@@ -512,8 +457,8 @@ int LifeStuffImpl::UnMountDrive() {
     return kWrongLoggedInState;
   }
 
-  user_storage_->UnMountDrive();
-  if (user_storage_->mount_status()) {
+  logged_in_components_->storage.UnMountDrive();
+  if (logged_in_components_->storage.mount_status()) {
     LOG(kError) << "Failed to un-mount.";
     return kUnMountDriveError;
   }
@@ -548,23 +493,23 @@ int LifeStuffImpl::StartMessagesAndIntros() {
     return kStartMessagesAndContactsNoPublicIds;
   }
 
-  public_id_->StartUp(interval_);
-  message_handler_->StartUp(interval_);
+  logged_in_components_->public_id.StartUp(interval_);
+  logged_in_components_->message_handler.StartUp(interval_);
   if ((kMessagesAndIntrosStarted & logged_in_state_) != kMessagesAndIntrosStarted)
     logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
   return kSuccess;
 }
 
 int LifeStuffImpl::StopMessagesAndIntros() {
-  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {  // ||
-//      (kDriveMounted & logged_in_state_) != kDriveMounted) {
+  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
+      (kDriveMounted & logged_in_state_) != kDriveMounted) {
      LOG(kError) << "In unsuitable state to stop messages and intros: " <<
                     "make sure user_credentials are logged in and drive is mounted.";
      return kWrongLoggedInState;
   }
 
-  public_id_->ShutDown();
-  message_handler_->ShutDown();
+  logged_in_components_->public_id.ShutDown();
+  logged_in_components_->message_handler.ShutDown();
   if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted)
     logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
   return kSuccess;
@@ -660,11 +605,11 @@ int LifeStuffImpl::LeaveLifeStuff() {
   // TODO(Alison) - set logged_in_state_ - to which value?
 
   // Stop Messaging
-  message_handler_->StopCheckingForNewMessages();
-  public_id_->StopCheckingForNewContacts();
+  logged_in_components_->message_handler.StopCheckingForNewMessages();
+  logged_in_components_->public_id.StopCheckingForNewContacts();
 
   // Unmount
-  user_storage_->UnMountDrive();
+  logged_in_components_->storage.UnMountDrive();
 
   int result(0);
   std::vector<NonEmptyString> public_ids(session_.PublicIdentities());
@@ -676,7 +621,7 @@ int LifeStuffImpl::LeaveLifeStuff() {
   std::for_each(public_ids.begin(),
                 public_ids.end(),
                 [&result, this] (const NonEmptyString& public_id) {
-                  result += public_id_->DeletePublicId(public_id);
+                  result += logged_in_components_->public_id.DeletePublicId(public_id);
                 });
 
   // Shut down vaults
@@ -699,7 +644,7 @@ int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = public_id_->AddContact(my_public_id, contact_public_id, message);
+  result = logged_in_components_->public_id.AddContact(my_public_id, contact_public_id, message);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add contact with result: " << result;
     return result;
@@ -715,13 +660,15 @@ int LifeStuffImpl::ConfirmContact(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = public_id_->ConfirmContact(my_public_id, contact_public_id);
+  result = logged_in_components_->public_id.ConfirmContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to Confirm Contact with result: " << result;
     return result;
   }
 
-  result = message_handler_->SendPresenceMessage(my_public_id, contact_public_id, kOnline);
+  result = logged_in_components_->message_handler.SendPresenceMessage(my_public_id,
+                                                                      contact_public_id,
+                                                                      kOnline);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send presence message with result: " << result;
     return result;
@@ -737,7 +684,7 @@ int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = public_id_->RejectContact(my_public_id, contact_public_id);
+  result = logged_in_components_->public_id.RejectContact(my_public_id, contact_public_id);
   if (result != kSuccess) {
     LOG(kError) << "Failed to decline contact with result: " << result;
     return result;
@@ -757,7 +704,7 @@ int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
 
   // Remove the contact
   NonEmptyString timestamp(IsoTimeWithMicroSeconds());
-  result = public_id_->RemoveContact(my_public_id,
+  result = logged_in_components_->public_id.RemoveContact(my_public_id,
                                      contact_public_id,
                                      removal_message,
                                      timestamp,
@@ -792,7 +739,7 @@ int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
     fs::path profile_picture_path(mount_path() / std::string(my_public_id.string() +
                                                              "_profile_picture" +
                                                              kHiddenFileExtension));
-    result = user_storage_->WriteHiddenFile(profile_picture_path,
+    result = logged_in_components_->storage.WriteHiddenFile(profile_picture_path,
                                             profile_picture_contents,
                                             true);
     if (result != kSuccess) {
@@ -807,14 +754,14 @@ int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
     int count(0), limit(10);
     while (reconstructed != profile_picture_contents.string() && count++ < limit) {
       data_map.clear();
-      result = user_storage_->GetHiddenFileDataMap(profile_picture_path, &data_map);
+      result = logged_in_components_->storage.GetHiddenFileDataMap(profile_picture_path, &data_map);
       if ((result != kSuccess || data_map.empty()) && count == limit) {
         LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
                     << profile_picture_path << " with result " << result;
         return result == kSuccess ? kChangePictureEmptyDataMap : result;
       }
 
-      reconstructed = user_storage_->ConstructFile(NonEmptyString(data_map));
+      reconstructed = logged_in_components_->storage.ConstructFile(NonEmptyString(data_map));
       Sleep(bptime::milliseconds(500));
     }
 
@@ -844,7 +791,7 @@ int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
   LOG(kError) << "Session set to changed.";
 
   // Send to everybody
-  message_handler_->SendEveryone(message);
+  logged_in_components_->message_handler.SendEveryone(message);
 
   return kSuccess;
 }
@@ -876,7 +823,8 @@ NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_publ
                                                            "_profile_picture" +
                                                            kHiddenFileExtension));
   std::string profile_picture_contents;
-  if (user_storage_->ReadHiddenFile(profile_picture_path, &profile_picture_contents) != kSuccess ||
+  if (logged_in_components_->storage.ReadHiddenFile(profile_picture_path,
+                                                    &profile_picture_contents) != kSuccess ||
       profile_picture_contents.empty()) {
     LOG(kError) << "Failed reading profile picture: " << profile_picture_path;
     return NonEmptyString();
@@ -915,7 +863,8 @@ NonEmptyString LifeStuffImpl::GetContactProfilePicture(const NonEmptyString& my_
 
   // Read contents, put them in a string, give them back. Should not be
   // over a certain size (kFileRecontructionLimit).
-  return NonEmptyString(user_storage_->ConstructFile(contact.profile_picture_data_map));
+  return NonEmptyString(logged_in_components_->storage.ConstructFile(
+                            contact.profile_picture_data_map));
 }
 
 int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
@@ -927,7 +876,9 @@ int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
     return result;
   }
 
-  result = public_id_->GetLifestuffCard(my_public_id, contact_public_id, social_info);
+  result = logged_in_components_->public_id.GetLifestuffCard(my_public_id,
+                                                             contact_public_id,
+                                                             social_info);
   if (result != kSuccess) {
     LOG(kError) << "Failed to get LifeStuff card with result " << result;
     return result;
@@ -941,7 +892,7 @@ int LifeStuffImpl::SetLifestuffCard(const NonEmptyString& my_public_id,
   if (result != kSuccess)
     return result;
 
-  result = public_id_->SetLifestuffCard(my_public_id, social_info);
+  result = logged_in_components_->public_id.SetLifestuffCard(my_public_id, social_info);
   if (result != kSuccess) {
     LOG(kError) << "Failed to set LifeStuff card with result " << result;
     return result;
@@ -991,7 +942,7 @@ int LifeStuffImpl::SendChatMessage(const NonEmptyString& sender_public_id,
   inbox_item.sender_public_id = sender_public_id;
   inbox_item.content.push_back(message);
 
-  result = message_handler_->Send(inbox_item);
+  result = logged_in_components_->message_handler.Send(inbox_item);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send chat message with result " << result;
     return result;
@@ -1007,7 +958,7 @@ int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
     return result;
 
   std::string serialised_datamap;
-  result = user_storage_->GetDataMap(absolute_path, &serialised_datamap);
+  result = logged_in_components_->storage.GetDataMap(absolute_path, &serialised_datamap);
   if (result != kSuccess || serialised_datamap.empty()) {
     LOG(kError) << "Failed to get DM for " << absolute_path << " with result " << result;
     return result;
@@ -1019,7 +970,7 @@ int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
   inbox_item.content.push_back(NonEmptyString(absolute_path.filename().string()));
   inbox_item.content.push_back(NonEmptyString(serialised_datamap));
 
-  result = message_handler_->Send(inbox_item);
+  result = logged_in_components_->message_handler.Send(inbox_item);
   if (result != kSuccess) {
     LOG(kError) << "Failed to send file with result " << result;
     return result;
@@ -1041,7 +992,9 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
   }
 
   std::string saved_file_name, serialised_data_map;
-  if (!user_storage_->GetSavedDataMap(identifier, serialised_data_map, saved_file_name)) {
+  if (!logged_in_components_->storage.GetSavedDataMap(identifier,
+                                                      serialised_data_map,
+                                                      saved_file_name)) {
     LOG(kError) << "Failed to get saved details for identifier " << Base64Substr(identifier);
     return -1;
   }
@@ -1057,7 +1010,7 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
       LOG(kError) << "No name found to work for saving the file.";
       return kAcceptFileNameFailure;
     }
-    result = user_storage_->InsertDataMap(store_path / adequate_name,
+    result = logged_in_components_->storage.InsertDataMap(store_path / adequate_name,
                                           NonEmptyString(serialised_data_map));
 
     if (result != kSuccess) {
@@ -1066,7 +1019,8 @@ int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
     }
     *file_name = adequate_name;
   } else {
-    result = user_storage_->InsertDataMap(absolute_path, NonEmptyString(serialised_data_map));
+    result = logged_in_components_->storage.InsertDataMap(absolute_path,
+                                                          NonEmptyString(serialised_data_map));
     if (result != kSuccess) {
       LOG(kError) << "Failed inserting DM: " << result;
       return result;
@@ -1082,7 +1036,7 @@ int LifeStuffImpl::RejectSentFile(const NonEmptyString& identifier) {
     return result;
 
   fs::path hidden_file(mount_path() / std::string(identifier.string() + kHiddenFileExtension));
-  result = user_storage_->DeleteHiddenFile(hidden_file);
+  result = logged_in_components_->storage.DeleteHiddenFile(hidden_file);
   if (result != kSuccess) {
     LOG(kError) << "Failed to reject file with result " << result;
     return result;
@@ -1101,7 +1055,7 @@ int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* co
     return kReadHiddenFileContentFailure;
   }
 
-  result = user_storage_->ReadHiddenFile(absolute_path, content);
+  result = logged_in_components_->storage.ReadHiddenFile(absolute_path, content);
   if (result != kSuccess) {
     LOG(kError) << "Failed to read hidden file with result " << result;
     return result;
@@ -1116,7 +1070,9 @@ int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
   if (result != kSuccess)
     return result;
 
-  result = user_storage_->WriteHiddenFile(absolute_path, content, overwrite_existing);
+  result = logged_in_components_->storage.WriteHiddenFile(absolute_path,
+                                                          content,
+                                                          overwrite_existing);
   if (result != kSuccess) {
     LOG(kError) << "Failed to write hidden file with result " << result;
     return result;
@@ -1129,7 +1085,7 @@ int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
   if (result != kSuccess)
     return result;
 
-  result = user_storage_->DeleteHiddenFile(absolute_path);
+  result = logged_in_components_->storage.DeleteHiddenFile(absolute_path);
   if (result != kSuccess) {
     LOG(kError) << "Failed to delete hidden file with result " << result;
     return result;
@@ -1143,7 +1099,7 @@ int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
   if (result != kSuccess)
     return result;
 
-  result = user_storage_->SearchHiddenFiles(absolute_path, results);
+  result = logged_in_components_->storage.SearchHiddenFiles(absolute_path, results);
   if (result != kSuccess) {
     LOG(kError) << "Failed to search hidden files with result " << result;
     return result;
@@ -1166,22 +1122,25 @@ fs::path LifeStuffImpl::mount_path() const {
     return fs::path();
   }
 
-  return user_storage_->mount_dir();
+  return logged_in_components_->storage.mount_dir();
 }
 
 void LifeStuffImpl::ConnectInternalElements() {
-  message_handler_->ConnectToParseAndSaveDataMapSignal(
-      [&] (const NonEmptyString& file_name,
-           const NonEmptyString& serialised_data_map,
-           std::string& data_map_hash)->bool {
-        return user_storage_->ParseAndSaveDataMap(file_name, serialised_data_map, data_map_hash);
+  logged_in_components_->message_handler.ConnectToParseAndSaveDataMapSignal(
+      [this] (const NonEmptyString& file_name,
+              const NonEmptyString& serialised_data_map,
+              std::string& data_map_hash)->bool {
+        return logged_in_components_->storage.ParseAndSaveDataMap(file_name,
+                                                                  serialised_data_map,
+                                                                  data_map_hash);
       });
 
-  public_id_->ConnectToContactConfirmedSignal(
-      [&] (const NonEmptyString& own_public_id,
-           const NonEmptyString& recipient_public_id,
-           const NonEmptyString&) {
-        message_handler_->InformConfirmedContactOnline(own_public_id, recipient_public_id);
+  logged_in_components_->public_id.ConnectToContactConfirmedSignal(
+      [this] (const NonEmptyString& own_public_id,
+              const NonEmptyString& recipient_public_id,
+              const NonEmptyString&) {
+        logged_in_components_->message_handler.InformConfirmedContactOnline(own_public_id,
+                                                                            recipient_public_id);
       });
 }
 
@@ -1210,30 +1169,16 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   routings_handler_->set_remote_chunk_store(*remote_chunk_store_);
   user_credentials_->set_remote_chunk_store(*remote_chunk_store_);
 
-  public_id_ = std::make_shared<PublicId>(*remote_chunk_store_, session_, asio_service_.service());
-
-  message_handler_ = std::make_shared<MessageHandler>(*remote_chunk_store_,
-                                                      session_,
-                                                      asio_service_.service());
-
-  user_storage_ = std::make_shared<UserStorage>(*remote_chunk_store_);
+  logged_in_components_ = std::make_shared<LoggedInComponents>(*remote_chunk_store_,
+                                                               session_,
+                                                               asio_service_.service());
 
   ConnectInternalElements();
   state_ = kInitialised;
 
-  result = ConnectToSignals(false,
-                            slots_.chat_slot,
-                            slots_.file_success_slot,
-                            slots_.file_failure_slot,
-                            slots_.new_contact_slot,
-                            slots_.confirmed_contact_slot,
-                            slots_.profile_picture_slot,
-                            slots_.contact_presence_slot,
-                            slots_.contact_deletion_function,
-                            slots_.lifestuff_card_update_function,
-                            slots_.network_health_function,
-                            slots_.immediate_quit_required_function);
-  return result;
+  ConnectToSignals();
+
+  return kSuccess;
 }
 
 int LifeStuffImpl::CheckStateAndFullAccess() const {
@@ -1268,14 +1213,11 @@ int LifeStuffImpl::PreContactChecksFullAccess(const NonEmptyString &my_public_id
   return kSuccess;
 }
 
-void LifeStuffImpl::NetworkHealthSlot(const int& index) {
-  network_health_signal_(index);
-}
-
+void LifeStuffImpl::NetworkHealthSlot(const int& index) { network_health_signal_(index); }
 
 int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
   Identity account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
-                                                                      true).identity);
+                                                                   true).identity);
   Fob pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
 
   if (!client_controller_->StartVault(pmid_keys, account_name.string(), chunk_store)) {

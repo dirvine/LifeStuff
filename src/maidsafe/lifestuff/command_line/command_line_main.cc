@@ -40,43 +40,64 @@ struct ChatMessage {
 std::mutex g_messages_mutex;
 std::vector<ChatMessage> g_messages;
 
-int ConnectSignals(LifeStuff& lifestuff) {
-  return lifestuff.ConnectToSignals([] (const NonEmptyString& own_id,
-                                        const NonEmptyString& other_id,
-                                        const NonEmptyString& message,
-                                        const NonEmptyString& timestamp) {
-                                      std::lock_guard<std::mutex> lock(g_messages_mutex);
-                                      g_messages.push_back(ChatMessage(own_id, other_id, message,
-                                                                       timestamp));
-                                    },
-                                    FileTransferSuccessFunction(),
-                                    FileTransferFailureFunction(),
-                                    [&lifestuff] (const NonEmptyString& own_id,
-                                                  const NonEmptyString& other_id,
-                                                  const std::string&,
-                                                  const NonEmptyString&) {
-                                      int result(lifestuff.ConfirmContact(own_id, other_id));
-                                      printf("%s confirming %s result: %d\n",
-                                             own_id.string().c_str(),
-                                             other_id.string().c_str(),
-                                             result);
-                                    },
-                                    [&] (const NonEmptyString& own_id,
-                                         const NonEmptyString& other_id,
+void ConnectSignals(Slots& slot_functions) {
+  slot_functions.chat_slot = [] (const NonEmptyString& own_id,
+                                 const NonEmptyString& other_id,
+                                 const NonEmptyString& message,
+                                 const NonEmptyString& timestamp) {
+                               std::lock_guard<std::mutex> lock(g_messages_mutex);
+                               g_messages.push_back(ChatMessage(own_id, other_id, message,
+                                                                timestamp));
+                             };
+  slot_functions.file_success_slot = [] (const NonEmptyString&,
+                                         const NonEmptyString&,
+                                         const NonEmptyString&,
+                                         const NonEmptyString&,
                                          const NonEmptyString&) {
-                                      printf("%s confirmed %s\n",
-                                             own_id.string().c_str(),
-                                             other_id.string().c_str());
-                                    },
-                                    ContactProfilePictureFunction(),
-                                    [] (const NonEmptyString& /*own_public_id*/,
-                                        const NonEmptyString& /*contact_public_id*/,
-                                        const NonEmptyString& /*timestamp*/,
-                                        ContactPresence /*cp*/) {},
-                                    ContactDeletionFunction(),
-                                    LifestuffCardUpdateFunction(),
-                                    NetworkHealthFunction(),
-                                    ImmediateQuitRequiredFunction());
+                                     };
+  slot_functions.file_failure_slot = [] (const NonEmptyString&,
+                                         const NonEmptyString&,
+                                         const NonEmptyString&) {
+                                     };
+  slot_functions.new_contact_slot = [&/*lifestuff*/] (const NonEmptyString&,
+                                                      const NonEmptyString&,
+                                                      const std::string&,
+                                                      const NonEmptyString&) {
+//                                      int result(lifestuff.ConfirmContact(own_id, other_id));
+//                                      printf("%s confirming %s result: %d\n",
+//                                             own_id.string().c_str(),
+//                                             other_id.string().c_str(),
+//                                             result);
+                                    };
+  slot_functions.confirmed_contact_slot = [&] (const NonEmptyString& own_id,
+                                               const NonEmptyString& other_id,
+                                               const NonEmptyString&) {
+                                            printf("%s confirmed %s\n",
+                                                   own_id.string().c_str(),
+                                                   other_id.string().c_str());
+                                          };
+  slot_functions.profile_picture_slot = [] (const NonEmptyString&,
+                                            const NonEmptyString&,
+                                            const NonEmptyString&) {
+                                        };
+  slot_functions.contact_presence_slot = [] (const NonEmptyString&,
+                                             const NonEmptyString&,
+                                             const NonEmptyString&,
+                                             ContactPresence) {
+                                         };
+  slot_functions.contact_deletion_slot =  [] (const NonEmptyString&,
+                                              const NonEmptyString&,
+                                              const std::string&,
+                                              const NonEmptyString&) {
+                                          };
+  slot_functions.lifestuff_card_update_slot = [] (const NonEmptyString&,
+                                                  const NonEmptyString&,
+                                                  const NonEmptyString&) {
+                                              };
+  slot_functions.network_health_slot = [] (const int&) {};  // NOLINT (Dan)
+  slot_functions.immediate_quit_required_slot = [] () {};  // NOLINT (Dan)
+  slot_functions.update_available_slot = [] (NonEmptyString) {};  // NOLINT (Dan)
+  slot_functions.operation_progress_slot = [] (Operation, SubTask) {};  // NOLINT (Dan)
 }
 
 void PrintMenu() {
@@ -216,18 +237,9 @@ int main(int argc, char* argv[]) {
   printf("---------------------------------\n");
   printf("Initialising, please wait...\n");
 
-  maidsafe::lifestuff::LifeStuff lifestuff;
-  int result(lifestuff.Initialise([] (maidsafe::NonEmptyString) {}, fs::path(), false));
-  if (result != maidsafe::lifestuff::kSuccess) {
-    printf("Lifestuff failed to initialise: %d\n", result);
-    return -1;
-  }
-
-  result = maidsafe::lifestuff::ConnectSignals(lifestuff);
-  if (result != maidsafe::lifestuff::kSuccess) {
-    printf("Lifestuff failed to connect signals: %d\n", result);
-    return -1;
-  }
+  maidsafe::lifestuff::Slots slot_functions;
+  maidsafe::lifestuff::ConnectSignals(slot_functions);
+  maidsafe::lifestuff::LifeStuff lifestuff(slot_functions, fs::path());
 
   int option(-1), operation_result;
   do {
@@ -241,7 +253,7 @@ int main(int argc, char* argv[]) {
     }
   } while (option != 1);
 
-  lifestuff.Finalise();
+//  lifestuff.Finalise();
 
   return 0;
 }

@@ -105,52 +105,18 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
   // Create packets (pending) in passport
   passport_.CreateSelectableIdentity(public_id);
 
-  // Retrieves ANMPID, MPID, and MMID's <name, value, signature>
-  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
-  Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
-
   // Store packets
-  std::vector<int> individual_results(2, utils::kPendingResult);
-  std::condition_variable condition_variable;
-  std::mutex mutex;
-  OperationResults results(mutex, condition_variable, individual_results);
-
-  priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
-  if (!remote_chunk_store_.Store(anmpid_name,
-                                 SignaturePacketValue(anmpid),
-                                 [&] (const bool& response) {
-                                   StoreMpid(response, results, public_id, accepts_new_contacts);
-                                 },
-                                 anmpid)) {
-    LOG(kError) << "Failed to store ANMPID";
-    OperationCallback(false, results, 0);
-  }
-
-  if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
-                                 AppendableIdValue(mmid, true),
-                                 [&] (const bool& response) {
-                                   OperationCallback(response, results, 1);
-                                 },
-                                 mmid)) {
-    LOG(kError) << "Failed to store MMID";
-    OperationCallback(false, results, 1);
-  }
-
-  result = utils::WaitForResults(mutex, condition_variable, individual_results,
-                                 std::chrono::seconds(30));
+  result = ProcessPublicIdPacketsStore(public_id, accepts_new_contacts);
   if (result != kSuccess) {
-    LOG(kError) << "Timed out: " << result;
-    LOG(kError) << "ANMPID path: " << individual_results.at(0)
-                << ", MMID: " << individual_results.at(1);
+    LOG(kError) << "Failed to store the packets to the network for " << public_id.string();
     return result;
   }
 
-  LOG(kInfo) << "ANMPID path: " << individual_results.at(0)
-             << ", MMID: " << individual_results.at(1);
-  if (individual_results[0] != kSuccess || individual_results[1] != kSuccess) {
-    LOG(kError) << "Failed to store packets. " << "ANMPID path: " << individual_results[0]
-                << ", MMID: "<< individual_results[1];
-    return kStorePublicIdFailure;
+  // Store the lifestuff card
+  Identity lifestuff_card_address;
+  result = StoreLifestuffCard(public_id, lifestuff_card_address);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add entry for " << public_id.string();
   }
 
   // Confirm packets as stored
@@ -160,13 +126,6 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
     return result;
   }
 
-  // Store the lifestuff card
-  Identity lifestuff_card_address;
-  result = StoreLifestuffCard(mmid, lifestuff_card_address);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to add entry for " << public_id.string();
-  }
-
   result = session_.AddPublicId(public_id, lifestuff_card_address);
   if (result != kSuccess) {
     LOG(kError) << "Failed to add entry for " << public_id.string();
@@ -174,6 +133,111 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
   }
 
   return kSuccess;
+}
+
+int PublicId::ProcessPublicIdPacketsStore(const NonEmptyString& public_id,
+                                          bool accepts_new_contacts) {
+  std::vector<int> individual_results(2, utils::kPendingResult);
+  std::condition_variable condition_variable;
+  std::mutex mutex;
+  OperationResults results(mutex, condition_variable, individual_results);
+
+  StoreMpidPath(public_id, results, accepts_new_contacts);
+  StoreInbox(public_id, results);
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results,
+                                   std::chrono::seconds(30)));
+  if (result != kSuccess) {
+    LOG(kError) << "Timed out: " << result;
+    LOG(kError) << "inbox: " << individual_results.at(0)
+               << ", MPID path: " << individual_results.at(1);
+    return result;
+  }
+
+  LOG(kInfo) << "inbox: " << individual_results.at(0)
+             << ", MPID path: " << individual_results.at(1);
+  result = AssessJointResult(individual_results);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store packets. MPID path: " << individual_results[1]
+                << ", MMID: "<< individual_results[0];
+    return kStorePublicIdFailure;
+  }
+
+  return kSuccess;
+}
+
+void PublicId::StoreMpidPath(const NonEmptyString& public_id,
+                             OperationResults& results,
+                             bool accepts_new_contacts) {
+  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+               StoreMpid(response, results, public_id, accepts_new_contacts);
+             };
+  priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
+  if (!remote_chunk_store_.Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
+    LOG(kError) << "Failed to store ANMPID";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::StoreMpid(bool response,
+                         OperationResults& results,
+                         const NonEmptyString& public_id,
+                         bool accepts_new_contacts) {
+  if (!response) {
+    LOG(kError) << "Anmpid failed to store.";
+    OperationCallback(false, results, 0);
+    return;
+  }
+  LOG(kInfo) << "Stored anmpid";
+
+  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   StoreMcid(response, results, public_id, accepts_new_contacts);
+                                 };
+  priv::ChunkId mpid_name(SignaturePacketName(mpid.identity));
+  if (!remote_chunk_store_.Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
+    LOG(kError) << "Failed to store ANMPID";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::StoreMcid(bool response,
+                         OperationResults& results,
+                         const NonEmptyString& public_id,
+                         bool accepts_new_contacts) {
+  if (!response) {
+    LOG(kError) << "Mpid failed to store.";
+    OperationCallback(false, results, 0);
+    return;
+  }
+  LOG(kInfo) << "Stored mpid";
+
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
+  priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   OperationCallback(response, results, 0);
+                                 };
+  if (!remote_chunk_store_.Store(mcid_name,
+                                 AppendableIdValue(mpid, accepts_new_contacts),
+                                 callback,
+                                 mpid)) {
+    LOG(kError) << "Mcid failed to store";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::StoreInbox(const NonEmptyString& public_id, OperationResults& results) {
+  Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
+  if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
+                                 AppendableIdValue(mmid, true),
+                                 [&] (const bool& response) {
+                                   OperationCallback(response, results, 1);
+                                 },
+                                 mmid)) {
+    LOG(kError) << "Failed to store MMID";
+    OperationCallback(false, results, 1);
+  }
 }
 
 int PublicId::AddContact(const NonEmptyString& own_public_id,
@@ -225,78 +289,11 @@ int PublicId::EnablePublicId(const NonEmptyString& public_id) {
 }
 
 int PublicId::DeletePublicId(const NonEmptyString& public_id) {
-  std::vector<int> individual_results(4, utils::kPendingResult);
-  std::condition_variable condition_variable;
-  std::mutex mutex;
-  OperationResults results(mutex, condition_variable, individual_results);
+  DeleteLifestuffCard(public_id);
 
-  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
-  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
-  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id));
-  priv::ChunkId inbox_name(AppendableByAllName(inbox_keys.identity)),
-                mpid_name(SignaturePacketName(mpid.identity)),
-                anmpid_name(SignaturePacketName(anmpid.identity)),
-                mcid_name(MaidsafeContactIdName(public_id));
-
-  Identity card_address;
-  int result(0);
-  SocialInfoDetail social_info(session_.social_info(public_id));
-  if (social_info.first) {
-    {
-      std::lock_guard<std::mutex> lock(*social_info.first);
-      card_address = social_info.second->card_address;
-    }
-    result = RemoveLifestuffCard(card_address, inbox_keys);
-    LOG(kInfo) << "Deleting LS card: " << result;
-  }
-
-  if (!remote_chunk_store_.Delete(inbox_name,
-                                  [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
-                                  inbox_keys)) {
-    LOG(kError) << "Failed to delete inbox.";
-    OperationCallback(false, results, 0);
-  }
-
-  if (!remote_chunk_store_.Delete(mcid_name,
-                                  [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
-                                  mpid)) {
-    LOG(kError) << "Failed to delete MCID.";
-    OperationCallback(false, results, 1);
-  }
-
-  if (!remote_chunk_store_.Delete(mpid_name,
-                                  [&] (bool result) { OperationCallback(result, results, 2); },  // NOLINT (Dan)
-                                  anmpid)) {
-    LOG(kError) << "Failed to delete MPID.";
-    OperationCallback(false, results, 2);
-  }
-
-  if (!remote_chunk_store_.Delete(anmpid_name,
-                                  [&] (bool result) { OperationCallback(result, results, 3); },  // NOLINT (Dan)
-                                  anmpid)) {
-    LOG(kError) << "Failed to delete ANMPID.";
-    OperationCallback(false, results, 3);
-  }
-
-  result = utils::WaitForResults(mutex, condition_variable, individual_results,
-                                 std::chrono::seconds(30));
+  int result(ProcessPublicIdPacketsDelete(public_id));
   if (result != kSuccess) {
-    LOG(kError) << "Wait for results timed out: " << result;
-    LOG(kError) << "inbox: " << individual_results.at(0)
-              << ", MCID: " << individual_results.at(1)
-              << ", MPID: " << individual_results.at(2)
-              << ", ANMPID: " << individual_results.at(3);
-    return result;
-  }
-
-  LOG(kInfo) << "inbox: " << individual_results.at(0)
-             << ", MCID: " << individual_results.at(1)
-             << ", MPID: " << individual_results.at(2)
-             << ", ANMPID: " << individual_results.at(3);
-  result = AssessJointResult(individual_results);
-  if (result != kSuccess) {
-    LOG(kError) << "One of the operations for " << public_id.string() << " failed. "
-                << "Turn on INFO for feedback on which one. ";
+    LOG(kError) << "Failed to delete packets: " << public_id.string();
     return kDeletePublicIdFailure;
   }
 
@@ -307,6 +304,109 @@ int PublicId::DeletePublicId(const NonEmptyString& public_id) {
   }
 
   return kSuccess;
+}
+
+void PublicId::DeleteLifestuffCard(const NonEmptyString& public_id) {
+  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  Identity card_address;
+  SocialInfoDetail social_info(session_.social_info(public_id));
+  if (social_info.first) {
+    {
+      std::lock_guard<std::mutex> lock(*social_info.first);
+      card_address = social_info.second->card_address;
+    }
+    int result(RemoveLifestuffCard(card_address, inbox_keys));
+    LOG(kInfo) << "Deleting LS card: " << result;
+  }
+}
+
+int PublicId::ProcessPublicIdPacketsDelete(const NonEmptyString& public_id) {
+  std::vector<int> individual_results(2, utils::kPendingResult);
+  std::condition_variable condition_variable;
+  std::mutex mutex;
+  OperationResults results(mutex, condition_variable, individual_results);
+
+  DeleteMpidPath(public_id, results);
+  DeleteInbox(public_id, results);
+  int result(utils::WaitForResults(mutex, condition_variable, individual_results));
+  if (result != kSuccess) {
+    LOG(kError) << "Wait for results timed out: " << result;
+    LOG(kError) << "inbox: " << individual_results.at(0)
+              << ", MPID path: " << individual_results.at(1);
+    return result;
+  }
+
+  LOG(kInfo) << "inbox: " << individual_results.at(0)
+             << ", MPID path: " << individual_results.at(1);
+  result = AssessJointResult(individual_results);
+  if (result != kSuccess) {
+    LOG(kError) << "One of the operations for " << public_id.string() << " failed. "
+                << "Turn on INFO for feedback on which one. ";
+    return kDeletePublicIdFailure;
+  }
+
+  return kSuccess;
+}
+
+void PublicId::DeleteMpidPath(const NonEmptyString& public_id, OperationResults& results) {
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
+  if (!remote_chunk_store_.Delete(mcid_name,
+                                  [&] (bool result) { DeleteMpid(result, results, public_id); },  // NOLINT (Dan)
+                                  mpid)) {
+    LOG(kError) << "Failed to delete MCID.";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::DeleteMpid(bool response,
+                          OperationResults& results,
+                          const NonEmptyString& public_id) {
+  if (!response) {
+    LOG(kError) << "MCID failed to delete.";
+    OperationCallback(false, results, 0);
+    return;
+  }
+
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id));
+  priv::ChunkId mpid_name(SignaturePacketName(mpid.identity));
+  if (!remote_chunk_store_.Delete(mpid_name,
+                                  [&] (bool result) { DeleteAnmpid(result, results, public_id); },  // NOLINT (Dan)
+                                  anmpid)) {
+    LOG(kError) << "Failed to delete MPID.";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::DeleteAnmpid(bool response,
+                            OperationResults& results,
+                            const NonEmptyString& public_id) {
+  if (!response) {
+    LOG(kError) << "MCID failed to delete.";
+    OperationCallback(false, results, 0);
+    return;
+  }
+
+  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id));
+  priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
+  if (!remote_chunk_store_.Delete(anmpid_name,
+                                  [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
+                                  anmpid)) {
+    LOG(kError) << "Failed to delete ANMPID.";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::DeleteInbox(const NonEmptyString& public_id, OperationResults& results) {
+  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  priv::ChunkId inbox_name(AppendableByAllName(inbox_keys.identity));
+  if (!remote_chunk_store_.Delete(inbox_name,
+                                  [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
+                                  inbox_keys)) {
+    LOG(kError) << "Failed to delete inbox.";
+    OperationCallback(false, results, 1);
+  }
 }
 
 int PublicId::ConfirmContact(const NonEmptyString& own_public_id,
@@ -371,7 +471,80 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
                             const std::string& removal_message,
                             const NonEmptyString& timestamp,
                             const bool& instigator) {
-  const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
+  ContactsHandlerPtr contacts_handler;
+  int result(CheckContactAndMoveInbox(own_public_id, contact_public_id, contacts_handler));
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to check contact or move inbox: " << result;
+    return result;
+  }
+
+  result = StoreNewInbox(own_public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store new MMID: " << result;
+    return result;
+  }
+
+  Identity new_card_address;
+  result = StoreLifestuffCard(own_public_id, new_card_address);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to store new lifestuff card when removing a contact.";
+    return kRemoveContactFailure;
+  }
+
+  SocialInfoDetail social_info(session_.social_info(own_public_id));
+  Identity old_card_address;
+  if (social_info.first) {
+    std::lock_guard<std::mutex> lock(*social_info.first);
+    old_card_address = social_info.second->card_address;
+    social_info.second->card_address = new_card_address;
+  }
+
+  // Block previous MMID, i.e. put it into kModifiableByOwner
+  result = BlockOldInbox(own_public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to block old MMID: " << result;
+    return result;
+  }
+
+  // Get current inbox identity so we can send a deletion message without our new inbox location
+  Fob old_inbox(passport_.SignaturePacketDetails(passport::kMmid, true, own_public_id));
+  passport_.ConfirmMovedMaidsafeInbox(own_public_id);
+  result = RemoveLifestuffCard(old_card_address, old_inbox);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to remove old lifestuff card.";
+    return result;
+  }
+
+  // Get contact we're deleting so we can message him later
+  Contact deleted_contact;
+  result = contacts_handler->ContactInfo(contact_public_id, &deleted_contact);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Failed to remove contact: " << contact_public_id.string();
+    return result;
+  }
+
+  result = contacts_handler->DeleteContact(contact_public_id);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to remove contact : " << contact_public_id.string();
+    return result;
+  }
+
+  session_.set_changed(true);
+
+  return SendInformationMessages(contacts_handler,
+                                 deleted_contact,
+                                 old_inbox.identity,
+                                 own_public_id,
+                                 contact_public_id,
+                                 removal_message,
+                                 timestamp,
+                                 instigator);
+}
+
+int PublicId::CheckContactAndMoveInbox(const NonEmptyString& own_public_id,
+                                       const NonEmptyString& contact_public_id,
+                                       ContactsHandlerPtr& contacts_handler) {
+  contacts_handler = session_.contacts_handler(own_public_id);
   if (!contacts_handler) {
     LOG(kError) << "User does not have public id: " << own_public_id.string();
     return kPublicIdNotFoundFailure;
@@ -382,19 +555,17 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     return kContactNotFoundFailure;
   }
 
-  // Get current inbox identity so we can send a deletion message without our new inbox location
-  Identity old_inbox_identity(
-      passport_.SignaturePacketDetails(passport::kMmid,
-                                       true,
-                                       own_public_id).identity);
-
-  // Generate a new MMID and store it
+  // Generate a new MMID
   int result(passport_.MoveMaidsafeInbox(own_public_id));
   if (result != kSuccess) {
     LOG(kError) << "Failed to generate a new MMID: " << result;
     return kGenerateNewMMIDFailure;
   }
 
+  return kSuccess;
+}
+
+int PublicId::StoreNewInbox(const NonEmptyString& own_public_id) {
   std::mutex mutex;
   std::condition_variable cond_var;
   std::vector<int> results;
@@ -414,7 +585,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     std::lock_guard<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
-  result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -424,41 +595,22 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     return kRemoveContactFailure;
   }
 
-  Identity new_card_address;
-  result = StoreLifestuffCard(new_mmid, new_card_address);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to store new lifestuff card when removing a contact.";
-    return kRemoveContactFailure;
-  }
+  return kSuccess;
+}
 
-  SocialInfoDetail social_info(session_.social_info(own_public_id));
-  Identity old_card_address;
-  if (social_info.first) {
-    std::lock_guard<std::mutex> lock(*social_info.first);
-    old_card_address = social_info.second->card_address;
-    social_info.second->card_address = new_card_address;
-  }
+int PublicId::BlockOldInbox(const NonEmptyString& own_public_id) {
+  std::mutex mutex;
+  std::condition_variable cond_var;
+  std::vector<int> results;
+  results.push_back(utils::kPendingResult);
 
-  // Get contact we're deleting so we can message him later
-  Contact deleted_contact;
-  result = contacts_handler->ContactInfo(contact_public_id, &deleted_contact);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Failed to remove contact: " << contact_public_id.string();
-    return result;
-  }
-
-  result = contacts_handler->DeleteContact(contact_public_id);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to remove contact : " << contact_public_id.string();
-    return result;
-  }
-
-  // Invalidate previous MMID, i.e. put it into kModifiableByOwner
-  results[0] = utils::kPendingResult;
   Fob old_mmid(passport_.SignaturePacketDetails(passport::kMmid, true, own_public_id));
-  callback = [&] (const bool& response) {
-               utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[0]);
-             };
+  VoidFunctionOneBool callback = [&] (const bool& response) {
+                                   utils::ChunkStoreOperationCallback(response,
+                                                                      &mutex,
+                                                                      &cond_var,
+                                                                      &results[0]);
+                                 };
   if (!remote_chunk_store_.Modify(AppendableByAllName(old_mmid.identity),
                                   ComposeModifyAppendableByAll(old_mmid.keys.private_key, false),
                                   callback,
@@ -467,7 +619,7 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -477,15 +629,18 @@ int PublicId::RemoveContact(const NonEmptyString& own_public_id,
     return kRemoveContactFailure;
   }
 
-  passport_.ConfirmMovedMaidsafeInbox(own_public_id);
-  result = RemoveLifestuffCard(old_card_address, old_mmid);
-  if (result != kSuccess) {
-    LOG(kError) << "Failed to remove old lifestuff card.";
-    return result;
-  }
+  return kSuccess;
+}
 
-  session_.set_changed(true);
-
+int PublicId::SendInformationMessages(const ContactsHandlerPtr& contacts_handler,
+                                      const Contact& deleted_contact,
+                                      const Identity& old_inbox_identity,
+                                      const NonEmptyString& own_public_id,
+                                      const NonEmptyString& contact_public_id,
+                                      const std::string& removal_message,
+                                      const NonEmptyString& timestamp,
+                                      const bool& instigator) {
+  int result(0);
   if (instigator) {
     // Inform the deleted contact that we have deleted him
     std::vector<Contact> deleted_contact_vector(1, deleted_contact);
@@ -675,96 +830,102 @@ void PublicId::ProcessRequests(const NonEmptyString& own_public_id,
     return;
   }
 
-  for (int it(0); it < mcid.appendices_size(); ++it) {
-    asymm::PlainText decrypted_introduction(
-        asymm::Decrypt(asymm::CipherText(mcid.appendices(it).data()),
-                       mpid.keys.private_key));
+  for (int it(0); it < mcid.appendices_size(); ++it)
+    HandleAppendix(mcid.appendices(it), own_public_id, mpid);
+}
 
-    Introduction introduction;
-    if (!introduction.ParseFromString(decrypted_introduction.string())) {
-      LOG(kError) << "Failed to parse as Introduction";
-      continue;
-    }
+void PublicId::HandleAppendix(const pca::SignedData& signed_data,
+                              const NonEmptyString& own_public_id,
+                              const Fob& mpid) {
+  asymm::PlainText decrypted_introduction(asymm::Decrypt(asymm::CipherText(signed_data.data()),
+                                                         mpid.keys.private_key));
+  Introduction introduction;
+  if (!introduction.ParseFromString(decrypted_introduction.string())) {
+    LOG(kError) << "Failed to parse as Introduction";
+    return;
+  }
 
-    const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
-    if (!contacts_handler) {
-      LOG(kError) << "User does not hold such public id: " << own_public_id.string();
-      continue;
-    }
-    Contact contact;
-    int result(contacts_handler->ContactInfo(NonEmptyString(introduction.public_id()), &contact));
-    if (result == kSuccess) {
-      if (!asymm::CheckSignature(asymm::PlainText(mcid.appendices(it).data()),
-                                 asymm::Signature(mcid.appendices(it).signature()),
-                                 contact.mpid_public_key)) {
-        LOG(kError) << "User has sent a message incorrectly signed: " << contact.public_id.string();
-        continue;
-      }
-    }
-
-    int type(introduction.type());
-    switch (type) {
-      case kFriendRequest:
-        if (result != kSuccess) {
-          ProcessNewContact(contact,
-                            contacts_handler,
-                            own_public_id,
-                            introduction,
-                            mcid.appendices(it));
-        } else {
-          if (contact.status == kConfirmed &&
-              introduction.inbox_name() == contact.inbox_name.string())
-            ProcessMisplacedContactRequest(contact, own_public_id);
-          else if (contact.status == kRequestSent)
-            ProcessRequestWhenExpectingResponse(contact,
-                                                contacts_handler,
-                                                own_public_id,
-                                                introduction);
-          else
-            LOG(kError) << "Introduction of type kFriendRequest doesn't match current state!";
-        }
-        break;
-      case kFriendResponse:
-        if (result == kSuccess && contact.status == kRequestSent)
-          ProcessContactConfirmation(contact, contacts_handler, own_public_id, introduction);
-        else
-          LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
-        break;
-      case kDefriend:
-        contact_deletion_received_signal_(own_public_id,
-                                          NonEmptyString(introduction.public_id()),
-                                          introduction.message(),
-                                          NonEmptyString(introduction.timestamp()));
-          break;
-      case kMovedInbox:
-        if (result == kSuccess &&
-            (contact.status == kConfirmed || contact.status == kPendingResponse) &&
-            introduction.inbox_name() != contact.inbox_name.string())
-          ProcessContactMoveInbox(contact,
-                                  contacts_handler,
-                                  Identity(introduction.inbox_name()),
-                                  Identity(introduction.pointer_to_info()));
-        else
-          LOG(kError) << "Introduction of type kMovedInbox doesn't match current state!";
-        break;
-      case kFixAsync:
-        if (result == kSuccess && contact.status == kRequestSent)
-          ProcessContactConfirmation(contact, contacts_handler, own_public_id, introduction);
-        else
-          LOG(kError) << "Introduction of type kFixAsync doesn't match current state!";
-        break;
-      case kLifestuffCardChanged:
-        if (result == kSuccess &&
-            (contact.status == kConfirmed || contact.status == kPendingResponse))
-          lifestuff_card_updated_signal_(own_public_id,
-                                         contact.public_id,
-                                         NonEmptyString(introduction.timestamp()));
-        else
-          LOG(kError) << "Introduction of type kLifestuffCardChanged doesn't match current state!";
-        break;
-      default: LOG(kError) << "Introduction of unrecognised type!";
+  const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
+  if (!contacts_handler) {
+    LOG(kError) << "User does not hold such public id: " << own_public_id.string();
+    return;
+  }
+  Contact contact;
+  int result(contacts_handler->ContactInfo(NonEmptyString(introduction.public_id()), &contact));
+  if (result == kSuccess) {
+    if (!asymm::CheckSignature(asymm::PlainText(signed_data.data()),
+                               asymm::Signature(signed_data.signature()),
+                               contact.mpid_public_key)) {
+      LOG(kError) << "User has sent a message incorrectly signed: " << contact.public_id.string();
+      return;
     }
   }
+
+  ProcessIntroduction(contact, contacts_handler, own_public_id, introduction, signed_data, result);
+}
+
+void PublicId::ProcessIntroduction(Contact& contact,
+                                   const ContactsHandlerPtr& contacts_handler,
+                                   const NonEmptyString& own_public_id,
+                                   const Introduction& introduction,
+                                   const pca::SignedData& signed_data,
+                                   int have_contact) {
+  int type(introduction.type());
+  switch (type) {
+    case kFriendRequest: return ProccessFriendRequest(contact, contacts_handler, own_public_id,
+                                                      introduction, signed_data, have_contact);
+    case kFriendResponse: return ProccessFriendResponse(contact, contacts_handler, own_public_id,
+                                                        introduction, have_contact);
+    case kDefriend: return ProcessDefriending(own_public_id, introduction);
+    case kMovedInbox: return ProcessContactMoveInbox(contact,
+                                                     contacts_handler,
+                                                     Identity(introduction.inbox_name()),
+                                                     Identity(introduction.pointer_to_info()),
+                                                     introduction,
+                                                     have_contact);
+    case kFixAsync: return ProcessFixAsync(contact, contacts_handler, own_public_id,
+                                           introduction, have_contact);
+    case kLifestuffCardChanged: return ProcessLifestuffCardChanged(contact, own_public_id,
+                                                                   introduction, have_contact);
+    default: LOG(kError) << "Introduction of unrecognised type!";
+  }
+}
+
+void PublicId::ProccessFriendRequest(Contact& contact,
+                                     const ContactsHandlerPtr& contacts_handler,
+                                     const NonEmptyString& own_public_id,
+                                     const Introduction& introduction,
+                                     const pca::SignedData& signed_data,
+                                     int have_contact) {
+  if (have_contact == kSuccess) {
+    if (contact.status == kConfirmed && introduction.inbox_name() == contact.inbox_name.string())
+      ProcessMisplacedContactRequest(contact, own_public_id);
+    else if (contact.status == kRequestSent)
+      ProcessRequestWhenExpectingResponse(contact, contacts_handler, own_public_id, introduction);
+    else
+      LOG(kError) << "Introduction of type kFriendRequest doesn't match current state!";
+  } else {
+    ProcessNewContact(contact, contacts_handler, own_public_id, introduction, signed_data);
+  }
+}
+
+void PublicId::ProccessFriendResponse(Contact& contact,
+                                      const ContactsHandlerPtr& contacts_handler,
+                                      const NonEmptyString& own_public_id,
+                                      const Introduction& introduction,
+                                      int have_contact) {
+  if (have_contact == kSuccess && contact.status == kRequestSent)
+    ProcessContactConfirmation(contact, contacts_handler, own_public_id, introduction);
+  else
+    LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
+}
+
+void PublicId::ProcessDefriending(const NonEmptyString& own_public_id,
+                                  const Introduction& introduction) {
+  contact_deletion_received_signal_(own_public_id,
+                                    NonEmptyString(introduction.public_id()),
+                                    introduction.message(),
+                                    NonEmptyString(introduction.timestamp()));
 }
 
 void PublicId::ProcessContactConfirmation(Contact& contact,
@@ -793,19 +954,51 @@ void PublicId::ProcessContactConfirmation(Contact& contact,
 void PublicId::ProcessContactMoveInbox(Contact& contact,
                                        const ContactsHandlerPtr contacts_handler,
                                        const Identity& inbox_name,
-                                       const Identity& pointer_to_info) {
-  int result = GetPublicKey(inbox_name, contact, 1);
-  contact.pointer_to_info = pointer_to_info;
-  if (result == kSuccess) {
-    result = contacts_handler->UpdateContact(contact);
-    if (result != kSuccess) {
-      LOG(kError) << "Failed to update MMID.";
+                                       const Identity& pointer_to_info,
+                                       const Introduction& introduction,
+                                       int have_contact) {
+  if (have_contact == kSuccess &&
+      (contact.status == kConfirmed || contact.status == kPendingResponse) &&
+      introduction.inbox_name() != contact.inbox_name.string()) {
+    int result = GetPublicKey(inbox_name, contact, 1);
+    contact.pointer_to_info = pointer_to_info;
+    if (result == kSuccess) {
+      result = contacts_handler->UpdateContact(contact);
+      if (result != kSuccess) {
+        LOG(kError) << "Failed to update MMID.";
+      } else {
+        session_.set_changed(true);
+      }
     } else {
-      session_.set_changed(true);
+      LOG(kError) << "Failed to update contact after inbox move.";
     }
   } else {
-    LOG(kError) << "Failed to update contact after inbox move.";
+    LOG(kError) << "Introduction of type kMovedInbox doesn't match current state!";
   }
+}
+
+void PublicId::ProcessFixAsync(Contact& contact,
+                               const ContactsHandlerPtr& contacts_handler,
+                               const NonEmptyString& own_public_id,
+                               const Introduction& introduction,
+                               int have_contact) {
+  if (have_contact == kSuccess && contact.status == kRequestSent)
+    ProcessContactConfirmation(contact, contacts_handler, own_public_id, introduction);
+  else
+    LOG(kError) << "Introduction of type kFixAsync doesn't match current state!";
+}
+
+void PublicId::ProcessLifestuffCardChanged(Contact& contact,
+                                           const NonEmptyString& own_public_id,
+                                           const Introduction& introduction,
+                                           int have_contact) {
+  if (have_contact == kSuccess &&
+      (contact.status == kConfirmed || contact.status == kPendingResponse))
+    lifestuff_card_updated_signal_(own_public_id,
+                                   contact.public_id,
+                                   NonEmptyString(introduction.timestamp()));
+  else
+    LOG(kError) << "Introduction of type kLifestuffCardChanged doesn't match current state!";
 }
 
 void PublicId::ProcessNewContact(Contact& contact,
@@ -1079,9 +1272,11 @@ NonEmptyString EmptyCardContent(const asymm::PrivateKey& private_key) {
   return NonEmptyString(signed_data.SerializeAsString());
 }
 
-int PublicId::StoreLifestuffCard(const Fob& mmid, Identity& lifestuff_card_address) {
+int PublicId::StoreLifestuffCard(const NonEmptyString& public_id,
+                                 Identity& lifestuff_card_address) {
   int attempts(0), wait_result(kSuccess);
   Identity card_address;
+  Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
   NonEmptyString empty_card_content(EmptyCardContent(mmid.keys.private_key));
   std::vector<int> results(1, utils::kPendingResult);
   std::mutex mutex;
@@ -1187,53 +1382,6 @@ int PublicId::RetrieveLifestuffCard(const Identity& lifestuff_card_address,
     social_info[NonEmptyString(lifestuff_card.key(n))] = lifestuff_card.value(n);
 
   return kSuccess;
-}
-
-void PublicId::StoreMpid(bool response,
-                         OperationResults& results,
-                         const NonEmptyString& public_id,
-                         bool accepts_new_contacts) {
-  LOG(kInfo) << "StoreMpid - anmpid result: " << std::boolalpha << response;
-  if (!response) {
-    LOG(kError) << "Anmpid failed to store.";
-    OperationCallback(false, results, 0);
-    return;
-  }
-
-  Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
-  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
-  VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   StoreMcid(response, results, public_id, accepts_new_contacts);
-                                 };
-  priv::ChunkId mpid_name(SignaturePacketName(mpid.identity));
-  if (!remote_chunk_store_.Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
-    LOG(kError) << "Failed to store ANMPID";
-    OperationCallback(false, results, 0);
-  }
-}
-
-void PublicId::StoreMcid(bool response,
-                         OperationResults& results,
-                         const NonEmptyString& public_id,
-                         bool accepts_new_contacts) {
-  LOG(kInfo) << "StoreMcid - mpid result: " << std::boolalpha << response;
-  if (!response) {
-    LOG(kError) << "Mpid failed to store.";
-    OperationCallback(false, results, 0);
-    return;
-  }
-  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
-  priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
-  VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   OperationCallback(response, results, 0);
-                                 };
-  if (!remote_chunk_store_.Store(mcid_name,
-                                 AppendableIdValue(mpid, accepts_new_contacts),
-                                 callback,
-                                 mpid)) {
-    LOG(kError) << "Mcid failed to store";
-    OperationCallback(false, results, 0);
-  }
 }
 
 }  // namespace lifestuff

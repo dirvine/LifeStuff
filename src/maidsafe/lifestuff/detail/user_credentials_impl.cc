@@ -131,19 +131,9 @@ int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
                                              const NonEmptyString& password) {
   std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
-  int result(CheckKeywordValidity(keyword));
+  int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "    Return code: " << result << ")";
+    LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
     return result;
   }
 
@@ -270,35 +260,29 @@ int UserCredentialsImpl::GetUserInfo(const NonEmptyString& keyword,
                                      std::string& mid_packet,
                                      std::string& smid_packet) {
   if (compare_names) {
-    std::string new_mid_packet;
-    std::string new_smid_packet;
+    std::string re_mid_packet;
+    std::string re_smid_packet;
 
     uint32_t int_pin(StringToIntPin(pin));
     priv::ChunkId mid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
     priv::ChunkId smid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
 
-    boost::thread get_mid_thread(
-        [&] {
-          new_mid_packet = remote_chunk_store_->Get(mid_name, Fob());
-        });
-    boost::thread get_smid_thread(
-        [&] {
-          new_smid_packet = remote_chunk_store_->Get(smid_name, Fob());
-        });
+    boost::thread mid_thread([&] { re_mid_packet = remote_chunk_store_->Get(mid_name, Fob()); });  // NOLINT (Dan)
+    boost::thread smid_thread([&] { re_smid_packet = remote_chunk_store_->Get(smid_name, Fob()); });  // NOLINT (Dan)
 
-    get_mid_thread.join();
-    get_smid_thread.join();
+    mid_thread.join();
+    smid_thread.join();
 
-    if (new_mid_packet.empty()) {
+    if (re_mid_packet.empty()) {
       LOG(kError) << "No MID found.";
       return kIdPacketNotFound;
     }
-    if (new_smid_packet.empty()) {
+    if (re_smid_packet.empty()) {
       LOG(kError) << "No SMID found.";
       return kIdPacketNotFound;
     }
 
-    if (mid_packet == new_mid_packet && smid_packet == new_smid_packet) {
+    if (mid_packet == re_mid_packet && smid_packet == re_smid_packet) {
       LOG(kInfo) << "MID and SMID are up to date.";
       return kSuccess;
     }
@@ -426,42 +410,85 @@ void UserCredentialsImpl::GetIdAndTemporaryId(const NonEmptyString& keyword,
   }
 }
 
+int TmidAndNoStmid(const std::string& tmid_serialised_data_atlas,
+                   Session& session,
+                   std::string& tmid_da,
+                   std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = tmid_serialised_data_atlas;
+    stmid_da = tmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
+    return kSuccess;
+  }
+  return kLoginAccountCorrupted;
+}
+
+int StmidAndNoTmid(const std::string& stmid_serialised_data_atlas,
+                   Session& session,
+                   std::string& tmid_da,
+                   std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = stmid_serialised_data_atlas;
+    stmid_da = stmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+    return kSuccess;
+  }
+  return kLoginAccountCorrupted;
+}
+
+int BothTmidAndStmid(const std::string& tmid_serialised_data_atlas,
+                     const std::string& stmid_serialised_data_atlas,
+                     Session& session,
+                     std::string& tmid_da,
+                     std::string& stmid_da) {
+  int result = session.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
+  if (result == kSuccess) {
+    tmid_da = tmid_serialised_data_atlas;
+    stmid_da = stmid_serialised_data_atlas;
+    session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+    return kSuccess;
+  } else {
+    result = session.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
+    if (result == kSuccess) {
+      tmid_da = stmid_serialised_data_atlas;
+      stmid_da = stmid_serialised_data_atlas;
+      session.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
+      return kSuccess;
+    }
+  }
+  return kLoginAccountCorrupted;
+}
+
 int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
                                                   const NonEmptyString& pin,
                                                   const NonEmptyString& password,
                                                   const std::string& tmid_serialised_data_atlas,
                                                   const std::string& stmid_serialised_data_atlas) {
-  int result(kSuccess);
-  std::string tmid_da, stmid_da;
-  if (!tmid_serialised_data_atlas.empty()) {
-    result = session_.ParseDataAtlas(NonEmptyString(tmid_serialised_data_atlas));
-    if (result == kSuccess) {
-      session_.set_serialised_data_atlas(NonEmptyString(tmid_serialised_data_atlas));
-      tmid_da = tmid_serialised_data_atlas;
-    } else if (result == kTryAgainLater) {
-      return kTryAgainLater;
-    }
-  } else if (!stmid_serialised_data_atlas.empty()) {
-    tmid_da = stmid_serialised_data_atlas;
-    stmid_da = stmid_serialised_data_atlas;
-    result = session_.ParseDataAtlas(NonEmptyString(stmid_serialised_data_atlas));
-    if (result == kSuccess) {
-      session_.set_serialised_data_atlas(NonEmptyString(stmid_serialised_data_atlas));
-      result = kUsingNextToLastSession;
-    } else if (result == kTryAgainLater) {
-      return kTryAgainLater;
-    }
+  if (tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    LOG(kError) << "No valid DA.";
+    return kSetIdentityPacketsFailure;
   }
 
-  if (stmid_da.empty()) {
-    if (!stmid_serialised_data_atlas.empty()) {
-      stmid_da = stmid_serialised_data_atlas;
-    } else if (!tmid_da.empty()) {
-      stmid_da = tmid_da;
-    } else {
-      LOG(kError) << "No valid DA.";
-      return kSetIdentityPacketsFailure;
-    }
+  int result(kSuccess);
+  std::string tmid_da, stmid_da;
+  if (!tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    result = TmidAndNoStmid(tmid_serialised_data_atlas, session_, tmid_da, stmid_da);
+    if (result != kSuccess)
+      return result;
+  } else if (tmid_serialised_data_atlas.empty() && stmid_serialised_data_atlas.empty()) {
+    result = StmidAndNoTmid(stmid_serialised_data_atlas, session_, tmid_da, stmid_da);
+    if (result != kSuccess)
+      return result;
+  } else {
+    result = BothTmidAndStmid(tmid_serialised_data_atlas,
+                              stmid_serialised_data_atlas,
+                              session_,
+                              tmid_da,
+                              stmid_da);
+    if (result != kSuccess)
+      return result;
   }
 
   int id_packets_result = passport_.SetIdentityPackets(keyword,
@@ -483,19 +510,9 @@ int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
                                     const NonEmptyString& password) {
   std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
-  int result(CheckKeywordValidity(keyword));
+  int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
-    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPinValidity(pin);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
-    return result;
-  }
-  result = CheckPasswordValidity(password);
-  if (result != kSuccess) {
-    LOG(kInfo) << "Invalid password: " << password.string() << "   (Return code: " << result << ")";
+    LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
     return result;
   }
 
@@ -1309,8 +1326,30 @@ void UserCredentialsImpl::LogoutCompletedArrived(const std::string& session_mark
   completed_log_out_conditional_.notify_one();
 }
 
-bool  UserCredentialsImpl::IsOwnSessionTerminationMessage(const std::string& session_marker) {
+bool UserCredentialsImpl::IsOwnSessionTerminationMessage(const std::string& session_marker) {
   return pending_session_marker_ == session_marker;
+}
+
+int UserCredentialsImpl::CheckInputs(const NonEmptyString& keyword,
+                                     const NonEmptyString& pin,
+                                     const NonEmptyString& password) {
+  int result(CheckKeywordValidity(keyword));
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid keyword: " << keyword.string() << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPinValidity(pin);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid pin: " << pin.string() << "    Return code: " << result << ")";
+    return result;
+  }
+  result = CheckPasswordValidity(password);
+  if (result != kSuccess) {
+    LOG(kInfo) << "Invalid password: " << password.string() << "   (Return code: " << result << ")";
+    return result;
+  }
+
+  return kSuccess;
 }
 
 }  // namespace lifestuff

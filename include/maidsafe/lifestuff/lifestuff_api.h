@@ -46,26 +46,8 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  LifeStuff();
+  LifeStuff(const Slots& slot_functions, const fs::path& base_directory);
   ~LifeStuff();
-
-  /// State operations
-  int Initialise(const UpdateAvailableFunction& software_update_available_function,
-                 const fs::path& base_directory,
-                 bool vault_cheat);
-  int ConnectToSignals(const ChatFunction& chat_slot,
-                       const FileTransferSuccessFunction& file_success_slot,
-                       const FileTransferFailureFunction& file_failure_slot,
-                       const NewContactFunction& new_contact_slot,
-                       const ContactConfirmationFunction& confirmed_contact_slot,
-                       const ContactProfilePictureFunction& profile_picture_slot,
-                       const ContactPresenceFunction& contact_presence_slot,
-                       const ContactDeletionFunction& contact_deletion_function,
-                       const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-                       const NetworkHealthFunction& network_health_function,
-                       const ImmediateQuitRequiredFunction& immediate_quit_required_function);
-
-  int Finalise();
 
   /// Credential operations
   int CreateUser(const NonEmptyString& keyword,

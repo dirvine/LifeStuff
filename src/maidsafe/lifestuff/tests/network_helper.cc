@@ -114,6 +114,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
   boost::system::error_code error_code;
   fs::remove("bootstrap", error_code);
+  fs::remove(GetUserAppDir() / kCompanyName / kApplicationName, error_code);
 
   // Invoke pd-keys-helper to create 2 zero-state vaults and all keys
   bp::pipe anon_pipe = bp::create_pipe();

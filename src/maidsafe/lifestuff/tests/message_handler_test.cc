@@ -168,20 +168,26 @@ class MessageHandlerTest : public testing::Test {
                                                                     *test_dir_ / dir3 / "lock",
                                                                     asio_service2_.service());
 
-    public_id1_.reset(new PublicId(*remote_chunk_store1_, session1_, asio_service1_.service()));
-    message_handler1_.reset(new MessageHandler(*remote_chunk_store1_,
-                                               session1_,
-                                               asio_service1_.service()));
+    public_id1_ = std::make_shared<PublicId>(*remote_chunk_store1_,
+                                             session1_,
+                                             asio_service1_.service());
+    message_handler1_ = std::make_shared<MessageHandler>(*remote_chunk_store1_,
+                                                         session1_,
+                                                         asio_service1_.service());
 
-    public_id2_.reset(new PublicId(*remote_chunk_store2_, session2_, asio_service2_.service()));
-    message_handler2_.reset(new MessageHandler(*remote_chunk_store2_,
-                                               session2_,
-                                               asio_service2_.service()));
+    public_id2_ = std::make_shared<PublicId>(*remote_chunk_store2_,
+                                             session2_,
+                                             asio_service2_.service());
+    message_handler2_ = std::make_shared<MessageHandler>(*remote_chunk_store2_,
+                                                         session2_,
+                                                         asio_service2_.service());
 
-    public_id3_.reset(new PublicId(*remote_chunk_store3_, session3_, asio_service3_.service()));
-    message_handler3_.reset(new MessageHandler(*remote_chunk_store3_,
-                                               session3_,
-                                               asio_service3_.service()));
+    public_id3_ = std::make_shared<PublicId>(*remote_chunk_store3_,
+                                             session3_,
+                                             asio_service3_.service());
+    message_handler3_ = std::make_shared<MessageHandler>(*remote_chunk_store3_,
+                                                         session3_,
+                                                         asio_service3_.service());
   }
 
   void TearDown() {

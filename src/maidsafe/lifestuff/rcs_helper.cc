@@ -48,10 +48,6 @@ std::shared_ptr<priv::chunk_store::RemoteChunkStore> BuildChunkStore(
     std::shared_ptr<pd::Node>& node,
     const std::function<void(const int&)>& network_health_function) {
   node = SetupNode(base_dir, endopints, network_health_function);
-  if (!node) {
-    LOG(kError) << "Failed to start client node";
-    return std::shared_ptr<pcs::RemoteChunkStore>();
-  }
 
   std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store(
       std::make_shared<pcs::RemoteChunkStore>(node->chunk_store(),
@@ -78,7 +74,7 @@ std::shared_ptr<pd::Node> SetupNode(
   int result(node->Start(base_dir / "buffered_chunk_store", peer_endpoints));
   if (result != kSuccess) {
     LOG(kError) << "Failed to start PD client node.  Result: " << result;
-    return std::shared_ptr<pd::Node>();
+    throw std::exception();
   }
 
   LOG(kInfo) << "Started PD client node.";

@@ -33,47 +33,10 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-LifeStuff::LifeStuff() : lifestuff_impl_(std::make_shared<LifeStuffImpl>()) {}
+LifeStuff::LifeStuff(const Slots& slot_functions, const fs::path& base_directory)
+    : lifestuff_impl_(std::make_shared<LifeStuffImpl>(slot_functions, base_directory)) {}
 
 LifeStuff::~LifeStuff() {}
-
-int LifeStuff::Initialise(const UpdateAvailableFunction& software_update_available_function,
-                          const fs::path& base_directory,
-                          bool vault_cheat) {
-  return lifestuff_impl_->Initialise(software_update_available_function,
-                                     base_directory,
-                                     vault_cheat);
-}
-
-int LifeStuff::ConnectToSignals(
-    const ChatFunction& chat_slot,
-    const FileTransferSuccessFunction& file_success_slot,
-    const FileTransferFailureFunction& file_failure_slot,
-    const NewContactFunction& new_contact_slot,
-    const ContactConfirmationFunction& confirmed_contact_slot,
-    const ContactProfilePictureFunction& profile_picture_slot,
-    const ContactPresenceFunction& contact_presence_slot,
-    const ContactDeletionFunction& contact_deletion_function,
-    const LifestuffCardUpdateFunction& lifestuff_card_update_function,
-    const NetworkHealthFunction& network_health_function,
-    const ImmediateQuitRequiredFunction& immediate_quit_required_function) {
-  return lifestuff_impl_->ConnectToSignals(true,
-                                           chat_slot,
-                                           file_success_slot,
-                                           file_failure_slot,
-                                           new_contact_slot,
-                                           confirmed_contact_slot,
-                                           profile_picture_slot,
-                                           contact_presence_slot,
-                                           contact_deletion_function,
-                                           lifestuff_card_update_function,
-                                           network_health_function,
-                                           immediate_quit_required_function);
-}
-
-int LifeStuff::Finalise() {
-  return lifestuff_impl_->Finalise();
-}
 
 /// Credential operations
 int LifeStuff::CreateUser(const NonEmptyString& keyword,

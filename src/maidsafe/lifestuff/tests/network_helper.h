@@ -51,10 +51,10 @@ class NetworkHelper {
   testing::AssertionResult StopLocalNetwork();
 
  private:
-   typedef std::unique_ptr<boost::iostreams::stream<boost::iostreams::file_descriptor_source>>
-      InStreamPtr;
-      std::vector<boost::process::child> zero_state_processes_;
-   std::vector<std::pair<boost::process::child, InStreamPtr>> vault_processes_;
+   typedef std::unique_ptr<boost::iostreams::stream<boost::iostreams::file_descriptor_source> >
+           InStreamPtr;
+   std::vector<boost::process::child> zero_state_processes_;
+   std::vector<std::pair<boost::process::child, InStreamPtr> > vault_processes_;
    std::vector<boost::process::child> lifestuff_manager_processes_;
 };
 

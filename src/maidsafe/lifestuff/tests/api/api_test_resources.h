@@ -110,10 +110,10 @@ void MultipleFileTransferSlot(const NonEmptyString&,
 
 void NewContactSlot(const NonEmptyString&,
                     const NonEmptyString&,
-                    const NonEmptyString&,
+                    const std::string&,
                     const NonEmptyString&,
                     volatile bool* done,
-                    NonEmptyString* contact_request_message);
+                    std::string* contact_request_message);
 
 void ContactConfirmationSlot(const NonEmptyString&,
                              const NonEmptyString&,
@@ -133,9 +133,9 @@ void ContactPresenceSlot(const NonEmptyString&,
 
 void ContactDeletionSlot(const NonEmptyString&,
                          const NonEmptyString&,
-                         const NonEmptyString& signal_message,
+                         const std::string& signal_message,
                          const NonEmptyString&,
-                         NonEmptyString* slot_message,
+                         std::string* slot_message,
                          volatile bool* done);
 
 void LifestuffCardSlot(const NonEmptyString&,
@@ -144,6 +144,8 @@ void LifestuffCardSlot(const NonEmptyString&,
                        volatile bool* done);
 
 void ImmediateQuitRequiredSlot(volatile bool* done);
+
+void PopulateSlots(Slots& slot_functions, TestingVariables& testing_variables);
 
 int DoFullCreateUser(LifeStuff& test_elements,
                      const NonEmptyString& keyword,
@@ -157,8 +159,8 @@ int DoFullLogIn(LifeStuff& test_elements,
 
 int DoFullLogOut(LifeStuff& test_elements);
 
-int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
-                                 LifeStuff& test_elements2,
+int CreateAndConnectTwoPublicIds(Slots& lifestuff_slots1,
+                                 Slots& lifestuff_slots2,
                                  TestingVariables& testing_variables1,
                                  TestingVariables& testing_variables2,
                                  const fs::path& test_dir,
@@ -169,34 +171,18 @@ int CreateAndConnectTwoPublicIds(LifeStuff& test_elements1,
                                  const NonEmptyString& keyword2,
                                  const NonEmptyString& pin2,
                                  const NonEmptyString& password2,
-                                 const NonEmptyString& public_id2,
-                                 bool several_files = false,
-                                 std::vector<std::string>* ids = nullptr,
-                                 std::vector<std::string>* names = nullptr,
-                                 size_t* total_files = nullptr);
+                                 const NonEmptyString& public_id2);
 
-int InitialiseAndConnect(LifeStuff& test_elements,
-                         TestingVariables& testing_variables,
-                         const fs::path& test_dir,
-                         bool several_files = false,
-                         std::vector<std::string>* ids = nullptr,
-                         std::vector<std::string>* names = nullptr,
-                         size_t* total_files = nullptr);
-
-int CreateAccountWithPublicId(LifeStuff& test_elements,
-                              TestingVariables& testing_variables,
+int CreateAccountWithPublicId(Slots& lifestuff_slots,
                               const fs::path& test_dir,
                               const NonEmptyString& keyword,
                               const NonEmptyString& pin,
                               const NonEmptyString& password,
-                              const NonEmptyString& public_id,
-                              bool several_files = false,
-                              std::vector<std::string>* ids = nullptr,
-                              std::vector<std::string>* names = nullptr,
-                              size_t* total_files = nullptr);
+                              const NonEmptyString& public_id);
 
-int ConnectTwoPublicIds(LifeStuff& test_elements1,
-                        LifeStuff& test_elements2,
+int ConnectTwoPublicIds(const fs::path& test_dir,
+                        Slots& lifestuff_slots1,
+                        Slots& lifestuff_slots2,
                         TestingVariables& testing_variables1,
                         TestingVariables& testing_variables2,
                         const NonEmptyString& keyword1,
@@ -264,9 +250,8 @@ class OneUserApiTest : public testing::Test {
       pin_(CreatePin()),
       password_(RandomAlphaNumericString(6)),
       network_(),
-      error_code_(),
-      done_(),
-      test_elements_() {}
+      testing_variables_(),
+      lifestuff_slots_() {}
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -274,26 +259,8 @@ class OneUserApiTest : public testing::Test {
   NonEmptyString pin_;
   NonEmptyString password_;
   NetworkHelper network_;
-  boost::system::error_code error_code_;
-  volatile bool done_;
-  LifeStuff test_elements_;
-
-  virtual void SetUp();
-
-  virtual void TearDown();
-};
-
-class TwoInstancesApiTest : public OneUserApiTest {
- public:
-  TwoInstancesApiTest()
-    : test_elements_2_(),
-      testing_variables_1_(),
-      testing_variables_2_() {}
-
- protected:
-  LifeStuff test_elements_2_;
-  TestingVariables testing_variables_1_;
-  TestingVariables testing_variables_2_;
+  TestingVariables testing_variables_;
+  Slots lifestuff_slots_;
 
   virtual void SetUp();
 
@@ -312,10 +279,10 @@ class TwoUsersApiTest : public testing::Test {
       pin_2_(CreatePin()),
       password_2_(RandomAlphaNumericString(6)),
       public_id_2_(RandomAlphaNumericString(5)),
-      test_elements_1_(),
-      test_elements_2_(),
       testing_variables_1_(),
       testing_variables_2_(),
+      lifestuff_slots_1_(),
+      lifestuff_slots_2_(),
       network_() {}
 
  protected:
@@ -328,24 +295,11 @@ class TwoUsersApiTest : public testing::Test {
   NonEmptyString pin_2_;
   NonEmptyString password_2_;
   NonEmptyString public_id_2_;
-  LifeStuff test_elements_1_;
-  LifeStuff test_elements_2_;
   TestingVariables testing_variables_1_;
   TestingVariables testing_variables_2_;
+  Slots lifestuff_slots_1_;
+  Slots lifestuff_slots_2_;
   NetworkHelper network_;
-
-  virtual void SetUp();
-
-  virtual void TearDown();
-};
-
-class TwoUsersMutexApiTest : public TwoUsersApiTest {
- public:
-  TwoUsersMutexApiTest()
-    : mutex_() {}
-
- protected:
-  boost::mutex mutex_;
 
   virtual void SetUp();
 
