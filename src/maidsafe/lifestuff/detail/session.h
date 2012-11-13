@@ -99,6 +99,8 @@ class Session {
   ~Session();
   void Reset();
 
+  void set_bootstrap_endpoints(const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);
+  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints() const;
   passport::Passport& passport();
 
   int AddPublicId(const NonEmptyString& public_id, const Identity& pointer_to_lifestuff_card);
@@ -146,6 +148,7 @@ class Session {
   Session &operator=(const Session&);
   Session(const Session&);
 
+  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints_;
   passport::Passport passport_;
   UserDetails user_details_;
   mutable std::mutex user_details_mutex_;

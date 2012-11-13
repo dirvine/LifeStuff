@@ -112,8 +112,7 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
       slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
-      immediate_quit_required_signal_(),
-      bootstrap_endpoints_() {
+      immediate_quit_required_signal_() {
   CheckSlots(slots_);
 
   // Initialisation
@@ -129,21 +128,25 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
 
 
   int counter(0);
+  std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_ = std::make_shared<priv::process_management::ClientController>(
                              slots_.update_available_slot);
-    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints_))
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints))
       counter = kRetryLimit;
     else
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
   }
+
+  session_.set_bootstrap_endpoints(bootstrap_endpoints);
+
   state_ = kConnected;
 }
 
 int LifeStuffImpl::MakeAnonymousComponents() {
   remote_chunk_store_ = BuildChunkStore(buffered_path_,
-                                        bootstrap_endpoints_,
+                                        session_.bootstrap_endpoints(),
                                         client_node_,
                                         nullptr);
   if (!remote_chunk_store_) {
@@ -220,7 +223,6 @@ int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
                    "messages and intros have been stopped.";
     return kWrongLoggedInState;
   }
-  session_.Reset();
 
   slots_.operation_progress_slot(Operation::kCreateUser, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());

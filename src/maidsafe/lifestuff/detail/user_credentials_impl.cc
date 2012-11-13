@@ -538,7 +538,7 @@ int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
   if (!test_) {
     Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
     if (!routings_handler_.AddRoutingObject(maid,
-                                            std::vector<std::pair<std::string, uint16_t> >(),
+                                            session_.bootstrap_endpoints(),
                                             NonEmptyString(maid.identity),
                                             nullptr)) {
       LOG(kError) << "Failure to start the routing object for the MAID.";

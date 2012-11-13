@@ -157,7 +157,6 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   boost::signals2::signal<void()> immediate_quit_required_signal_;
-  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints_;
 
   void ConnectToSignals();
   int MakeAnonymousComponents();

@@ -69,7 +69,8 @@ PublicIdDetails::PublicIdDetails(const PublicIdDetails& other)
       social_info_mutex(other.social_info_mutex) {}
 
 Session::Session()
-    : passport_(),
+    : bootstrap_endpoints_(),
+      passport_(),
       user_details_(),
       user_details_mutex_(),
       public_id_details_(),
@@ -80,6 +81,8 @@ Session::~Session() {}
 void Session::Reset() {
   {
     std::lock_guard<std::mutex> lock(user_details_mutex_);
+    bootstrap_endpoints_.clear();
+    
     user_details_.defconlevel = DefConLevels::kDefCon3;
     user_details_.keyword = NonEmptyString();
     user_details_.pin = NonEmptyString();
@@ -100,6 +103,16 @@ void Session::Reset() {
     std::lock_guard<std::mutex> lock(public_id_details_mutex_);
     public_id_details_.clear();
   }
+}
+
+void Session::set_bootstrap_endpoints(const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {
+  std::lock_guard<std::mutex> lock(user_details_mutex_);
+  bootstrap_endpoints_ =bootstrap_endpoints;
+}
+
+std::vector<std::pair<std::string, uint16_t> > Session::bootstrap_endpoints() const {
+  std::lock_guard<std::mutex> lock(user_details_mutex_);
+  return bootstrap_endpoints_;
 }
 
 passport::Passport& Session::passport() { return passport_; }
