@@ -63,7 +63,7 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
                              Session* session,
                              const NonEmptyString& drive_logo) {
   if (mount_status_) {
-    LOG(kInfo) << "Already mounted.";
+    LOG(kInfo) << "Already mounted on " << mount_dir_path;
     return;
   }
 
@@ -71,9 +71,6 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
     LOG(kError) << "Failed to initialise needed file chunkstore.";
     return;
   }
-
-  if (!fs::exists(mount_dir_path))
-    fs::create_directory(mount_dir_path);
 
   session_ = session;
   Fob fob(session->passport().SignaturePacketDetails(passport::kMaid, true));
@@ -119,6 +116,14 @@ void UserStorage::MountDrive(const fs::path& file_chunk_store_path,
   }
   mount_status_ = true;
 #else
+  boost::system::error_code error_code;
+  if (!fs::exists(mount_dir_path)) {
+    fs::create_directories(mount_dir_path, error_code);
+    if (error_code) {
+      LOG(kError) << "Failed to create mount dir(" << mount_dir_path << "): "
+                  << error_code.message();
+    }
+  }
   mount_dir_ = mount_dir_path;
   mount_thread_ = std::move(std::thread([this, drive_logo] {
                                           drive_in_user_space_->Mount(mount_dir_,

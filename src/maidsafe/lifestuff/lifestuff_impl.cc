@@ -437,9 +437,9 @@ int LifeStuffImpl::MountDrive() {
   }
 
   logged_in_components_->storage.MountDrive(buffered_path_ / "encryption_drive_chunks",
-                            mount_dir,
-                            &session_,
-                            kDriveLogo);
+                                            mount_dir,
+                                            &session_,
+                                            kDriveLogo);
   if (!logged_in_components_->storage.mount_status()) {
     LOG(kError) << "Failed to mount";
     return kMountDriveError;
