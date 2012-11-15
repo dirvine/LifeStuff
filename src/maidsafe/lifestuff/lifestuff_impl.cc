@@ -323,7 +323,6 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
                    "messages and intros have been stopped.";
     return kWrongLoggedInState;
   }
-  session_.Reset();
 
   slots_.operation_progress_slot(Operation::kLogIn, SubTask::kInitialiseAnonymousComponents);
   int result(MakeAnonymousComponents());
@@ -401,8 +400,6 @@ int LifeStuffImpl::LogOut(bool clear_maid_routing) {
     Identity maid_id(session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
     assert(routings_handler_->DeleteRoutingObject(maid_id));
   }
-
-  session_.Reset();
 
   state_ = kConnected;
   logged_in_state_ = kBaseState;

@@ -157,7 +157,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
     source = biostr::file_descriptor_source(anon_pipe.source, biostr::close_handle);
 
-    std::random_shuffle(endpoints.begin(), endpoints.end());
+    // std::random_shuffle(endpoints.begin(), endpoints.end());
     std::string args("--start --chunk_path ");
     std::string index(boost::lexical_cast<std::string>(i));
     fs::path chunkstore(*test_root / (std::string("ChunkStore") + index));
@@ -167,7 +167,10 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     }
     args += chunkstore.string();
     args += " --identity_index " + index;
-//    args += " --peer " + endpoints.front();
+    if (i == 2)
+      args += " --log_* I --log_folder E:\\Downloads\\invagilator_log";
+    args += " --peer " + endpoints.back().first + ":" +
+            boost::lexical_cast<std::string>(endpoints.back().second);
     vault_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -211,6 +214,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   }
 
   // Start other vaults
+  std::string local_ip(GetLocalIp().to_string());
   for (int i(4); i != vault_count + 2; ++i) {
     LOG(kInfo) << "Starting Vault " << i;
     anon_pipe = bp::create_pipe();
@@ -227,7 +231,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
     args += chunkstore.string();
     args += " --identity_index " + index;
-//    args += " --peer " + endpoints.front();
+    args += " --peer " + local_ip + ":5483";
     vault_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -247,7 +251,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
   bp::child store_key_child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
-                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-ls")),
+                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-ls --peer " + local_ip + ":5483")),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env()));
   if (error_code)

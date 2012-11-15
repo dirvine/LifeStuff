@@ -172,10 +172,13 @@ int UserCredentialsImpl::CheckForOtherRunningInstances(const NonEmptyString& key
                                                        std::string& smid_packet) {
   // Start MAID routing
   Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
-  routings_handler_.AddRoutingObject(maid,
-                                     std::vector<std::pair<std::string, uint16_t> >(),
-                                     NonEmptyString(maid.identity),
-                                     nullptr);
+  if (!routings_handler_.AddRoutingObject(maid,
+                                          session_.bootstrap_endpoints(),
+                                          NonEmptyString(maid.identity),
+                                          nullptr)) {
+    LOG(kError) << "Failed to add MAID routing object to check for running instances.";
+    return -1;
+  }
 
   // Message self and wait for response
   std::string logout_request_acknowledgement;
