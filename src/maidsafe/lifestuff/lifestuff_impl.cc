@@ -1155,11 +1155,18 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   }
   Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
 
+  std::vector<boost::asio::ip::udp::endpoint> peer_endpoints;
+  for (auto& element : session_.bootstrap_endpoints()) {
+    boost::asio::ip::udp::endpoint endpoint;
+    endpoint.address(boost::asio::ip::address::from_string(element.first));
+    endpoint.port(element.second);
+    peer_endpoints.push_back(endpoint);
+  }
   client_node_->set_fob(maid);
   client_node_->set_account_name(maid.identity);
-  result = client_node_->Start(buffered_path_ / "buffered_chunk_store");
+  result = client_node_->Start(buffered_path_ / "buffered_chunk_store", peer_endpoints);
   if (result != kSuccess) {
-      LOG(kError) << "Failed to start client container: " << result;
+    LOG(kError) << "Failed to start client container: " << result;
     return result;
   }
 

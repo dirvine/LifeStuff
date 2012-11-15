@@ -154,7 +154,7 @@ fs::path CreateDirectoryContainingFiles(fs::path const& path) {
     LOG(kError) << e.what();
     return "";
   }
-};
+}
 
 bool CopyDirectories(fs::path const& from, fs::path const& to) {
   LOG(kInfo) << "CopyDirectories: from " << from << " to " << (to / from.filename());
@@ -187,7 +187,7 @@ bool CopyDirectories(fs::path const& from, fs::path const& to) {
     return false;
   }
   return true;
-};
+}
 
 bool RemoveDirectories(fs::path const& path) {
   LOG(kInfo) << "RemoveDirectories: " << path;
@@ -230,7 +230,7 @@ bool RemoveDirectories(fs::path const& path) {
     return false;
   }
   return true;
-};
+}
 
 fs::path CreateTestDirectoriesAndFiles(fs::path const& parent) {
   const size_t kMaxPathLength(200);
@@ -352,7 +352,7 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryToDriveThenDelete) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -383,7 +383,7 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryToDriveDeleteThenRecopy) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   int64_t file_size(0);
   // Create empty directory on disk...
@@ -414,7 +414,7 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryThenRename) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -447,7 +447,7 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryRenameThenRecopy) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -485,7 +485,7 @@ TEST_F(OneUserApiTest, FUNC_CopyDirectoryContainingFiles) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   // Create directory with random number of files...
@@ -504,7 +504,7 @@ TEST_F(OneUserApiTest, FUNC_CopyDirectoryContainingFilesAndDirectories) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   // Create directories hierarchy some of which containing files...
@@ -523,7 +523,7 @@ TEST_F(OneUserApiTest, FUNC_CopyFileThenCopyCopiedFile) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -553,7 +553,7 @@ TEST_F(OneUserApiTest, FUNC_CopyFileDeleteThenRecopy) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -585,7 +585,7 @@ TEST_F(OneUserApiTest, FUNC_CopyFileRenameThenRecopy) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -620,7 +620,7 @@ TEST_F(OneUserApiTest, BEH_CopyFileThenRead) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -650,7 +650,7 @@ TEST_F(OneUserApiTest, FUNC_CopyFileRenameThenRead) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -688,7 +688,7 @@ TEST_F(OneUserApiTest, FUNC_CopyFileDeleteThenTryToRead) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -723,7 +723,7 @@ TEST_F(OneUserApiTest, BEH_CreateFileOnDriveThenRead) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -744,7 +744,7 @@ TEST_F(OneUserApiTest, BEH_CopyFileModifyThenRead) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -779,7 +779,7 @@ TEST_F(OneUserApiTest, FUNC_CheckFailures) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   int64_t file_size(0);
@@ -896,7 +896,7 @@ TEST_F(OneUserApiTest, FUNC_FunctionalTest) {
   LifeStuff test_elements(lifestuff_slots_, *test_dir_);
   EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
   Sleep(boost::posix_time::seconds(5));
-  
+
   // Test drive...
   boost::system::error_code error_code;
   size_t count(15 + RandomUint32() % 5);
