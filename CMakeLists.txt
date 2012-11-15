@@ -95,6 +95,8 @@ set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
 set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
                        "${PATH_TO_TESTS}/session_test.cc"
                        "${PATH_TO_TESTS}/utils_test.cc")
+set(DRIVE_TEST_CC "${PATH_TO_TESTS}/drive_test.cc"
+                  "${PATH_TO_TESTS}/api/api_test_resources.cc")
 set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
 set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
 set(NETWORK_HELPER_PROTOS "${PATH_TO_TESTS}/bootstrap.pb.cc"
@@ -110,6 +112,7 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${ROUTINGS_HANDLER_TEST_CC}
                                         ${API_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
+                                        ${DRIVE_TEST_CC}
                                         ${NETWORK_HELPER_CC})
 
 source_group("Tests Header Files" FILES ${PROJECT_BINARY_DIR}/keys_helper.h
@@ -142,6 +145,7 @@ endif()
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_drive "Tests/LifeStuff" ${DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
 endif()
 
@@ -157,7 +161,7 @@ if(MAIDSAFE_TESTING)
                              ${CMAKE_COMMAND} -E echo "#include \"boost/filesystem/path.hpp\"" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "namespace maidsafe {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-  
+
                              ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "namespace pd {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "boost::filesystem::path kVaultExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -171,7 +175,7 @@ if(MAIDSAFE_TESTING)
                              ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "}  //  namespace pd" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-  
+
                              ${CMAKE_COMMAND} -E echo "namespace priv {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "boost::filesystem::path kLifeStuffManagerExecutable() {" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "  static boost::filesystem::path exe(\"$<TARGET_FILE:lifestuff_mgr>\");  // NOLINT" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
@@ -179,7 +183,7 @@ if(MAIDSAFE_TESTING)
                              ${CMAKE_COMMAND} -E echo "}" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "}  //  namespace priv" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
-  
+
                              ${CMAKE_COMMAND} -E echo "}  //  namespace maidsafe" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "" >> ${PROJECT_BINARY_DIR}/keys_helper.h &&
                              ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
@@ -187,6 +191,8 @@ if(MAIDSAFE_TESTING)
                      )
   target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
   add_dependencies(TESTlifestuff_api lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_drive lifestuff_vault pd_key_helper lifestuff_mgr)
   target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager)
   add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
 endif()
@@ -219,11 +225,12 @@ if(MAIDSAFE_TESTING)
                  ${PUBLIC_ID_TEST_CC}
                  ${STORAGE_TEST_CC}
                  ${ROUTINGS_HANDLER_TEST_CC}
-                 ${API_TEST_CC})
-  
+                 ${API_TEST_CC}
+                 ${DRIVE_TEST_CC})
+
   add_gtests(TESTlifestuff_general)
   add_gtests(TESTlifestuff_api)
-  
+
   add_project_experimental()
   test_summary_output()
 endif()
