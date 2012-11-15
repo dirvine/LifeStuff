@@ -126,7 +126,6 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
     buffered_path_ = base_directory / RandomAlphaNumericString(16);
   }
 
-
   int counter(0);
   std::vector<std::pair<std::string, uint16_t>> bootstrap_endpoints;
   while (counter++ < kRetryLimit) {

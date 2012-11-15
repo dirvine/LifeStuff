@@ -44,15 +44,12 @@ TEST_F(OneUserApiTest, FUNC_CreateLogoutLoginLogout) {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-    Sleep(boost::posix_time::seconds(5));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
-  Sleep(boost::posix_time::seconds(5));
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-    Sleep(boost::posix_time::seconds(5));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
   }
 }

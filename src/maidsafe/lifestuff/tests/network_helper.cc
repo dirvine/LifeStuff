@@ -167,8 +167,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     }
     args += chunkstore.string();
     args += " --identity_index " + index;
-    if (i == 2)
-      args += " --log_* I --log_folder E:\\Downloads\\invagilator_log";
+//    if (i == 2)
+//      args += " --log_* I --log_folder E:\\Downloads\\invagilator_log";
     args += " --peer " + endpoints.back().first + ":" +
             boost::lexical_cast<std::string>(endpoints.back().second);
     vault_processes_.push_back(std::make_pair(
@@ -268,7 +268,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     // Startup LifeStuffManager
     uint16_t port(maidsafe::test::GetRandomPort());
     priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port, *test_root);
-    std::string args(" --port " + boost::lexical_cast<std::string>(port) + " --root_dir " +
+    std::string args("--log_private I --port " + boost::lexical_cast<std::string>(port) + " --root_dir " +
                      (*test_root / "lifestuff_manager").string());
     lifestuff_manager_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
