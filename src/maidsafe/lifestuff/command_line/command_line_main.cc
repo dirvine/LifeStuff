@@ -141,7 +141,7 @@ int DoCreateUser(LifeStuff& lifestuff) {
   std::vector<NonEmptyString> creds;
   ReadAndParseCredentials(creds);
   if (creds.size() != 3U) {
-    printf("Credentials size inadequate: %d", creds.size());
+    std::cout << "Credentials size inadequate: " << creds.size() << "\n";
     return -1;
   }
 
@@ -152,7 +152,7 @@ int DoLogin(LifeStuff& lifestuff) {
   std::vector<NonEmptyString> creds;
   ReadAndParseCredentials(creds);
   if (creds.size() != 3U) {
-    printf("Credentials size inadequate: %d", creds.size());
+    std:: cout << "Credentials size inadequate: " << creds.size() << "\n";
     return -1;
   }
 
@@ -193,7 +193,7 @@ int DoAddContact(LifeStuff& lifestuff) {
   while (it != end)
     ids.push_back(NonEmptyString(*it++));
   if (ids.size() != 2U) {
-    printf("Id size inadequate: %d", ids.size());
+    std::cout << "Id size inadequate: " << ids.size() << "\n";
     return -1;
   }
   return lifestuff.AddContact(ids.at(0), ids.at(1), "Let's be friends.");
