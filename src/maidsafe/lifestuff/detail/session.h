@@ -99,7 +99,8 @@ class Session {
   ~Session();
   void Reset();
 
-  void set_bootstrap_endpoints(const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints);
+  void set_bootstrap_endpoints(
+      const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints);
   std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints() const;
   passport::Passport& passport();
 

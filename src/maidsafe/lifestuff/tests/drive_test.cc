@@ -366,7 +366,8 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryToDriveThenDelete) {
   ASSERT_TRUE(CopyDirectories(directory, test_elements.mount_path()));
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
-  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(), error_code));
+  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(),
+                         error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Delete the directory along with its contents...
   ASSERT_EQ(2U, fs::remove_all(test_elements.mount_path() / directory.filename(), error_code));
@@ -428,7 +429,8 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryThenRename) {
   ASSERT_TRUE(CopyDirectories(directory, test_elements.mount_path()));
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
-  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(), error_code));
+  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(),
+                         error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Rename the directory...
   fs::path new_directory_name(test_elements.mount_path() / maidsafe::RandomAlphaNumericString(5));
@@ -461,7 +463,8 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryRenameThenRecopy) {
   ASSERT_TRUE(CopyDirectories(directory, test_elements.mount_path()));
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
-  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(), error_code));
+  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(),
+                         error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Rename the directory...
   fs::path new_directory_name(test_elements.mount_path() / maidsafe::RandomAlphaNumericString(5));
@@ -474,7 +477,8 @@ TEST_F(OneUserApiTest, BEH_CopyNonemptyDirectoryRenameThenRecopy) {
   ASSERT_TRUE(CopyDirectories(directory, test_elements.mount_path()));
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
-  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(), error_code));
+  ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory.filename() / file.filename(),
+                         error_code));
   ASSERT_EQ(error_code.value(), 0);
 
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
@@ -532,7 +536,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileThenCopyCopiedFile) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -562,7 +568,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileDeleteThenRecopy) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -572,7 +580,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileDeleteThenRecopy) {
   ASSERT_FALSE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_NE(error_code.value(), 0);
   // Copy file to virtual drive again...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -594,7 +604,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileRenameThenRecopy) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -607,7 +619,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileRenameThenRecopy) {
   ASSERT_TRUE(fs::exists(new_file_name, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive again...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(*test_dir_ / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -629,13 +643,17 @@ TEST_F(OneUserApiTest, BEH_CopyFileThenRead) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Write virtual drive file back to a disk file...
   fs::path test_file(*test_dir_ / (RandomAlphaNumericString(5) + ".txt"));
-  fs::copy_file(test_elements.mount_path() / file.filename(), test_file, fs::copy_option::overwrite_if_exists);
+  fs::copy_file(test_elements.mount_path() / file.filename(),
+                test_file,
+                fs::copy_option::overwrite_if_exists);
   ASSERT_TRUE(fs::exists(test_file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Compare content in the two files...
@@ -659,7 +677,9 @@ TEST_F(OneUserApiTest, FUNC_CopyFileRenameThenRead) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -697,7 +717,8 @@ TEST_F(OneUserApiTest, FUNC_CopyFileDeleteThenTryToRead) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Delete the file...
@@ -753,7 +774,9 @@ TEST_F(OneUserApiTest, BEH_CopyFileModifyThenRead) {
   ASSERT_TRUE(fs::exists(file, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file, test_elements.mount_path() / file.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file, test_elements.mount_path() / file.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -788,12 +811,16 @@ TEST_F(OneUserApiTest, FUNC_CheckFailures) {
   ASSERT_TRUE(fs::exists(file0, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy file to virtual drive...
-  fs::copy_file(file0, test_elements.mount_path() / file0.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file0, test_elements.mount_path() / file0.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file0.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy same file to virtual drive again...
-  fs::copy_file(file0, test_elements.mount_path() / file0.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file0, test_elements.mount_path() / file0.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_NE(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file0.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -806,13 +833,17 @@ TEST_F(OneUserApiTest, FUNC_CheckFailures) {
   ASSERT_TRUE(fs::exists(file1, error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Copy it to virtual drive...
-  fs::copy_file(file1, test_elements.mount_path() / file1.filename(), fs::copy_option::fail_if_exists, error_code);
+  fs::copy_file(file1, test_elements.mount_path() / file1.filename(),
+                fs::copy_option::fail_if_exists,
+                error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file1.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
 
   // Rename to first file name...
-  fs::rename(test_elements.mount_path() / file1.filename(), test_elements.mount_path() / file0.filename(), error_code);
+  fs::rename(test_elements.mount_path() / file1.filename(),
+             test_elements.mount_path() / file0.filename(),
+             error_code);
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / file0.filename(), error_code));
   ASSERT_FALSE(fs::exists(test_elements.mount_path() / file1.filename(), error_code));
@@ -850,7 +881,8 @@ TEST_F(OneUserApiTest, FUNC_CheckFailures) {
   ASSERT_TRUE(fs::exists(test_elements.mount_path() / directory0.filename(), error_code));
   ASSERT_EQ(error_code.value(), 0);
   // Create a directory with the same name on the virtual drive...
-  ASSERT_FALSE(fs::create_directory(test_elements.mount_path() / directory0.filename(), error_code));
+  ASSERT_FALSE(fs::create_directory(test_elements.mount_path() / directory0.filename(),
+                                    error_code));
   ASSERT_EQ(error_code.value(), 0);
   ASSERT_TRUE(fs::exists(directory0, error_code));
   ASSERT_EQ(error_code.value(), 0);
@@ -865,7 +897,9 @@ TEST_F(OneUserApiTest, FUNC_CheckFailures) {
   ASSERT_EQ(error_code.value(), 0);
 
   // Rename to first directory name...
-  fs::rename(test_elements.mount_path() / directory1.filename(), test_elements.mount_path() / directory0.filename(), error_code);
+  fs::rename(test_elements.mount_path() / directory1.filename(),
+             test_elements.mount_path() / directory0.filename(),
+             error_code);
 
   // From boost filesystem docs: if new_p resolves to an existing directory,
   // it is removed if empty on POSIX but is an error on Windows.

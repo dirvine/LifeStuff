@@ -82,7 +82,6 @@ void Session::Reset() {
   {
     std::lock_guard<std::mutex> lock(user_details_mutex_);
     bootstrap_endpoints_.clear();
-    
     user_details_.defconlevel = DefConLevels::kDefCon3;
     user_details_.keyword = NonEmptyString();
     user_details_.pin = NonEmptyString();
@@ -105,7 +104,8 @@ void Session::Reset() {
   }
 }
 
-void Session::set_bootstrap_endpoints(const std::vector<std::pair<std::string, uint16_t>>& bootstrap_endpoints) {
+void Session::set_bootstrap_endpoints(
+    const std::vector<std::pair<std::string, uint16_t> >& bootstrap_endpoints) {
   std::lock_guard<std::mutex> lock(user_details_mutex_);
   bootstrap_endpoints_ =bootstrap_endpoints;
 }
