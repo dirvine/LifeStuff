@@ -231,6 +231,34 @@ if(MAIDSAFE_TESTING)
   add_gtests(TESTlifestuff_general)
   add_gtests(TESTlifestuff_api)
 
+  set_tests_properties(SessionTest.BEH_SetsGetsAndReset
+                       SessionTest.BEH_SessionName
+                       SessionTest.BEH_SerialisationAndParsing
+                       UtilsTest.BEH_WordValidity
+                       UtilsTest.BEH_PinValidity
+                       OneUserApiTest.FUNC_LoggedInState
+                       OneUserApiTest.FUNC_IncorrectLoginLogoutSequences
+                       OneUserApiTest.FUNC_CreateLogoutLoginLogout
+                       OneUserApiTest.FUNC_ChangeCredentials
+                       OneUserApiTest.FUNC_CreateInvalidUsers
+                       OneUserApiTest.FUNC_ChangeCredentialsAndLogOut
+                       OneUserApiTest.FUNC_LogInFromTwoPlaces
+                       OneUserApiTest.FUNC_LogInAfterCreateUser
+                       OneUserApiTest.FUNC_CreatePublicIdCases
+                       OneUserApiTest.FUNC_AddInvalidContact
+                       OneUserApiTest.FUNC_ChangeProfilePictureAfterSaveSession
+                       TwoUsersApiTest.FUNC_SendFileSaveToGivenPath
+                       TwoUsersApiTest.FUNC_SendFileSaveToDefaultLocation
+                       TwoUsersApiTest.FUNC_SendFileAcceptToDeletedDefaultLocation
+                       TwoUsersApiTest.FUNC_SendFileWithRejection
+                       TwoUsersApiTest.FUNC_ProfilePicture
+                       TwoUsersApiTest.FUNC_ProfilePictureAndLogOut
+                       #TwoUsersApiTest.FUNC_RemoveContact
+                       #TwoUsersApiTest.FUNC_RemoveContactAddContact
+                       TwoUsersApiTest.FUNC_AddContactWithMessage
+                       #TwoUsersApiTest.FUNC_AddThenRemoveOfflineUser
+                       PROPERTIES LABELS Critical)
+
   add_project_experimental()
   test_summary_output()
 endif()
