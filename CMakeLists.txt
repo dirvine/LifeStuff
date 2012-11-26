@@ -95,8 +95,9 @@ set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
 set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
                        "${PATH_TO_TESTS}/session_test.cc"
                        "${PATH_TO_TESTS}/utils_test.cc")
-set(DRIVE_TEST_CC "${PATH_TO_TESTS}/drive_test.cc"
-                  "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/virtual_drive_test.cc"
+                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/real_drive_test.cc")
 set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
 set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
 set(NETWORK_HELPER_PROTOS "${PATH_TO_TESTS}/bootstrap.pb.cc"
@@ -112,7 +113,8 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${ROUTINGS_HANDLER_TEST_CC}
                                         ${API_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
-                                        ${DRIVE_TEST_CC}
+                                        ${VIRTUAL_DRIVE_TEST_CC}
+										${REAL_DRIVE_TEST_CC}
                                         ${NETWORK_HELPER_CC})
 
 source_group("Tests Header Files" FILES ${PROJECT_BINARY_DIR}/keys_helper.h
@@ -145,7 +147,8 @@ endif()
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_drive "Tests/LifeStuff" ${DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_virtual_drive "Tests/LifeStuff" ${VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_real_drive "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
 endif()
 
@@ -191,8 +194,9 @@ if(MAIDSAFE_TESTING)
                      )
   target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
   add_dependencies(TESTlifestuff_api lifestuff_vault pd_key_helper lifestuff_mgr)
-  target_link_libraries(TESTlifestuff_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_drive lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_real_drive maidsafe_drive)
   target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager)
   add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
 endif()
@@ -226,7 +230,8 @@ if(MAIDSAFE_TESTING)
                  ${STORAGE_TEST_CC}
                  ${ROUTINGS_HANDLER_TEST_CC}
                  ${API_TEST_CC}
-                 ${DRIVE_TEST_CC})
+                 ${VIRTUAL_DRIVE_TEST_CC}
+				 ${REAL_DRIVE_TEST_CC})
 
   add_gtests(TESTlifestuff_general)
   add_gtests(TESTlifestuff_api)
