@@ -283,19 +283,26 @@ int PublicId::AddContact(const NonEmptyString& own_public_id,
 
   std::vector<Contact> contacts(1, recipient_contact);
   result = InformContactInfo(own_public_id, contacts, message, kFriendRequest);
-  if (result == kSuccess) {
-    const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
-    if (!contacts_handler) {
-      LOG(kError) << "User does not hold public ID: " << own_public_id.string();
-      return result;
-    }
-    result = contacts_handler->AddContact(recipient_contact);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to inform contacts of " << own_public_id.string() << " (" << result
+                << ")";
+    return result;
   }
 
-  if (result == kSuccess)
-    session_.set_changed(true);
+  const ContactsHandlerPtr contacts_handler(session_.contacts_handler(own_public_id));
+  if (!contacts_handler) {
+    LOG(kError) << "User does not hold public ID: " << own_public_id.string();
+    return result;
+  }
 
-  return result;
+  result = contacts_handler->AddContact(recipient_contact);
+  if (result != kSuccess) {
+    LOG(kError) << "Failed to add contact " << recipient_public_id.string();
+    return result;
+  }
+
+  session_.set_changed(true);
+  return kSuccess;
 }
 
 int PublicId::DisablePublicId(const NonEmptyString& public_id) {
@@ -1246,21 +1253,19 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     // Store encrypted intro at recipient's MPID's name
     priv::ChunkId contact_id(MaidsafeContactIdName(recipient_public_id));
     VoidFunctionOneBool callback = [&] (const bool& response) {
-                                     utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
-                                                                        &results[i]);
-                                   };
+      utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[i]);
+    };
     if (!remote_chunk_store_.Modify(contact_id,
                                     NonEmptyString(signed_data.SerializeAsString()),
                                     callback,
                                     mpid)) {
       LOG(kError) << "Failed to send out the message to: " << contact_id.string();
-      std::lock_guard<std::mutex> lock(mutex);
-      results[i] = kRemoteChunkStoreFailure;
+      utils::ChunkStoreOperationCallback(false, &mutex, &cond_var, &results[i]);
     }
   }
   int result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
   if (result != kSuccess) {
-    LOG(kError) << "Timed out.";
+    LOG(kError) << "Timed out waiting for results.";
     return result;
   }
 
