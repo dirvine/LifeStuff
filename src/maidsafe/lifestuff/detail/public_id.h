@@ -153,10 +153,9 @@ class PublicId {
   friend class test::PublicIdTest;
 
   int ProcessPublicIdPacketsStore(const NonEmptyString& public_id, bool accepts_new_contacts);
-  void StoreInbox(const NonEmptyString& public_id, OperationResults& results);
-  void StoreMpidPath(const NonEmptyString& public_id,
-                     OperationResults& results,
-                     bool accepts_new_contacts);
+  void StoreAnmpid(const NonEmptyString& public_id,
+                   OperationResults& results,
+                   bool accepts_new_contacts);
   void StoreMpid(bool result,
                  OperationResults& results,
                  const NonEmptyString& public_id,
@@ -165,11 +164,14 @@ class PublicId {
                  OperationResults& results,
                  const NonEmptyString& public_id,
                  bool accepts_new_contacts);
+  void StoreInboxKey(bool response, const NonEmptyString& public_id, OperationResults& results);
+  void StoreInbox(bool response, const NonEmptyString& public_id, OperationResults& results);
 
   void DeleteLifestuffCard(const NonEmptyString& public_id);
   int ProcessPublicIdPacketsDelete(const NonEmptyString& public_id);
   void DeleteInbox(const NonEmptyString& public_id, OperationResults& results);
-  void DeleteMpidPath(const NonEmptyString& public_id, OperationResults& results);
+  void DeleteInboxKey(bool response, const NonEmptyString& public_id, OperationResults& results);
+  void DeleteMcid(bool response, const NonEmptyString& public_id, OperationResults& results);
   void DeleteMpid(bool response, OperationResults& results, const NonEmptyString& public_id);
   void DeleteAnmpid(bool response, OperationResults& results, const NonEmptyString& public_id);
 

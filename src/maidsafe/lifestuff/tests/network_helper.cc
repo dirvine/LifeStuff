@@ -17,6 +17,7 @@
 #include "maidsafe/lifestuff/tests/network_helper.h"
 
 #include <algorithm>
+#include <string>
 
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/convenience.hpp"
@@ -80,7 +81,7 @@ std::vector<std::pair<std::string, uint16_t> > ExtractEndpoints(const std::strin
                                                std::string(result[2].first, result[2].second)))));
     });
   }
-  catch (boost::regex_error& e) {
+  catch(boost::regex_error& e) {
     std::cout << "Error: " << e.what() << std::endl;
   }
   return endpoints;
@@ -125,7 +126,10 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
 
   zero_state_processes_.push_back(bp::child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
-                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-cpb -n " + boost::lexical_cast<std::string>(2 + vault_count))),
+                  bp::initializers::set_cmd_line(
+                      ConstructCommandLine(false,
+                                           "-cpb -n " +
+                                           boost::lexical_cast<std::string>(2 + vault_count))),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env(),
                   bp::initializers::bind_stdout(sink),
@@ -168,7 +172,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     args += chunkstore.string();
     args += " --identity_index " + index;
 //    if (i == 2)
-//      args += " --log_* I --log_folder E:\\Downloads\\invagilator_log";
+      args += " --log_pd I --log_folder /tmp";
     args += " --peer " + endpoints.back().first + ":" +
             boost::lexical_cast<std::string>(endpoints.back().second);
     vault_processes_.push_back(std::make_pair(
@@ -185,11 +189,11 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     Sleep(boost::posix_time::seconds(5));
   }
 
-   // stop origin bootstrap nodes
-   bp::terminate(zero_state_processes_[0]);
-   Sleep(boost::posix_time::seconds(15));
+  // stop origin bootstrap nodes
+  bp::terminate(zero_state_processes_[0]);
+  Sleep(boost::posix_time::seconds(15));
 
-   // erase bootstrap nodes from list
+  // erase bootstrap nodes from list
   {
     std::string boot_ip(endpoints[0].first);
     uint16_t boot_port1(endpoints[0].second);
@@ -232,6 +236,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     args += chunkstore.string();
     args += " --identity_index " + index;
     args += " --peer " + local_ip + ":5483";
+    args += " --log_pd I --log_folder /tmp";
     vault_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -251,7 +256,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
   sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
   bp::child store_key_child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
-                  bp::initializers::set_cmd_line(ConstructCommandLine(false, "-ls --peer " + local_ip + ":5483")),
+                  bp::initializers::set_cmd_line(
+                      ConstructCommandLine(false, "-ls --peer " + local_ip + ":5483")),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env()));
   if (error_code)
@@ -268,8 +274,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     // Startup LifeStuffManager
     uint16_t port(maidsafe::test::GetRandomPort());
     priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port, *test_root);
-    std::string args("--log_private I --port " + boost::lexical_cast<std::string>(port) + " --root_dir " +
-                     (*test_root / "lifestuff_manager").string());
+    std::string args("--log_private I --port " + boost::lexical_cast<std::string>(port) +
+                     " --root_dir " + (*test_root / "lifestuff_manager").string());
     lifestuff_manager_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),

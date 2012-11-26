@@ -104,6 +104,7 @@ set(NETWORK_HELPER_PROTOS "${PATH_TO_TESTS}/bootstrap.pb.cc"
                           "${PATH_TO_TESTS}/bootstrap_pb.h"
                           "${PATH_TO_TESTS}/bootstrap.proto")
 set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H} ${NETWORK_HELPER_PROTOS})
+set(NETWORK_HELPER_STYLE ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
 
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
@@ -226,7 +227,8 @@ if(MAIDSAFE_TESTING)
                  ${STORAGE_TEST_CC}
                  ${ROUTINGS_HANDLER_TEST_CC}
                  ${API_TEST_CC}
-                 ${DRIVE_TEST_CC})
+                 ${DRIVE_TEST_CC}
+                 ${NETWORK_HELPER_STYLE})
 
   add_gtests(TESTlifestuff_general)
   add_gtests(TESTlifestuff_api)

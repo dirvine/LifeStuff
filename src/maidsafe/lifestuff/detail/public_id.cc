@@ -137,41 +137,37 @@ int PublicId::CreatePublicId(const NonEmptyString& public_id, bool accepts_new_c
 
 int PublicId::ProcessPublicIdPacketsStore(const NonEmptyString& public_id,
                                           bool accepts_new_contacts) {
-  std::vector<int> individual_results(2, utils::kPendingResult);
+  std::vector<int> individual_results(1, utils::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
 
-  StoreMpidPath(public_id, results, accepts_new_contacts);
-  StoreInbox(public_id, results);
+  StoreAnmpid(public_id, results, accepts_new_contacts);
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
                                    std::chrono::seconds(30)));
   if (result != kSuccess) {
     LOG(kError) << "Timed out: " << result;
-    LOG(kError) << "inbox: " << individual_results.at(0)
-               << ", MPID path: " << individual_results.at(1);
+    LOG(kError) << "Result: " << individual_results.at(0);
     return result;
   }
 
-  LOG(kInfo) << "inbox: " << individual_results.at(0)
-             << ", MPID path: " << individual_results.at(1);
+  LOG(kInfo) << "result: " << individual_results.at(0);
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
-    LOG(kError) << "Failed to store packets. MPID path: " << individual_results[1]
-                << ", MMID: "<< individual_results[0];
+    LOG(kError) << "Failed to store packets. result path: " << individual_results[0];
     return kStorePublicIdFailure;
   }
 
   return kSuccess;
 }
 
-void PublicId::StoreMpidPath(const NonEmptyString& public_id,
-                             OperationResults& results,
-                             bool accepts_new_contacts) {
+void PublicId::StoreAnmpid(const NonEmptyString& public_id,
+                           OperationResults& results,
+                           bool accepts_new_contacts) {
   Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
   VoidFunctionOneBool callback = [&] (const bool& response) {
-               StoreMpid(response, results, public_id, accepts_new_contacts);
-             };
+                                   StoreMpid(response, results, public_id, accepts_new_contacts);
+                                 };
   priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
   if (!remote_chunk_store_.Store(anmpid_name, SignaturePacketValue(anmpid), callback, anmpid)) {
     LOG(kError) << "Failed to store ANMPID";
@@ -184,11 +180,11 @@ void PublicId::StoreMpid(bool response,
                          const NonEmptyString& public_id,
                          bool accepts_new_contacts) {
   if (!response) {
-    LOG(kError) << "Anmpid failed to store.";
+    LOG(kError) << "ANMPID failed to store";
     OperationCallback(false, results, 0);
     return;
   }
-  LOG(kInfo) << "Stored anmpid";
+  LOG(kInfo) << "Stored ANMPID";
 
   Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, false, public_id));
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
@@ -197,7 +193,7 @@ void PublicId::StoreMpid(bool response,
                                  };
   priv::ChunkId mpid_name(SignaturePacketName(mpid.identity));
   if (!remote_chunk_store_.Store(mpid_name, SignaturePacketValue(mpid), callback, anmpid)) {
-    LOG(kError) << "Failed to store ANMPID";
+    LOG(kError) << "Failed to store MPID";
     OperationCallback(false, results, 0);
   }
 }
@@ -207,36 +203,64 @@ void PublicId::StoreMcid(bool response,
                          const NonEmptyString& public_id,
                          bool accepts_new_contacts) {
   if (!response) {
-    LOG(kError) << "Mpid failed to store.";
+    LOG(kError) << "MPID failed to store";
     OperationCallback(false, results, 0);
     return;
   }
-  LOG(kInfo) << "Stored mpid";
+  LOG(kInfo) << "Stored MPID";
 
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
   priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
-  VoidFunctionOneBool callback = [&] (const bool& response) {
-                                   OperationCallback(response, results, 0);
+  VoidFunctionOneBool callback = [&public_id, &results, this] (const bool& response) {
+                                   StoreInboxKey(response, public_id, results);
                                  };
   if (!remote_chunk_store_.Store(mcid_name,
                                  AppendableIdValue(mpid, accepts_new_contacts),
                                  callback,
                                  mpid)) {
-    LOG(kError) << "Mcid failed to store";
+    LOG(kError) << "MCID failed to store";
     OperationCallback(false, results, 0);
   }
 }
 
-void PublicId::StoreInbox(const NonEmptyString& public_id, OperationResults& results) {
+void PublicId::StoreInboxKey(bool response,
+                             const NonEmptyString& public_id,
+                             OperationResults& results) {
+  if (!response) {
+    LOG(kError) << "MCID failed to store";
+    OperationCallback(false, results, 0);
+    return;
+  }
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
+  Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
+  if (!remote_chunk_store_.Store(SignaturePacketName(mmid.identity),
+                                 SignaturePacketValue(mmid),
+                                 [&] (const bool& response) {
+                                   StoreInbox(response, public_id, results);
+                                 },
+                                 mpid)) {
+    LOG(kError) << "Failed to store MMID key";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::StoreInbox(bool response,
+                          const NonEmptyString& public_id,
+                          OperationResults& results) {
+  if (!response) {
+    LOG(kError) << "MMID key failed to store";
+    OperationCallback(false, results, 0);
+    return;
+  }
   Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
   if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
                                  AppendableIdValue(mmid, true),
                                  [&] (const bool& response) {
-                                   OperationCallback(response, results, 1);
+                                   OperationCallback(response, results, 0);
                                  },
                                  mmid)) {
     LOG(kError) << "Failed to store MMID";
-    OperationCallback(false, results, 1);
+    OperationCallback(false, results, 0);
   }
 }
 
@@ -244,7 +268,7 @@ int PublicId::AddContact(const NonEmptyString& own_public_id,
                          const NonEmptyString& recipient_public_id,
                          const std::string& message) {
   if (session_.OwnPublicId(recipient_public_id)) {
-    LOG(kInfo) << "Cannot add own Public Id as a contact.";
+    LOG(kInfo) << "Cannot add own Public Id as a contact";
     return kCannotAddOwnPublicId;
   }
 
@@ -321,23 +345,20 @@ void PublicId::DeleteLifestuffCard(const NonEmptyString& public_id) {
 }
 
 int PublicId::ProcessPublicIdPacketsDelete(const NonEmptyString& public_id) {
-  std::vector<int> individual_results(2, utils::kPendingResult);
+  std::vector<int> individual_results(1, utils::kPendingResult);
   std::condition_variable condition_variable;
   std::mutex mutex;
   OperationResults results(mutex, condition_variable, individual_results);
 
-  DeleteMpidPath(public_id, results);
   DeleteInbox(public_id, results);
   int result(utils::WaitForResults(mutex, condition_variable, individual_results));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
-    LOG(kError) << "inbox: " << individual_results.at(0)
-              << ", MPID path: " << individual_results.at(1);
+    LOG(kError) << "result: " << individual_results.at(0);
     return result;
   }
 
-  LOG(kInfo) << "inbox: " << individual_results.at(0)
-             << ", MPID path: " << individual_results.at(1);
+  LOG(kInfo) << "result: " << individual_results.at(0);
   result = AssessJointResult(individual_results);
   if (result != kSuccess) {
     LOG(kError) << "One of the operations for " << public_id.string() << " failed. "
@@ -348,7 +369,44 @@ int PublicId::ProcessPublicIdPacketsDelete(const NonEmptyString& public_id) {
   return kSuccess;
 }
 
-void PublicId::DeleteMpidPath(const NonEmptyString& public_id, OperationResults& results) {
+void PublicId::DeleteInbox(const NonEmptyString& public_id, OperationResults& results) {
+  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  priv::ChunkId inbox_name(AppendableByAllName(inbox_keys.identity));
+  if (!remote_chunk_store_.Delete(inbox_name,
+                                  [&] (bool result) { DeleteInboxKey(result, public_id, results); },  // NOLINT (Dan)
+                                  inbox_keys)) {
+    LOG(kError) << "Failed to delete inbox.";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::DeleteInboxKey(bool response,
+                              const NonEmptyString& public_id,
+                              OperationResults& results) {
+  if (!response) {
+    LOG(kError) << "MMID failed to delete.";
+    OperationCallback(false, results, 0);
+    return;
+  }
+  Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
+  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
+  priv::ChunkId inbox_key_name(SignaturePacketName(inbox_keys.identity));
+  if (!remote_chunk_store_.Delete(inbox_key_name,
+                                  [&] (bool result) { DeleteMcid(result, public_id, results); },  // NOLINT (Dan)
+                                  mpid)) {
+    LOG(kError) << "Failed to delete MMID key.";
+    OperationCallback(false, results, 0);
+  }
+}
+
+void PublicId::DeleteMcid(bool response,
+                          const NonEmptyString& public_id,
+                          OperationResults& results) {
+  if (!response) {
+    LOG(kError) << "MMID key failed to delete.";
+    OperationCallback(false, results, 0);
+    return;
+  }
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
   priv::ChunkId mcid_name(MaidsafeContactIdName(public_id));
   if (!remote_chunk_store_.Delete(mcid_name,
@@ -391,21 +449,10 @@ void PublicId::DeleteAnmpid(bool response,
   Fob anmpid(passport_.SignaturePacketDetails(passport::kAnmpid, true, public_id));
   priv::ChunkId anmpid_name(SignaturePacketName(anmpid.identity));
   if (!remote_chunk_store_.Delete(anmpid_name,
-                                  [&] (bool result) { OperationCallback(result, results, 1); },  // NOLINT (Dan)
+                                  [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
                                   anmpid)) {
     LOG(kError) << "Failed to delete ANMPID.";
     OperationCallback(false, results, 0);
-  }
-}
-
-void PublicId::DeleteInbox(const NonEmptyString& public_id, OperationResults& results) {
-  Fob inbox_keys(passport_.SignaturePacketDetails(passport::kMmid, true, public_id));
-  priv::ChunkId inbox_name(AppendableByAllName(inbox_keys.identity));
-  if (!remote_chunk_store_.Delete(inbox_name,
-                                  [&] (bool result) { OperationCallback(result, results, 0); },  // NOLINT (Dan)
-                                  inbox_keys)) {
-    LOG(kError) << "Failed to delete inbox.";
-    OperationCallback(false, results, 1);
   }
 }
 
@@ -1196,7 +1243,7 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     signed_data.set_data(encrypted_introduction.string());
     signed_data.set_signature(signature.string());
 
-    // Store encrypted MCID at recipient's MPID's name
+    // Store encrypted intro at recipient's MPID's name
     priv::ChunkId contact_id(MaidsafeContactIdName(recipient_public_id));
     VoidFunctionOneBool callback = [&] (const bool& response) {
                                      utils::ChunkStoreOperationCallback(response, &mutex, &cond_var,
