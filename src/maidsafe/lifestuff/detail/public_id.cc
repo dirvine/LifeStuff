@@ -1252,7 +1252,9 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
 
     // Store encrypted intro at recipient's MPID's name
     priv::ChunkId contact_id(MaidsafeContactIdName(recipient_public_id));
-    VoidFunctionOneBool callback = [&] (const bool& response) {
+    auto callback = [&mutex, &cond_var, &results, i, contact_id] (const bool& response) {
+      if (!response)
+        LOG(kError) << "Failed to modify " << Base32Substr(contact_id);
       utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[i]);
     };
     if (!remote_chunk_store_.Modify(contact_id,
