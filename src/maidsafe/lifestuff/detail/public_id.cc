@@ -144,7 +144,7 @@ int PublicId::ProcessPublicIdPacketsStore(const NonEmptyString& public_id,
 
   StoreAnmpid(public_id, results, accepts_new_contacts);
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(60)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Timed out: " << result;
     LOG(kError) << "Result: " << individual_results.at(0);
@@ -231,6 +231,7 @@ void PublicId::StoreInboxKey(bool response,
     OperationCallback(false, results, 0);
     return;
   }
+  LOG(kInfo) << "Stored MCID";
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, false, public_id));
   Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
   if (!remote_chunk_store_.Store(SignaturePacketName(mmid.identity),
@@ -252,6 +253,7 @@ void PublicId::StoreInbox(bool response,
     OperationCallback(false, results, 0);
     return;
   }
+  LOG(kInfo) << "Stored MMID key";
   Fob mmid(passport_.SignaturePacketDetails(passport::kMmid, false, public_id));
   if (!remote_chunk_store_.Store(AppendableByAllName(mmid.identity),
                                  AppendableIdValue(mmid, true),
@@ -639,7 +641,7 @@ int PublicId::StoreNewInbox(const NonEmptyString& own_public_id) {
     std::lock_guard<std::mutex> lock(mutex);
     results[0] = kRemoteChunkStoreFailure;
   }
-  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -673,7 +675,7 @@ int PublicId::BlockOldInbox(const NonEmptyString& own_public_id) {
     results[0] = kRemoteChunkStoreFailure;
   }
 
-  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120));
   if (result != kSuccess) {
     LOG(kError) << "Timed out.";
     return result;
@@ -789,7 +791,7 @@ int PublicId::SetLifestuffCard(const NonEmptyString& my_public_id,
     return kRemoteChunkStoreFailure;
   }
 
-  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
+  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120)));
   if (wait_result != kSuccess) {
     LOG(kError) << "Timed out";
     return wait_result;
@@ -1182,7 +1184,7 @@ int PublicId::ModifyAppendability(const NonEmptyString& own_public_id, const boo
     results[1] = kRemoteChunkStoreFailure;
   }
 
-  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+  int result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120));
   if (result != kSuccess) {
     LOG(kError) << "Timed out wating for updates: " << own_public_id.string();
     return result;
@@ -1265,7 +1267,7 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
       utils::ChunkStoreOperationCallback(false, &mutex, &cond_var, &results[i]);
     }
   }
-  int result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
+  int result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Timed out waiting for results.";
     return result;
@@ -1352,7 +1354,7 @@ int PublicId::StoreLifestuffCard(const NonEmptyString& public_id,
       return kRemoteChunkStoreFailure;
     }
 
-    wait_result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30));
+    wait_result = utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120));
     if (wait_result == kSuccess && results[0] == kSuccess) {
       LOG(kInfo) << "Success storing the lifestuff card.";
       break;
@@ -1379,7 +1381,7 @@ int PublicId::RemoveLifestuffCard(const Identity& lifestuff_card_address, const 
     return kRemoteChunkStoreFailure;
   }
 
-  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(30)));
+  int wait_result(utils::WaitForResults(mutex, cond_var, results, std::chrono::seconds(120)));
   if (wait_result != kSuccess) {
     LOG(kInfo) << "Timed out deleting the lifestuff card.";
     return wait_result;

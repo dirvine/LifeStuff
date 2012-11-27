@@ -259,7 +259,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     args += chunkstore.string();
     args += " --identity_index " + index;
     args += " --peer " + local_ip + ":5483";
-    args += " --log_pd I --log_folder /tmp";
+    args += " --log_pd I --log_folder " + (*test_root / "logs").string();
 #ifndef MAIDSAFE_WIN32
     args += " --usr_id " + GetUserId();
 #endif
@@ -306,7 +306,8 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     uint16_t port(maidsafe::test::GetRandomPort());
     priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port, *test_root);
     std::string args("--log_private I --port " + boost::lexical_cast<std::string>(port) +
-                     " --root_dir " + (*test_root / "lifestuff_manager").string());
+                     " --root_dir " + (*test_root / "lifestuff_manager").string() +
+                     " --log_folder " + (*test_root / "logs").string());
     lifestuff_manager_processes_.push_back(
         bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -327,8 +328,8 @@ void NetworkHelper::StopLocalNetwork() {
   for (auto& lifestuff_manager_process : lifestuff_manager_processes_) {
     try {
 #ifdef MAIDSAFE_WIN32
-      bp::terminate(lifestuff_manager_process);
-      // lifestuff_manager_process.discard();
+      TerminateProcess(lifestuff_manager_process.process_handle(), 0);
+      lifestuff_manager_process.discard();
 #else
       if (kill(lifestuff_manager_process.pid, SIGTERM) != 0)
         kill(lifestuff_manager_process.pid, SIGKILL);
