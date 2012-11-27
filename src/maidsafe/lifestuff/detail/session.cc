@@ -375,9 +375,11 @@ int Session::ParseDataAtlas(const NonEmptyString& serialised_data_atlas) {
       contact.mpid_public_key =
           asymm::DecodeKey(asymm::EncodedPublicKey(
               data_atlas.public_ids(id_count).contacts(contact_count).mpid_public_key()));
-      contact.inbox_public_key =
-          asymm::DecodeKey(asymm::EncodedPublicKey(
-              data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key()));
+      if (data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key() != "pending") {
+        contact.inbox_public_key =
+            asymm::DecodeKey(asymm::EncodedPublicKey(
+                data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key()));
+      }
       int add_contact_result(public_id_details.contacts_handler->AddContact(contact));
       LOG(kInfo) << "Result of adding " << contact.public_id.string()
                  << " to " << pub_id.string() << ":  " << add_contact_result;
@@ -425,19 +427,28 @@ NonEmptyString Session::SerialiseDataAtlas() {
     for (size_t n(0); n < contacts.size(); ++n) {
       PublicContact* pc(pub_id->add_contacts());
       pc->set_public_id(contacts[n].public_id.string());
-      pc->set_mpid_name(contacts[n].mpid_name.string());
-      pc->set_inbox_name(contacts[n].inbox_name.string());
+      pc->set_mpid_name(contacts[n].mpid_name.IsInitialised() ? contacts[n].mpid_name.string() :
+                                                                "pending");
+      pc->set_inbox_name(contacts[n].inbox_name.IsInitialised() ? contacts[n].inbox_name.string() :
+                                                                  "pending");
       asymm::EncodedPublicKey serialised_mpid_public_key(
                                   asymm::EncodeKey(contacts[n].mpid_public_key)),
-                              serialised_inbox_public_key(
-                                  asymm::EncodeKey(contacts[n].inbox_public_key));
+                              serialised_inbox_public_key;
+      if (asymm::ValidateKey(contacts[n].inbox_public_key))
+        serialised_inbox_public_key = asymm::EncodeKey(contacts[n].inbox_public_key);
       pc->set_mpid_public_key(serialised_mpid_public_key.string());
-      pc->set_inbox_public_key(serialised_inbox_public_key.string());
+      pc->set_inbox_public_key(serialised_inbox_public_key.IsInitialised() ?
+                                   serialised_inbox_public_key.string() :
+                                   "pending");
       pc->set_status(contacts[n].status);
       pc->set_rank(contacts[n].rank);
       pc->set_last_contact(contacts[n].last_contact);
-      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map.string());
-      pc->set_pointer_to_info(contacts[n].pointer_to_info.string());
+      pc->set_profile_picture_data_map(contacts[n].profile_picture_data_map.IsInitialised() ?
+                                           contacts[n].profile_picture_data_map.string() :
+                                           "pending");
+      pc->set_pointer_to_info(contacts[n].pointer_to_info.IsInitialised() ?
+                                  contacts[n].pointer_to_info.string() :
+                                  "pending");
       LOG(kInfo) << "Added contact " << contacts[n].public_id.string()
                  << " to " << (*it).first.string() << " map.";
     }

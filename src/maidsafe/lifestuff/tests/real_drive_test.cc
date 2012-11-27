@@ -11,9 +11,9 @@
  *******************************************************************************
  */
 
-#include <memory>
 #include <cstdio>
-#include <random>
+#include <memory>
+#include <random>  // NOLINT
 
 #include "boost/lexical_cast.hpp"
 
@@ -51,6 +51,52 @@ enum TestOperationCode {
 };
 
 fs::path g_test_mirror, g_mount_dir;
+
+bool ExcludedFilename(const fs::path &path) {
+  std::string file_name(path.filename().stem().string());
+  if (file_name.size() == 4 && isdigit(file_name[3])) {
+    if (file_name[3] != '0') {
+      std::string name(file_name.substr(0, 3));
+      std::transform(name.begin(), name.end(), name.begin(), tolower);
+      if (name.compare(0, 3, "com", 0, 3) == 0) {
+        return true;
+      }
+      if (name.compare(0, 3, "lpt", 0, 3) == 0) {
+        return true;
+      }
+    }
+  } else if (file_name.size() == 3) {
+    std::string name(file_name);
+    std::transform(name.begin(), name.end(), name.begin(), tolower);
+    if (name.compare(0, 3, "con", 0, 3) == 0) {
+      return true;
+    }
+    if (name.compare(0, 3, "prn", 0, 3) == 0) {
+      return true;
+    }
+    if (name.compare(0, 3, "aux", 0, 3) == 0) {
+      return true;
+    }
+    if (name.compare(0, 3, "nul", 0, 3) == 0) {
+      return true;
+    }
+  } else if (file_name.size() == 6) {
+    if (file_name[5] == '$') {
+      std::string name(file_name);
+      std::transform(name.begin(), name.end(), name.begin(), tolower);
+      if (name.compare(0, 5, "clock", 0, 5) == 0) {
+        return true;
+      }
+    }
+  }
+  static const std::string excluded = "\"\\/<>?:*|";
+  std::string::const_iterator first(file_name.begin()), last(file_name.end());
+  for (; first != last; ++first) {
+    if (find(excluded.begin(), excluded.end(), *first) != excluded.end())
+      return true;
+  }
+  return false;
+}
 
 }  // unnamed namespace
 
@@ -96,6 +142,7 @@ class ApiTestEnvironment : public testing::Environment {
 class LifeStuffRealDriveApiTest : public testing::Test {
  public:
   static const uint32_t kDirectorySize = 4096;
+
  protected:
   void TearDown() {
      fs::directory_iterator end;
@@ -208,7 +255,7 @@ class LifeStuffRealDriveApiTest : public testing::Test {
     fs::path directory(CreateTestDirectory(parent)), check;
     int64_t file_size(0);
     std::mt19937 generator(RandomUint32());
-    std::uniform_int_distribution<> distribution(2,4);
+    std::uniform_int_distribution<> distribution(2, 4);
     size_t r1 = distribution(generator), r2, r3, r4;
 
     boost::system::error_code error_code;
