@@ -319,6 +319,10 @@ int UserCredentialsImpl::GetUserInfo(const NonEmptyString& keyword,
   // Wait for them to finish
   mid_tmid_thread.join();
   smid_stmid_thread.join();
+  LOG(kInfo) << "mid_tmid_result: " << mid_tmid_result << " - "
+             << std::boolalpha << mid_packet.empty() << " - " << tmid_packet.empty();
+  LOG(kInfo) << "smid_stmid_result: " << smid_stmid_result << " - "
+             << std::boolalpha << smid_packet.empty() << " - " << stmid_packet.empty();
 
   // Evaluate MID & TMID
   if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
@@ -586,7 +590,7 @@ int UserCredentialsImpl::StoreAnonymousPackets() {
   StoreAnmaid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)
@@ -759,7 +763,7 @@ int UserCredentialsImpl::StoreIdentityPackets() {
   StoreStmid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(60)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -854,7 +858,7 @@ int UserCredentialsImpl::SaveSession(bool log_out) {
   DeleteStmid(results);
 
   result = utils::WaitForResults(mutex, condition_variable, individual_results,
-                                 std::chrono::seconds(30));
+                                 std::chrono::seconds(120));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kSaveSessionFailure;
@@ -990,7 +994,7 @@ int UserCredentialsImpl::DeleteOldIdentityPackets() {
   DeleteStmid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out.";
     return result;
@@ -1100,7 +1104,7 @@ int UserCredentialsImpl::DoChangePasswordAdditions() {
   StoreStmid(new_results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1134,7 +1138,7 @@ int UserCredentialsImpl::DoChangePasswordRemovals() {
   DeleteStmid(del_results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Failed to store new identity packets: Time out.";
     return kChangePasswordFailure;
@@ -1200,7 +1204,7 @@ int UserCredentialsImpl::DeleteSignaturePackets() {
   DeletePmid(results);
 
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(120)));
   if (result != kSuccess) {
     LOG(kError) << "Wait for results timed out: " << result;
     LOG(kError) << "ANMID: " << individual_results.at(0)

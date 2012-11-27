@@ -316,6 +316,7 @@ int CreateAndConnectTwoPublicIds(Slots& lifestuff_slots1,
                                      public_id1);
   if (result != kSuccess)
     return result;
+  LOG(kInfo) << "\n\n\n\n\nDone with user 1\n\n\n\n\n";
   result = CreateAccountWithPublicId(lifestuff_slots2,
                                      test_dir / "elements2",
                                      keyword2,
@@ -324,6 +325,7 @@ int CreateAndConnectTwoPublicIds(Slots& lifestuff_slots1,
                                      public_id2);
   if (result != kSuccess)
     return result;
+  LOG(kInfo) << "\n\n\n\n\nDone with user 2\n\n\n\n\n";
   result = ConnectTwoPublicIds(test_dir,
                                lifestuff_slots1,
                                lifestuff_slots2,
@@ -383,6 +385,7 @@ int ConnectTwoPublicIds(const fs::path& test_dir,
       return result;
     }
   }
+  LOG(kInfo) << "\n\n\n\n\nUser 1 sent invitation to user 2\n\n\n\n\n";
   {
     PopulateSlots(lifestuff_slots2, testing_variables2);
     LifeStuff test_elements2(lifestuff_slots2, test_dir / "elements2");
@@ -398,6 +401,7 @@ int ConnectTwoPublicIds(const fs::path& test_dir,
       return result;
     }
   }
+  LOG(kInfo) << "\n\n\n\n\nUser 2 replied to user 1\n\n\n\n\n";
   {
     PopulateSlots(lifestuff_slots1, testing_variables1);
     LifeStuff test_elements1(lifestuff_slots1, test_dir / "elements1");
@@ -490,7 +494,7 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true)); }
 
-void OneUserApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
+void OneUserApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 void TwoUsersApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true));
@@ -504,7 +508,7 @@ void TwoUsersApiTest::SetUp() {
                                          keyword_2_, pin_2_, password_2_, public_id_2_));
 }
 
-void TwoUsersApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
+void TwoUsersApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 }  // namespace test
 

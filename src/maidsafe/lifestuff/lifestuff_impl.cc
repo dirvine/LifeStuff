@@ -302,6 +302,7 @@ int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   }
 
   session_.set_changed(true);
+  LOG(kSuccess) << "Success creating public ID: " << public_id.string();
 
   return kSuccess;
 }

@@ -765,6 +765,8 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_RemoveContactAddContact) {
 }
 */
 
+TEST_F(TwoUsersApiTest, FUNC_TempBasicTwoUsers) {}
+
 TEST_F(TwoUsersApiTest, FUNC_AddContactWithMessage) {
   const NonEmptyString public_id_3(RandomAlphaNumericString(RandomUint32() % 30 + 1));
   {
