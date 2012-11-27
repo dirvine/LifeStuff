@@ -79,8 +79,8 @@ Contact::Contact(const PublicContact& contact)
       rank(contact.rank()),
       last_contact(contact.last_contact()),
       presence(kOffline) {
-  if(contact.inbox_name() != "pending")
-    inbox_name =  Identity(contact.inbox_name());
+  if (contact.inbox_name() != "pending")
+    inbox_name = Identity(contact.inbox_name());
   if (contact.pointer_to_info() != "pending")
     pointer_to_info = Identity(contact.pointer_to_info());
 }

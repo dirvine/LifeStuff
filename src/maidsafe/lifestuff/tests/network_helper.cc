@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <string>
 
+#include "boost/algorithm/string.hpp"
 #include "boost/asio/ip/udp.hpp"
 #include "boost/filesystem/convenience.hpp"
 #include "boost/lexical_cast.hpp"
@@ -32,7 +33,6 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/private/lifestuff_manager/client_controller.h"
-
 #include "maidsafe/lifestuff/tests/bootstrap_pb.h"
 
 // keys_helper.h is automatically generated and placed in the build directory, hence no full path.
@@ -66,7 +66,70 @@ std::string ConstructCommandLine(bool is_vault_exe, const std::string& args) {
       pd::kVaultExecutable().string() + " " + args:
       pd::kKeysHelperExecutable().string() + " " + args;
 }
+
+std::string GetUserId() {
+  char user_name[64] = {0};
+  int result(getlogin_r(user_name, sizeof(user_name) - 1));
+  if (0 != result)
+    return "";
+  return std::string(user_name);
+}
 #endif
+
+int GetNumRunningProcesses(const fs::path& exe_path) {
+  auto file_dir = maidsafe::test::CreateTestPath("MaidSafe_Test_Misc");
+  fs::path file_path(*file_dir / "process_count.txt");
+  std::string exe_name = exe_path.filename().string();
+  std::string command(
+#ifdef MAIDSAFE_WIN32
+      "tasklist /fi \"imagename eq " + exe_name + "\" /nh > " + file_path.string());
+#else
+      "ps --no-heading -C " + exe_name + " -o stat | grep -v Z | wc -l > " + file_path.string());
+#endif
+  int result(system(command.c_str()));
+  if (result != 0) {
+    LOG(kError) << "Failed to execute command that checks processes: " << command;
+    return 0;
+  }
+  try {
+#ifdef MAIDSAFE_WIN32
+    int num_processes(0);
+    char process_info[256];
+    std::streamsize number_of_characters(256);
+    std::ifstream file(file_path.c_str(), std::ios_base::binary);
+    if (!file.good())
+      return num_processes;
+    while (file.getline(process_info, number_of_characters))
+      ++num_processes;
+    num_processes -= 1;
+#else
+    std::string process_string;
+    ReadFile(file_path, &process_string);
+    boost::trim(process_string);
+    int num_processes(boost::lexical_cast<int>(process_string));
+#endif
+    return num_processes;
+  }
+  catch(const std::exception& e) {
+    LOG(kError) << e.what();
+    return 0;
+  }
+}
+
+bool WaitForProcesses(const fs::path& exe_path, const size_t& count) {
+  int i(0);
+  for (;;) {
+    size_t current(GetNumRunningProcesses(exe_path));
+    if (current == count)
+      return true;
+     if (i >= 10)  // wait 10 seconds
+       return false;
+    LOG(kWarning) << "Found " << current << " instances of " << exe_path.filename()
+                  << ", waiting for " << count << "...";
+    ++i;
+    Sleep(boost::posix_time::seconds(1));
+  }
+}
 
 std::vector<std::pair<std::string, uint16_t> > ExtractEndpoints(const std::string& input) {
   std::vector<std::pair<std::string, uint16_t>> endpoints;
@@ -87,20 +150,6 @@ std::vector<std::pair<std::string, uint16_t> > ExtractEndpoints(const std::strin
   return endpoints;
 }
 
-bool WriteBootstrap(const std::vector<std::pair<std::string, uint16_t> >& endpoints) {
-  protobuf::Bootstrap protobuf_bootstrap;
-  for (size_t i = 0; i < endpoints.size(); ++i) {
-    protobuf::Endpoint* endpoint = protobuf_bootstrap.add_bootstrap_contacts();
-    endpoint->set_ip(endpoints[i].first);
-    endpoint->set_port(endpoints[i].second);
-  }
-  std::string serialised_bootstrap_nodes;
-  if (!protobuf_bootstrap.SerializeToString(&serialised_bootstrap_nodes))
-    return false;
-
-  return maidsafe::WriteFile("bootstrap", serialised_bootstrap_nodes);
-}
-
 }  // unnamed namespace
 
 
@@ -115,8 +164,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     return testing::AssertionFailure() << "Can't start " << vault_count << " vaults. Must be <= 16";
 
   boost::system::error_code error_code;
-  fs::remove("bootstrap", error_code);
-  fs::remove(GetUserAppDir() / kCompanyName / kApplicationName, error_code);
 
   // Invoke pd-keys-helper to create 2 zero-state vaults and all keys
   bp::pipe anon_pipe = bp::create_pipe();
@@ -134,7 +181,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
                   bp::initializers::inherit_env(),
                   bp::initializers::bind_stdout(sink),
                   bp::initializers::bind_stderr(sink))));
-  Sleep(boost::posix_time::seconds(5));
+  Sleep(boost::posix_time::seconds(1));
   if (error_code)
     return testing::AssertionFailure() << "Failed to execute " << pd::kKeysHelperExecutable()
                                        << " -cpb : " << error_code.message();
@@ -148,11 +195,6 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (!endpoints.empty())
       break;
   }
-
-  // write the info of bootstrap nodes into the bootstrap file
-  if (!WriteBootstrap(endpoints))
-    return testing::AssertionFailure() << "Failed to write local bootstrap file.";
-
 
   // Start 2 vaults
   for (int i(2); i < 4; ++i) {
@@ -171,9 +213,12 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     }
     args += chunkstore.string();
     args += " --identity_index " + index;
-    args += " --log_pd I  --log_private I --log_folder /tmp";
+    args += " --log_pd I --log_folder " + (*test_root / "logs").string();
     args += " --peer " + endpoints.back().first + ":" +
             boost::lexical_cast<std::string>(endpoints.back().second);
+#ifndef MAIDSAFE_WIN32
+    args += " --usr_id " + GetUserId();
+#endif
     vault_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -185,36 +230,15 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (error_code)
       return testing::AssertionFailure() << "Failed to execute " << pd::kVaultExecutable() << " "
                                          << args << ": " << error_code.message();
-    Sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(3));
   }
+
+  WaitForProcesses(pd::kVaultExecutable(), 2);
 
   // stop origin bootstrap nodes
   bp::terminate(zero_state_processes_[0]);
-  Sleep(boost::posix_time::seconds(15));
-
-  // erase bootstrap nodes from list
-  {
-    std::string boot_ip(endpoints[0].first);
-    uint16_t boot_port1(endpoints[0].second);
-    uint16_t boot_port2(endpoints[1].second);
-    std::string serialised_bootstrap_nodes;
-    if (!maidsafe::ReadFile("bootstrap", &serialised_bootstrap_nodes))
-      return testing::AssertionFailure() << "Could not read bootstrap file.";
-    protobuf::Bootstrap protobuf_bootstrap;
-    if (!protobuf_bootstrap.ParseFromString(serialised_bootstrap_nodes))
-      return testing::AssertionFailure() << "Could not parse bootstrap contacts.";
-
-    endpoints.clear();
-    for (int i(0); i != protobuf_bootstrap.bootstrap_contacts_size(); ++i) {
-      if ((boot_port1 != protobuf_bootstrap.bootstrap_contacts(i).port()) &&
-          (boot_port2 != protobuf_bootstrap.bootstrap_contacts(i).port()))
-        endpoints.push_back(std::make_pair(protobuf_bootstrap.bootstrap_contacts(i).ip(),
-                                           protobuf_bootstrap.bootstrap_contacts(i).port()));
-    }
-
-    if (!WriteBootstrap(endpoints))
-      return testing::AssertionFailure() << "Failed to write updated local bootstrap file.";
-  }
+  WaitForProcesses(pd::kKeysHelperExecutable(), 0);
+  Sleep(boost::posix_time::seconds(5));
 
   // Start other vaults
   std::string local_ip(GetLocalIp().to_string());
@@ -225,7 +249,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     source = biostr::file_descriptor_source(anon_pipe.source, biostr::close_handle);
 
     std::random_shuffle(endpoints.begin(), endpoints.end());
-    std::string args("--start --usr_id smer --chunk_path ");
+    std::string args("--start --chunk_path ");
     std::string index(boost::lexical_cast<std::string>(i));
     fs::path chunkstore(*test_root / (std::string("ChunkStore") + index));
     if (!fs::create_directories(chunkstore, error_code) || error_code)
@@ -236,6 +260,9 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     args += " --identity_index " + index;
     args += " --peer " + local_ip + ":5483";
     args += " --log_pd I --log_folder /tmp";
+#ifndef MAIDSAFE_WIN32
+    args += " --usr_id " + GetUserId();
+#endif
     vault_processes_.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
@@ -247,8 +274,13 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (error_code)
       return testing::AssertionFailure() << "Failed to execute " << pd::kVaultExecutable() << " "
                                          << args << ": " << error_code.message();
-    Sleep(boost::posix_time::seconds(5));
+    Sleep(boost::posix_time::seconds(2));
   }
+
+  if (!WaitForProcesses(pd::kVaultExecutable(), vault_count))
+    return testing::AssertionFailure() << "Failed to set up network of size " << vault_count;
+
+  Sleep(boost::posix_time::seconds(5));
 
   // Invoke pd-keys-helper to store all keys
   anon_pipe = bp::create_pipe();
@@ -283,14 +315,32 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     if (error_code)
       return testing::AssertionFailure() << "Failed to start LifeStuffManager: "
                                          << error_code.message();
-    Sleep(boost::posix_time::seconds(10));
+    WaitForProcesses(priv::kLifeStuffManagerExecutable(), 1);
   }
 
   return testing::AssertionSuccess();
 }
 
-testing::AssertionResult NetworkHelper::StopLocalNetwork() {
+void NetworkHelper::StopLocalNetwork() {
   LOG(kInfo) << "=============================== Stopping network ===============================";
+
+  for (auto& lifestuff_manager_process : lifestuff_manager_processes_) {
+    try {
+#ifdef MAIDSAFE_WIN32
+      bp::terminate(lifestuff_manager_process);
+      // lifestuff_manager_process.discard();
+#else
+      if (kill(lifestuff_manager_process.pid, SIGTERM) != 0)
+        kill(lifestuff_manager_process.pid, SIGKILL);
+#endif
+    }
+    catch(const std::exception& e) {
+      LOG(kError) << e.what();
+    }
+  }
+  lifestuff_manager_processes_.clear();
+  WaitForProcesses(priv::kLifeStuffManagerExecutable(), 0);
+
   for (auto& vault_process : vault_processes_) {
     try {
 #ifdef MAIDSAFE_WIN32
@@ -305,26 +355,8 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
     }
   }
   vault_processes_.clear();
-//  bp::terminate(zero_state_processes_[0]);
   zero_state_processes_.clear();
-
-  for (auto& lifestuff_manager_process : lifestuff_manager_processes_) {
-    try {
-#ifdef MAIDSAFE_WIN32
-      bp::terminate(lifestuff_manager_process);
-      // lifestuff_manager_process.discard();
-#else
-      if (kill(lifestuff_manager_process.pid, SIGINT) != 0)
-        kill(lifestuff_manager_process.pid, SIGKILL);
-#endif
-    }
-    catch(const std::exception& e) {
-      LOG(kError) << e.what();
-    }
-  }
-  lifestuff_manager_processes_.clear();
-
-  return testing::AssertionSuccess();
+  WaitForProcesses(pd::kVaultExecutable(), 0);
 }
 
 }  // namespace test

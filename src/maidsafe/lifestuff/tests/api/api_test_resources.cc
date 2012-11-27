@@ -494,7 +494,7 @@ void RunLogIn(LifeStuff& test_elements,
 
 void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true)); }
 
-void OneUserApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
+void OneUserApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 void TwoUsersApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true));
@@ -508,7 +508,7 @@ void TwoUsersApiTest::SetUp() {
                                          keyword_2_, pin_2_, password_2_, public_id_2_));
 }
 
-void TwoUsersApiTest::TearDown() { EXPECT_TRUE(network_.StopLocalNetwork()); }
+void TwoUsersApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 }  // namespace test
 
