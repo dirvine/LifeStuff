@@ -71,14 +71,19 @@ Contact::Contact(const PublicContact& contact)
     : public_id(contact.public_id()),
       profile_picture_data_map(contact.profile_picture_data_map()),
       mpid_name(contact.mpid_name()),
-      inbox_name(contact.inbox_name()),
-      pointer_to_info(contact.pointer_to_info()),
+      inbox_name(),
+      pointer_to_info(),
       mpid_public_key(),
       inbox_public_key(),
       status(static_cast<ContactStatus>(contact.status())),
       rank(contact.rank()),
       last_contact(contact.last_contact()),
-      presence(kOffline) {}
+      presence(kOffline) {
+  if(contact.inbox_name() != "pending")
+    inbox_name =  Identity(contact.inbox_name());
+  if (contact.pointer_to_info() != "pending")
+    pointer_to_info = Identity(contact.pointer_to_info());
+}
 
 bool Contact::Equals(const Contact& other) {
   if (public_id != other.public_id ||

@@ -171,8 +171,7 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
     }
     args += chunkstore.string();
     args += " --identity_index " + index;
-//    if (i == 2)
-      args += " --log_pd I --log_folder /tmp";
+    args += " --log_pd I  --log_private I --log_folder /tmp";
     args += " --peer " + endpoints.back().first + ":" +
             boost::lexical_cast<std::string>(endpoints.back().second);
     vault_processes_.push_back(std::make_pair(
@@ -297,7 +296,8 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
 #ifdef MAIDSAFE_WIN32
       bp::terminate(vault_process.first);
 #else
-      kill(vault_process.first.pid, SIGINT);
+      if (kill(vault_process.first.pid, SIGINT) != 0)
+        kill(vault_process.first.pid, SIGKILL);
 #endif
     }
     catch(const std::exception& e) {
@@ -314,7 +314,8 @@ testing::AssertionResult NetworkHelper::StopLocalNetwork() {
       bp::terminate(lifestuff_manager_process);
       // lifestuff_manager_process.discard();
 #else
-      kill(lifestuff_manager_process.pid, SIGINT);
+      if (kill(lifestuff_manager_process.pid, SIGINT) != 0)
+        kill(lifestuff_manager_process.pid, SIGKILL);
 #endif
     }
     catch(const std::exception& e) {

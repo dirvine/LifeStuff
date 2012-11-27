@@ -144,7 +144,7 @@ int PublicId::ProcessPublicIdPacketsStore(const NonEmptyString& public_id,
 
   StoreAnmpid(public_id, results, accepts_new_contacts);
   int result(utils::WaitForResults(mutex, condition_variable, individual_results,
-                                   std::chrono::seconds(30)));
+                                   std::chrono::seconds(60)));
   if (result != kSuccess) {
     LOG(kError) << "Timed out: " << result;
     LOG(kError) << "Result: " << individual_results.at(0);
@@ -268,7 +268,7 @@ int PublicId::AddContact(const NonEmptyString& own_public_id,
                          const NonEmptyString& recipient_public_id,
                          const std::string& message) {
   if (session_.OwnPublicId(recipient_public_id)) {
-    LOG(kInfo) << "Cannot add own Public Id as a contact";
+    LOG(kError) << "Cannot add own Public Id as a contact";
     return kCannotAddOwnPublicId;
   }
 
