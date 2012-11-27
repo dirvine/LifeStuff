@@ -492,12 +492,12 @@ void RunLogIn(LifeStuff& test_elements,
 
 }  // namespace sleepthreads
 
-void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true)); }
+void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10)); }
 
 void OneUserApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 void TwoUsersApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10, true));
+  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
   PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
   PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
   ASSERT_EQ(kSuccess,

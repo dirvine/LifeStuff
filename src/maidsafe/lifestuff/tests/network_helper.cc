@@ -33,7 +33,6 @@
 
 #include "maidsafe/common/utils.h"
 #include "maidsafe/private/lifestuff_manager/client_controller.h"
-#include "maidsafe/lifestuff/tests/bootstrap_pb.h"
 
 // keys_helper.h is automatically generated and placed in the build directory, hence no full path.
 #include "keys_helper.h"  // NOLINT (Fraser)
@@ -150,28 +149,17 @@ std::vector<std::pair<std::string, uint16_t> > ExtractEndpoints(const std::strin
   return endpoints;
 }
 
-}  // unnamed namespace
-
-
-NetworkHelper::NetworkHelper() : zero_state_processes_(),
-                                 vault_processes_(),
-                                 lifestuff_manager_processes_() {}
-
-testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::path> test_root,
-                                                          int vault_count,
-                                                          bool start_lifestuff_manager) {
-  if (vault_count > 16)
-    return testing::AssertionFailure() << "Can't start " << vault_count << " vaults. Must be <= 16";
-
-  boost::system::error_code error_code;
-
+bool StartBootstrappingNodes(std::vector<boost::process::child>& zero_state_processes,
+                             std::vector<std::pair<std::string, uint16_t> >& endpoints,
+                             int vault_count) {
   // Invoke pd-keys-helper to create 2 zero-state vaults and all keys
+  boost::system::error_code error_code;
   bp::pipe anon_pipe = bp::create_pipe();
   biostr::file_descriptor_sink sink(anon_pipe.sink, biostr::close_handle);
   biostr::file_descriptor_source source(anon_pipe.source, biostr::close_handle);
   biostr::stream<biostr::file_descriptor_source> input_stream(source);
 
-  zero_state_processes_.push_back(bp::child(
+  zero_state_processes.push_back(bp::child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
                   bp::initializers::set_cmd_line(
                       ConstructCommandLine(false,
@@ -182,44 +170,60 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
                   bp::initializers::bind_stdout(sink),
                   bp::initializers::bind_stderr(sink))));
   Sleep(boost::posix_time::seconds(1));
-  if (error_code)
-    return testing::AssertionFailure() << "Failed to execute " << pd::kKeysHelperExecutable()
-                                       << " -cpb : " << error_code.message();
+  if (error_code) {
+    LOG(kError) << "Failed to execute " << pd::kKeysHelperExecutable()
+                << " -cpb: " << error_code.message();
+    return false;
+  }
 
   // fetch the info of generated bootstrap nodes
   std::string zero_state_log;
-  std::vector<std::pair<std::string, uint16_t>> endpoints;
-  while (std::getline(input_stream, zero_state_log)) {
+  int count(0);
+  while (std::getline(input_stream, zero_state_log) && count++ < 100) {
     endpoints = ExtractEndpoints(zero_state_log);
-    // TODO(Fraser#5#): 2012-08-30 - Avoid hanging here if endpoints is always empty
     if (!endpoints.empty())
       break;
   }
 
-  // Start 2 vaults
-  for (int i(2); i < 4; ++i) {
-    LOG(kInfo) << "Starting Vault " << i;
-    anon_pipe = bp::create_pipe();
-    sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
-    source = biostr::file_descriptor_source(anon_pipe.source, biostr::close_handle);
+  if (endpoints.empty()) {
+    LOG(kError) << "Failed to capture bootstrapping nodes";
+    return false;
+  }
 
-    // std::random_shuffle(endpoints.begin(), endpoints.end());
-    std::string args("--start --chunk_path ");
+  return true;
+}
+
+typedef std::unique_ptr<boost::iostreams::stream<boost::iostreams::file_descriptor_source> >
+        InStreamPtr;
+bool ReplaceBootstrappingNodesWithVaults(
+    const fs::path& test_path,
+    std::vector<boost::process::child>& zero_state_processes,
+    std::vector<std::pair<boost::process::child, InStreamPtr> >& vault_processes,
+    std::vector<std::pair<std::string, uint16_t> >& endpoints) {
+  // Start 2 vaults
+  boost::system::error_code error_code;
+  for (int i(2); i != 4; ++i) {
+    LOG(kInfo) << "Starting Vault " << i;
+    bp::pipe anon_pipe = bp::create_pipe();
+    biostr::file_descriptor_sink sink(anon_pipe.sink, biostr::close_handle);
+    biostr::file_descriptor_source source(anon_pipe.source, biostr::close_handle);
+
     std::string index(boost::lexical_cast<std::string>(i));
-    fs::path chunkstore(*test_root / (std::string("ChunkStore") + index));
+    fs::path chunkstore(test_path / (std::string("ChunkStore") + index));
     if (!fs::create_directories(chunkstore, error_code) || error_code) {
-      return testing::AssertionFailure() << "Failed to create chunkstore for vault " << i
-                                         << ".  Error message: " << error_code.message();
+      LOG(kError) << "Failed to create chunkstore for vault " << i << ": "
+                  << error_code.message();
+      return false;
     }
-    args += chunkstore.string();
+    std::string args("--start --chunk_path " + chunkstore.string());
     args += " --identity_index " + index;
-    args += " --log_pd I --log_folder " + (*test_root / "logs").string();
+    args += " --log_pd I --log_folder " + (test_path / "logs").string();
     args += " --peer " + endpoints.back().first + ":" +
             boost::lexical_cast<std::string>(endpoints.back().second);
 #ifndef MAIDSAFE_WIN32
     args += " --usr_id " + GetUserId();
 #endif
-    vault_processes_.push_back(std::make_pair(
+    vault_processes.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
                               bp::initializers::set_on_error(error_code),
@@ -227,43 +231,54 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
                               bp::initializers::bind_stdout(sink),
                               bp::initializers::bind_stderr(sink))),
         InStreamPtr(new biostr::stream<biostr::file_descriptor_source>(source))));
-    if (error_code)
-      return testing::AssertionFailure() << "Failed to execute " << pd::kVaultExecutable() << " "
-                                         << args << ": " << error_code.message();
+    if (error_code) {
+      LOG(kError) << "Failed to execute " << pd::kVaultExecutable() << " " << args << ": "
+                  << error_code.message();
+      return false;
+    }
     Sleep(boost::posix_time::seconds(3));
   }
 
   WaitForProcesses(pd::kVaultExecutable(), 2);
 
   // stop origin bootstrap nodes
-  bp::terminate(zero_state_processes_[0]);
-  WaitForProcesses(pd::kKeysHelperExecutable(), 0);
+  bp::terminate(zero_state_processes[0]);
+  if (!WaitForProcesses(pd::kKeysHelperExecutable(), 0)) {
+    LOG(kError) << "The bootstrapping process did not terminate correctly.";
+    return false;
+  }
   Sleep(boost::posix_time::seconds(5));
 
-  // Start other vaults
-  std::string local_ip(GetLocalIp().to_string());
+  return true;
+}
+
+bool StartRemaningVaults(
+    const fs::path& test_path,
+    const std::string& local_ip,
+    std::vector<std::pair<boost::process::child, InStreamPtr> >& vault_processes,
+    int vault_count) {
+  boost::system::error_code error_code;
   for (int i(4); i != vault_count + 2; ++i) {
     LOG(kInfo) << "Starting Vault " << i;
-    anon_pipe = bp::create_pipe();
-    sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
-    source = biostr::file_descriptor_source(anon_pipe.source, biostr::close_handle);
+    bp::pipe anon_pipe = bp::create_pipe();
+    biostr::file_descriptor_sink sink(anon_pipe.sink, biostr::close_handle);
+    biostr::file_descriptor_source source(anon_pipe.source, biostr::close_handle);
 
-    std::random_shuffle(endpoints.begin(), endpoints.end());
-    std::string args("--start --chunk_path ");
     std::string index(boost::lexical_cast<std::string>(i));
-    fs::path chunkstore(*test_root / (std::string("ChunkStore") + index));
-    if (!fs::create_directories(chunkstore, error_code) || error_code)
-      return testing::AssertionFailure() << "Failed to create chunkstore for vault " << i
-                                         << ".  Error message: " << error_code.message();
+    fs::path chunkstore(test_path / (std::string("ChunkStore") + index));
+    if (!fs::create_directories(chunkstore, error_code) || error_code) {
+      LOG(kError) << "Failed to create chunkstore for vault " << i << ": " << error_code.message();
+      return false;
+    }
 
-    args += chunkstore.string();
+    std::string args("--start --chunk_path " + chunkstore.string());
     args += " --identity_index " + index;
     args += " --peer " + local_ip + ":5483";
-    args += " --log_pd I --log_folder " + (*test_root / "logs").string();
+    args += " --log_pd I --log_folder " + (test_path / "logs").string();
 #ifndef MAIDSAFE_WIN32
     args += " --usr_id " + GetUserId();
 #endif
-    vault_processes_.push_back(std::make_pair(
+    vault_processes.push_back(std::make_pair(
         bp::child(bp::execute(bp::initializers::run_exe(pd::kVaultExecutable()),
                               bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
                               bp::initializers::set_on_error(error_code),
@@ -271,53 +286,116 @@ testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::pa
                               bp::initializers::bind_stdout(sink),
                               bp::initializers::bind_stderr(sink))),
         InStreamPtr(new biostr::stream<biostr::file_descriptor_source>(source))));
-    if (error_code)
-      return testing::AssertionFailure() << "Failed to execute " << pd::kVaultExecutable() << " "
-                                         << args << ": " << error_code.message();
+    if (error_code) {
+      LOG(kError) << "#" << i <<  " - Failed to execute " << pd::kVaultExecutable() << " " << args
+                  << ": " << error_code.message();
+      return false;
+    }
     Sleep(boost::posix_time::seconds(2));
   }
 
-  if (!WaitForProcesses(pd::kVaultExecutable(), vault_count))
-    return testing::AssertionFailure() << "Failed to set up network of size " << vault_count;
+  if (!WaitForProcesses(pd::kVaultExecutable(), vault_count)) {
+    LOG(kError) << "Failed waiting for vaults setup";
+    return false;
+    testing::AssertionFailure();
+  }
 
   Sleep(boost::posix_time::seconds(5));
 
+  return true;
+}
+
+bool StoreKeysOfVaultNodes(const std::string& local_ip) {
   // Invoke pd-keys-helper to store all keys
-  anon_pipe = bp::create_pipe();
-  sink = biostr::file_descriptor_sink(anon_pipe.sink, biostr::close_handle);
+  boost::system::error_code error_code;
+  bp::pipe anon_pipe = bp::create_pipe();
+  biostr::file_descriptor_sink sink(anon_pipe.sink, biostr::close_handle);
   bp::child store_key_child(
       bp::execute(bp::initializers::run_exe(pd::kKeysHelperExecutable()),
                   bp::initializers::set_cmd_line(
                       ConstructCommandLine(false, "-ls --peer " + local_ip + ":5483")),
                   bp::initializers::set_on_error(error_code),
                   bp::initializers::inherit_env()));
-  if (error_code)
-    return testing::AssertionFailure() << "Failed to execute " << pd::kKeysHelperExecutable()
-                                       << " -ls : " << error_code.message();
+  if (error_code) {
+    LOG(kError) << "Failed to execute " << pd::kKeysHelperExecutable() << " -ls: "
+                << error_code.message();
+    return false;
+  }
 
   auto exit_code = wait_for_exit(store_key_child, error_code);
-  if (exit_code)
-    return testing::AssertionFailure() << "Executing " << "pd-store-keys -ls returned : "
-                                       << exit_code;
-
-
-  if (start_lifestuff_manager) {
-    // Startup LifeStuffManager
-    uint16_t port(maidsafe::test::GetRandomPort());
-    priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port, *test_root);
-    std::string args("--log_private I --port " + boost::lexical_cast<std::string>(port) +
-                     " --root_dir " + (*test_root / "lifestuff_manager").string() +
-                     " --log_folder " + (*test_root / "logs").string());
-    lifestuff_manager_processes_.push_back(
-        bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
-                              bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
-                              bp::initializers::set_on_error(error_code),
-                              bp::initializers::inherit_env())));
-    if (error_code)
-      return testing::AssertionFailure() << "Failed to start LifeStuffManager: "
-                                         << error_code.message();
-    WaitForProcesses(priv::kLifeStuffManagerExecutable(), 1);
+  if (exit_code) {
+    LOG(kError) << "Executing pd_key_helper -ls returned : " << exit_code;
+    return false;
   }
+
+  return true;
+}
+
+bool StartLifestuffManager(const fs::path& test_path,
+                           std::vector<boost::process::child>& lifestuff_manager_processes) {
+  // Startup LifeStuffManager
+  boost::system::error_code error_code;
+  uint16_t port(maidsafe::test::GetRandomPort());
+  priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port,
+                                                                         test_path,
+                                                                         pd::kVaultExecutable());
+  std::string args("--log_private I");
+  args += " --port " + boost::lexical_cast<std::string>(port);
+  args += " --root_dir " + (test_path / "lifestuff_manager").string();
+  args += " --vault_path " + pd::kVaultExecutable().parent_path().string();
+  args += " --log_folder " + (test_path / "logs").string();
+  lifestuff_manager_processes.push_back(
+      bp::child(bp::execute(bp::initializers::run_exe(priv::kLifeStuffManagerExecutable()),
+                            bp::initializers::set_cmd_line(ConstructCommandLine(true, args)),
+                            bp::initializers::set_on_error(error_code),
+                            bp::initializers::inherit_env())));
+  if (error_code) {
+    LOG(kError) << "Failed to start LifeStuffManager: " << error_code.message();
+    return false;
+  }
+
+  if (!WaitForProcesses(priv::kLifeStuffManagerExecutable(), 1)) {
+    LOG(kError) << "Failed to start LifeStuffManager after waiting";
+    return false;
+  }
+
+  return true;
+}
+
+}  // unnamed namespace
+
+
+NetworkHelper::NetworkHelper() : zero_state_processes_(),
+                                 vault_processes_(),
+                                 lifestuff_manager_processes_() {}
+
+testing::AssertionResult NetworkHelper::StartLocalNetwork(std::shared_ptr<fs::path> test_root,
+                                                          int vault_count) {
+  if (vault_count > 16 || vault_count < 10)
+    return testing::AssertionFailure() << "Can't start " << vault_count
+                                       << " vaults: Must be 9 < vault_count < 16";
+
+  std::vector<std::pair<std::string, uint16_t> > endpoints;
+  if (!StartBootstrappingNodes(zero_state_processes_, endpoints, vault_count))
+    return testing::AssertionFailure() << "Failed to start bootstrap nodes.";
+
+  if (!ReplaceBootstrappingNodesWithVaults(*test_root,
+                                           zero_state_processes_,
+                                           vault_processes_,
+                                           endpoints)) {
+    return testing::AssertionFailure() << "Failed to replace bootstrap nodes.";
+  }
+
+  std::string local_ip(GetLocalIp().to_string());
+  if (!StartRemaningVaults(*test_root, local_ip, vault_processes_, vault_count))
+    return testing::AssertionFailure() << "Failed to start remaining vaults.";
+
+
+  if (!StoreKeysOfVaultNodes(local_ip))
+    return testing::AssertionFailure() << "Failed to store vault keys.";
+
+  if (!StartLifestuffManager(*test_root, lifestuff_manager_processes_))
+    return testing::AssertionFailure() << "Failed to start lifestuff_mgr.";
 
   return testing::AssertionSuccess();
 }

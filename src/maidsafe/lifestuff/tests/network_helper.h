@@ -46,8 +46,7 @@ class NetworkHelper {
  public:
   NetworkHelper();
   testing::AssertionResult StartLocalNetwork(std::shared_ptr<boost::filesystem::path> test_root,
-                                             int vault_count,
-                                             bool start_lifestuff_manager = false);
+                                             int vault_count);
   void StopLocalNetwork();
 
  private:

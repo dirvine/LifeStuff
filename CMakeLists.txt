@@ -100,12 +100,8 @@ set(VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/virtual_drive_test.cc"
 set(REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/real_drive_test.cc")
 set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
 set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
-set(NETWORK_HELPER_PROTOS "${PATH_TO_TESTS}/bootstrap.pb.cc"
-                          "${PATH_TO_TESTS}/bootstrap.pb.h"
-                          "${PATH_TO_TESTS}/bootstrap_pb.h"
-                          "${PATH_TO_TESTS}/bootstrap.proto")
-set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H} ${NETWORK_HELPER_PROTOS})
-set(NETWORK_HELPER_STYLE ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
+set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
+set(NETWORK_HELPER_STYLE ${NETWORK_HELPER_FILES})
 
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${CLIENT_CONTROLLER_TEST_CC}
@@ -115,7 +111,7 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${API_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
                                         ${VIRTUAL_DRIVE_TEST_CC}
-										${REAL_DRIVE_TEST_CC}
+                                        ${REAL_DRIVE_TEST_CC}
                                         ${NETWORK_HELPER_CC})
 
 source_group("Tests Header Files" FILES ${PROJECT_BINARY_DIR}/keys_helper.h
