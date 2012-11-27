@@ -242,54 +242,6 @@ TEST_F(OneUserApiTest, FUNC_IncorrectLoginLogoutSequences) {
   }
 }
 
-TEST_F(OneUserApiTest, FUNC_CreateDirectoryLogoutLoginCheckDirectory) {
-  // Create directory
-  std::string tail;
-  boost::system::error_code error_code;
-  {
-    PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-    fs::path test(CreateTestDirectory(test_elements.mount_path(), &tail));
-    EXPECT_TRUE(fs::exists(test, error_code));
-    EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-  }
-  // Check directory exists
-  {
-    PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-    fs::path new_path(test_elements.mount_path() / tail);
-    EXPECT_TRUE(fs::exists(new_path, error_code));
-    EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-  }
-}
-
-TEST_F(OneUserApiTest, FUNC_LargeFileForMemoryCheck) {
-  // Create directory
-  std::string tail;
-  boost::system::error_code error_code;
-  {
-    PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-    EXPECT_EQ(kSuccess, CreateTestFile(test_elements.mount_path(), 500, &tail));
-    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code));
-    EXPECT_EQ(0, error_code.value());
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-  }
-  // Check directory exists
-  {
-    PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-    EXPECT_TRUE(fs::exists(test_elements.mount_path() / tail, error_code));
-    EXPECT_EQ(0, error_code.value());
-  }
-}
-
 }  // namespace test
 
 }  // namespace lifestuff
