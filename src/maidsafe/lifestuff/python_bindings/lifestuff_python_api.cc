@@ -21,10 +21,15 @@
 * ============================================================================
 */
 
-#define BOOST_PYTHON_STATIC_LIB
-
 #include "boost/filesystem/path.hpp"
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4100 4127 4244)
+#endif
 #include "boost/python.hpp"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
@@ -98,8 +103,4 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
       .def("state", &ls::LifeStuff::state)
       .def("logged_in_state", &ls::LifeStuff::logged_in_state)
       .def("mount_path", &ls::LifeStuff::mount_path);
-}
-
-int main() {
-  return 0;
 }
