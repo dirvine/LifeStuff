@@ -148,6 +148,7 @@ if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_real_drive "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
   ms_add_executable(lifestuff_python_bindings_tester "Tools" ${PATH_TO_SRC}/python_bindings/test_main.cc)
+  ms_add_executable(lifestuff_python_api "Tools" ${PATH_TO_SRC}/python_bindings/lifestuff_python_api.cc)
 endif()
 
 target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
@@ -200,6 +201,7 @@ if(MAIDSAFE_TESTING)
 
   include_directories(${PYTHON_INCLUDE_PATH})
   target_link_libraries(lifestuff_python_bindings_tester maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
+  target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
 endif()
 
 include_directories(${PROJECT_BINARY_DIR})
