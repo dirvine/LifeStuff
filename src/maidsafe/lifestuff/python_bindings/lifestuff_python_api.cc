@@ -37,26 +37,54 @@
 
 // NOTE in Python, do "from lifestuff_python_api import *"
 
+namespace bpy = boost::python;
 namespace ls = maidsafe::lifestuff;
 
 namespace {
 
-boost::filesystem::path MakePath(const std::string& s) {
-  return boost::filesystem::path(s);
+struct PathConverter {
+  static PyObject* convert(const boost::filesystem::path& path) {
+    return bpy::incref(bpy::str(path.c_str()).ptr());
+  }
+};
+
+struct NonEmptyStringConverter {
+  static PyObject* convert(const maidsafe::NonEmptyString& nes) {
+    return bpy::incref(bpy::str(nes.string().c_str()).ptr());
+  }
+};
+
+// struct PathExtractor {
+//   extract(const boost::filesystem::path& path) ...
+// };
+
+boost::filesystem::path ExtractPath(const bpy::str& s) {
+  return boost::filesystem::path(std::string(bpy::extract<const char*>(s)));
 }
 
-maidsafe::NonEmptyString MakeNonEmptyString(const std::string& s) {
-  return maidsafe::NonEmptyString(s);
+maidsafe::NonEmptyString ExtractNonEmptyString(const bpy::str& s) {
+  return maidsafe::NonEmptyString(std::string(bpy::extract<const char*>(s)));
+}
+
+// TODO(Steve) get this to work...
+std::string TestConversion(const maidsafe::NonEmptyString& nes) {
+  return nes.string();
 }
 
 }  // namespace
 
 BOOST_PYTHON_MODULE(lifestuff_python_api) {
-  boost::python::def("MakePath", MakePath);
-  boost::python::def("MakeNonEmptyString", MakeNonEmptyString);
+  bpy::def("TestConversion", TestConversion);
 
-  boost::python::class_<ls::LifeStuff>(
-      "LifeStuff", boost::python::init<ls::Slots, boost::filesystem::path>())
+  bpy::to_python_converter<boost::filesystem::path, PathConverter>();
+  bpy::to_python_converter<maidsafe::NonEmptyString, NonEmptyStringConverter>();
+//   boost::lvalue_from_pytype<PathExtractor, bpy::str>();
+//   bpy::converter::registry::insert(&ExtractPath, bpy::type_id<boost::filesystem::path>);
+//   bpy::converter::registry::insert(&ExtractNonEmptyString,
+//                                    bpy::type_id<maidsafe::NonEmptyString>);
+
+  bpy::class_<ls::LifeStuff>(
+      "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
 
       // Credential operations
       .def("CreateUser", &ls::LifeStuff::CreateUser)
