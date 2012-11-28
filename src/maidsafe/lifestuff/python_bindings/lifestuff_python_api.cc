@@ -21,14 +21,35 @@
 * ============================================================================
 */
 
+#define BOOST_PYTHON_STATIC_LIB
+
 #include "boost/filesystem/path.hpp"
 #include "boost/python.hpp"
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
+// NOTE set PYTHONPATH to your build directory
+
+// NOTE in Python, do "from lifestuff_python_api import *"
+
 namespace ls = maidsafe::lifestuff;
 
-BOOST_PYTHON_MODULE(lifestuff_api) {
+namespace {
+
+boost::filesystem::path MakePath(const std::string& s) {
+  return boost::filesystem::path(s);
+}
+
+maidsafe::NonEmptyString MakeNonEmptyString(const std::string& s) {
+  return maidsafe::NonEmptyString(s);
+}
+
+}  // namespace
+
+BOOST_PYTHON_MODULE(lifestuff_python_api) {
+  boost::python::def("MakePath", MakePath);
+  boost::python::def("MakeNonEmptyString", MakeNonEmptyString);
+
   boost::python::class_<ls::LifeStuff>(
       "LifeStuff", boost::python::init<ls::Slots, boost::filesystem::path>())
 

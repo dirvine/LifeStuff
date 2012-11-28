@@ -142,13 +142,20 @@ if(MAIDSAFE_TESTING)
 endif()
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
+
+add_library(lifestuff_python_api SHARED ${PATH_TO_SRC}/python_bindings/lifestuff_python_api.cc)
+target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
+set_target_properties(lifestuff_python_api PROPERTIES PREFIX ""
+                                                      DEBUG_POSTFIX ""
+                                                      LABELS Lifestuff
+                                                      FOLDER "MaidSafe/Libraries")
+
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_virtual_drive "Tests/LifeStuff" ${VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_real_drive "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
   ms_add_executable(lifestuff_python_bindings_tester "Tools" ${PATH_TO_SRC}/python_bindings/test_main.cc)
-  ms_add_executable(lifestuff_python_api "Tools" ${PATH_TO_SRC}/python_bindings/lifestuff_python_api.cc)
 endif()
 
 target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
@@ -198,12 +205,10 @@ if(MAIDSAFE_TESTING)
   target_link_libraries(TESTlifestuff_real_drive maidsafe_drive)
   target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager)
   add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
-
-  include_directories(${PYTHON_INCLUDE_PATH})
   target_link_libraries(lifestuff_python_bindings_tester maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
-  target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
 endif()
 
+include_directories(${PYTHON_INCLUDE_PATH})
 include_directories(${PROJECT_BINARY_DIR})
 
 rename_outdated_built_exes()
