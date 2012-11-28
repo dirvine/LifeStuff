@@ -670,48 +670,48 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
     pins_match = true;
   int result_pin_1(0), result_pin_2(0);
 
-  while (!pins_match) {
-    new_pin = CreatePin();
-    result_pin_1 = 0;
-    result_pin_2 = 0;
-    {
-      PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-      LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+  if (!pins_match) {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
 
-      boost::thread thread_pin_1(
+    while (!pins_match) {
+      new_pin = CreatePin();
+      result_pin_1 = 0;
+      result_pin_2 = 0;
+      {
+        boost::thread thread_pin_1(
+              [&] {
+              sleepthreads::RunChangePin(test_elements1,
+                                         std::ref(result_pin_1),
+                                         new_pin,
+                                         password_1_);
+              });
+        boost::thread thread_pin_2(
             [&] {
-            sleepthreads::RunChangePin(test_elements1,
-                                       std::ref(result_pin_1),
+            sleepthreads::RunChangePin(test_elements2,
+                                       std::ref(result_pin_2),
                                        new_pin,
-                                       password_1_);
+                                       password_2_);
             });
-      boost::thread thread_pin_2(
-          [&] {
-          sleepthreads::RunChangePin(test_elements2,
-                                     std::ref(result_pin_2),
-                                     new_pin,
-                                     password_2_);
-          });
-      thread_pin_1.join();
-      thread_pin_2.join();
-
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+        thread_pin_1.join();
+        thread_pin_2.join();
+       }
+      if (result_pin_1 == kSuccess)
+        pin_1_ = new_pin;
+      if (result_pin_2 == kSuccess)
+        pin_2_ = new_pin;
+      if (result_pin_1 == kSuccess && result_pin_2 == kSuccess) {
+        pins_match = true;
+        LOG(kInfo) << "Matching PINs attained.";
+      }
     }
-    if (result_pin_1 == kSuccess)
-      pin_1_ = new_pin;
-    if (result_pin_2 == kSuccess)
-      pin_2_ = new_pin;
-    if (result_pin_1 == kSuccess && result_pin_2 == kSuccess) {
-      pins_match = true;
-      LOG(kInfo) << "Matching PINs attained.";
-    }
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
   }
-
   EXPECT_EQ(pin_1_, pin_2_);
 
   std::vector<std::pair<int, int> > sleep_values;
@@ -721,16 +721,17 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 0));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    NonEmptyString new_keyword(RandomAlphaNumericString(5));
-    int result_keyword_1(0), result_keyword_2(0);
     int result_logout_1(0), result_logout_2(0);
     {
       PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
       LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
       EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
       EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+
+      NonEmptyString new_keyword(RandomAlphaNumericString(5));
+      int result_keyword_1(0), result_keyword_2(0);
 
       boost::thread thread_keyword_1(
           [&] {
@@ -762,46 +763,8 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
       result_logout_2 = DoFullLogOut(test_elements2);
     }
 
-    if (result_logout_1 != kSuccess) {
-      if (result_logout_2 != kSuccess) {
-        LOG(kError) << "Both test elements failed to log out.";
-        break;
-      }
-      LOG(kError) << "Can't log out of test_elements1";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2; credentials 2";
-      {
-        PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-        LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements1");
-        EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
-        EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-      }
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2; credentials 1";
-      {
-        PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-        LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-        EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_1_, pin_1_, password_1_));
-        EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-      }
-      break;
-    }
-    if (result_logout_2 != kSuccess) {
-      LOG(kError) << "Can't log out of test_elements2";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1; credentials 1";
-      {
-        PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-        LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-        EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-        EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-      }
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1; credentials 2";
-      {
-        PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-        LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-        EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_2_, pin_2_, password_2_));
-        EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-      }
-      break;
-    }
+    EXPECT_EQ(kSuccess, result_logout_1);
+    EXPECT_EQ(kSuccess, result_logout_2);
 
     {
       PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
@@ -812,15 +775,17 @@ TEST_F(TwoUsersApiTest, FUNC_ChangePinsToSameThenKeywordsToSameSimultaneously) {
     {
       PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
       LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_1_, pin_1_, password_1_));
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
       EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+    }
+    if (result_logout_1 != kSuccess || result_logout_2 != kSuccess) {
+      break;
     }
   }
 #endif
 }
 
-/*
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeKeywordsToSameThenPinsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, FUNC_ChangeKeywordsToSameThenPinsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   ASSERT_NE(pin_1_, pin_2_);
 
@@ -830,44 +795,51 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeKeywordsToSameThenPinsToSameSimultan
     keywords_match = true;
   int result_keyword_1(0), result_keyword_2(0);
 
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
+  if (!keywords_match) {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
 
-  while (!keywords_match) {
-    new_keyword = NonEmptyString(RandomAlphaNumericString(5));
-    result_keyword_1 = 0;
-    result_keyword_2 = 0;
+    while (!keywords_match) {
+      new_keyword = NonEmptyString(RandomAlphaNumericString(5));
+      result_keyword_1 = 0;
+      result_keyword_2 = 0;
 
-    boost::thread thread_keyword_1(
+      boost::thread thread_keyword_1(
+            [&] {
+            sleepthreads::RunChangeKeyword(test_elements1,
+                                           std::ref(result_keyword_1),
+                                           new_keyword,
+                                           password_1_,
+                                           std::make_pair(0, 0));
+            });
+      boost::thread thread_keyword_2(
           [&] {
-          sleepthreads::RunChangeKeyword(test_elements1_,
-                                         std::ref(result_keyword_1),
+          sleepthreads::RunChangeKeyword(test_elements2,
+                                         std::ref(result_keyword_2),
                                          new_keyword,
-                                         password_1_,
+                                         password_2_,
                                          std::make_pair(0, 0));
           });
-    boost::thread thread_keyword_2(
-        [&] {
-        sleepthreads::RunChangeKeyword(test_elements2_,
-                                       std::ref(result_keyword_2),
-                                       new_keyword,
-                                       password_2_,
-                                       std::make_pair(0, 0));
-        });
-    thread_keyword_1.join();
-    thread_keyword_2.join();
+      thread_keyword_1.join();
+      thread_keyword_2.join();
 
-    if (result_keyword_1 == kSuccess)
-      keyword_1_ = new_keyword;
-    if (result_keyword_2 == kSuccess)
-      keyword_2_ = new_keyword;
-    if (result_keyword_1 == kSuccess && result_keyword_2 == kSuccess) {
-      keywords_match = true;
-      LOG(kInfo) << "Matching keywords attained.";
+      if (result_keyword_1 == kSuccess)
+        keyword_1_ = new_keyword;
+      if (result_keyword_2 == kSuccess)
+        keyword_2_ = new_keyword;
+      if (result_keyword_1 == kSuccess && result_keyword_2 == kSuccess) {
+        keywords_match = true;
+        LOG(kInfo) << "Matching keywords attained.";
+      }
     }
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
   }
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-  EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
+  EXPECT_EQ(keyword_1_, keyword_2_);
 
   std::vector<std::pair<int, int> > sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
@@ -877,148 +849,133 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeKeywordsToSameThenPinsToSameSimultan
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
     LOG(kError) << "\n\nNew iteration\n";
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
+    int result_logout_1(0), result_logout_2(0);
+    {
+      PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+      LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
 
-    NonEmptyString new_pin(CreatePin());
-    int result_pin_1(0), result_pin_2(0);
+      NonEmptyString new_pin(CreatePin());
+      int result_pin_1(0), result_pin_2(0);
 
-    boost::thread thread_pin_1(
-        [&] {
-          sleepthreads::RunChangePin(test_elements1_,
-                                     std::ref(result_pin_1),
-                                     new_pin,
-                                     password_1_,
-                                     sleep_values.at(i));
-        });
-    boost::thread thread_pin_2(
-        [&] {
-          sleepthreads::RunChangePin(test_elements2_,
-                                         std::ref(result_pin_2),
-                                         new_pin,
-                                         password_2_,
-                                         sleep_values.at(i));
-        });
-    thread_pin_1.join();
-    thread_pin_2.join();
+      boost::thread thread_pin_1(
+          [&] {
+            sleepthreads::RunChangePin(test_elements1,
+                                       std::ref(result_pin_1),
+                                       new_pin,
+                                       password_1_,
+                                       sleep_values.at(i));
+          });
+      boost::thread thread_pin_2(
+          [&] {
+            sleepthreads::RunChangePin(test_elements2,
+                                           std::ref(result_pin_2),
+                                           new_pin,
+                                           password_2_,
+                                           sleep_values.at(i));
+          });
+      thread_pin_1.join();
+      thread_pin_2.join();
 
-    if (result_pin_1 == kSuccess)
-      pin_1_ = new_pin;
-    if (result_pin_2 == kSuccess)
-      pin_2_ = new_pin;
+      if (result_pin_1 == kSuccess)
+        pin_1_ = new_pin;
+      if (result_pin_2 == kSuccess)
+        pin_2_ = new_pin;
 
-    EXPECT_FALSE(result_pin_1 == kSuccess &&
-                 result_pin_2 == kSuccess);
+      EXPECT_FALSE(result_pin_1 == kSuccess &&
+                   result_pin_2 == kSuccess);
 
-    int result_logout_1(DoFullLogOut(test_elements1_));
-    LOG(kInfo) << "Logged 1 out. Logging 2 out...\n";
-    int result_logout_2(DoFullLogOut(test_elements2_));
+      result_logout_1 = DoFullLogOut(test_elements1);
+      LOG(kInfo) << "Logged 1 out. Logging 2 out...\n";
+      result_logout_2 = DoFullLogOut(test_elements2);
+    }
 
-    if (result_logout_1 != kSuccess) {
-      if (result_logout_2 != kSuccess) {
-        LOG(kError) << "Both test elements failed to log out.";
-        break;
-      }
-      LOG(kError) << "Can't log out of test_elements1_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 2";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 1";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
+    EXPECT_EQ(kSuccess, result_logout_1);
+    EXPECT_EQ(kSuccess, result_logout_2);
+
+    {
+      PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+      LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+    }
+    {
+      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+    }
+    if (result_logout_1 != kSuccess || result_logout_2 != kSuccess) {
       break;
     }
-    if (result_logout_2 != kSuccess) {
-      LOG(kError) << "Can't log out of test_elements2_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 1";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 2";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-      break;
-    }
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
   }
 #endif
 }
-*/
 
-/*
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, FUNC_ChangePinsAndKeywordsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   ASSERT_NE(keyword_1_, keyword_2_);
   ASSERT_NE(pin_1_, pin_2_);
 
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-  EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
+  {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
 
-  int result_keyword_1(0);
-  int result_pin_2(0);
+    int result_keyword_1(0);
+    int result_pin_2(0);
 
-  boost::thread thread_keyword_1(
-      [&] {
-        sleepthreads::RunChangeKeyword(test_elements1_,
-                                       std::ref(result_keyword_1),
-                                       keyword_2_,
-                                       password_1_);
-      });
-  boost::thread thread_pin_2(
-      [&] {
-        sleepthreads::RunChangePin(test_elements2_,
-                                   std::ref(result_pin_2),
-                                   pin_1_,
-                                   password_2_);
-          });
-  thread_keyword_1.join();
-  thread_pin_2.join();
+    boost::thread thread_keyword_1(
+        [&] {
+          sleepthreads::RunChangeKeyword(test_elements1,
+                                         std::ref(result_keyword_1),
+                                         keyword_2_,
+                                         password_1_);
+        });
+    boost::thread thread_pin_2(
+        [&] {
+          sleepthreads::RunChangePin(test_elements2,
+                                     std::ref(result_pin_2),
+                                     pin_1_,
+                                     password_2_);
+            });
+    thread_keyword_1.join();
+    thread_pin_2.join();
 
-  if (result_keyword_1 == kSuccess)
-    keyword_1_ = keyword_2_;
-  if (result_pin_2 == kSuccess)
-    pin_2_ = pin_1_;
+    if (result_keyword_1 == kSuccess)
+      keyword_1_ = keyword_2_;
+    if (result_pin_2 == kSuccess)
+      pin_2_ = pin_1_;
 
-  EXPECT_FALSE(result_keyword_1 == kSuccess &&
-               result_pin_2 == kSuccess);
+    EXPECT_FALSE(result_keyword_1 == kSuccess &&
+                 result_pin_2 == kSuccess);
 
-  int result_logout_1(DoFullLogOut(test_elements1_));
-  int result_logout_2(DoFullLogOut(test_elements2_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+  }
 
-  if (result_logout_1 != kSuccess) {
-    if (result_logout_2 != kSuccess) {
-      LOG(kError) << "Both test elements failed to log out.";
-    } else {
-      LOG(kError) << "Can't log out of test_elements1_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 2";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 1";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
-    }
-  } else if (result_logout_2 != kSuccess) {
-    LOG(kError) << "Can't log out of test_elements2_";
-    LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 1";
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-    LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 2";
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_2_, pin_2_, password_2_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-  } else {
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
+  {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+  }
+  {
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
   }
 #endif
 }
-*/
 
-/*
-TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameSimultaneously) {
+TEST_F(TwoUsersApiTest, FUNC_ChangeCredentialsToSameSimultaneously) {
 #ifdef MAIDSAFE_LINUX
   std::vector<std::pair<int, int>> sleep_values;
   sleep_values.push_back(std::make_pair(0, 200));
@@ -1027,96 +984,96 @@ TEST_F(TwoUsersApiTest, DISABLED_FUNC_ChangeCredentialsToSameSimultaneously) {
   sleep_values.push_back(std::make_pair(0, 0));
 
   for (size_t i = 0; i < sleep_values.size(); ++i) {
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
+    int result_logout_1(0), result_logout_2(0);
+    {
+      PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+      LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
 
-    NonEmptyString new_pin(CreatePin());
-    NonEmptyString new_keyword(RandomAlphaNumericString(5));
+      NonEmptyString new_pin(CreatePin());
+      NonEmptyString new_keyword(RandomAlphaNumericString(5));
 
-    int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
+      int result_pin_1(0), result_pin_2(0), result_keyword_1(0), result_keyword_2(0);
 
-    boost::thread thread_pin_1(
-        [&] {
-          sleepthreads::RunChangePin(test_elements1_,
-                                     std::ref(result_pin_1),
-                                     new_pin,
-                                     password_1_,
-                                     sleep_values.at(i));
-        });
-    boost::thread thread_pin_2(
-        [&] {
-          sleepthreads::RunChangePin(test_elements2_,
-                                     std::ref(result_pin_2),
-                                     new_pin,
-                                     password_2_,
-                                     sleep_values.at(i));
-        });
-    boost::thread thread_keyword_1(
-        [&] {
-          sleepthreads::RunChangeKeyword(test_elements1_,
-                                         std::ref(result_keyword_1),
-                                         new_keyword,
-                                         password_1_,
-                                         sleep_values.at(i));
-        });
-    boost::thread thread_keyword_2(
-        [&] {
-          sleepthreads::RunChangeKeyword(test_elements2_,
-                                         std::ref(result_keyword_2),
-                                         new_keyword,
-                                         password_2_,
-                                         sleep_values.at(i));
-        });
-    thread_pin_1.join();
-    thread_pin_2.join();
-    thread_keyword_1.join();
-    thread_keyword_2.join();
+      boost::thread thread_pin_1(
+          [&] {
+            sleepthreads::RunChangePin(test_elements1,
+                                       std::ref(result_pin_1),
+                                       new_pin,
+                                       password_1_,
+                                       sleep_values.at(i));
+          });
+      boost::thread thread_pin_2(
+          [&] {
+            sleepthreads::RunChangePin(test_elements2,
+                                       std::ref(result_pin_2),
+                                       new_pin,
+                                       password_2_,
+                                       sleep_values.at(i));
+          });
+      boost::thread thread_keyword_1(
+          [&] {
+            sleepthreads::RunChangeKeyword(test_elements1,
+                                           std::ref(result_keyword_1),
+                                           new_keyword,
+                                           password_1_,
+                                           sleep_values.at(i));
+          });
+      boost::thread thread_keyword_2(
+          [&] {
+            sleepthreads::RunChangeKeyword(test_elements2,
+                                           std::ref(result_keyword_2),
+                                           new_keyword,
+                                           password_2_,
+                                           sleep_values.at(i));
+          });
+      thread_pin_1.join();
+      thread_pin_2.join();
+      thread_keyword_1.join();
+      thread_keyword_2.join();
 
-    if (result_pin_1 == kSuccess)
-      pin_1_ = new_pin;
-    if (result_pin_2 == kSuccess)
-      pin_2_ = new_pin;
-    if (result_keyword_1 == kSuccess)
-      keyword_1_ = new_keyword;
-    if (result_keyword_2 == kSuccess)
-      keyword_2_ = new_keyword;
+      if (result_pin_1 == kSuccess)
+        pin_1_ = new_pin;
+      if (result_pin_2 == kSuccess)
+        pin_2_ = new_pin;
+      if (result_keyword_1 == kSuccess)
+        keyword_1_ = new_keyword;
+      if (result_keyword_2 == kSuccess)
+        keyword_2_ = new_keyword;
 
-    EXPECT_FALSE(result_pin_1 == kSuccess &&
-                 result_pin_2 == kSuccess &&
-                 result_keyword_1 == kSuccess &&
-                 result_keyword_2 == kSuccess);
+      EXPECT_FALSE(result_pin_1 == kSuccess &&
+                   result_pin_2 == kSuccess &&
+                   result_keyword_1 == kSuccess &&
+                   result_keyword_2 == kSuccess);
 
-    int result_logout_1(DoFullLogOut(test_elements1_));
-    int result_logout_2(DoFullLogOut(test_elements2_));
-
-    if (result_logout_1 != kSuccess) {
-      if (result_logout_2 != kSuccess) {
-        LOG(kError) << "Both test elements failed to log out.";
-        break;
-      }
-      LOG(kError) << "Can't log out of test_elements1_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 2";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements2_; credentials 1";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2_, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2_));
-      break;
+      result_logout_1 = DoFullLogOut(test_elements1);
+      result_logout_2 = DoFullLogOut(test_elements2);
     }
-    if (result_logout_2 != kSuccess) {
-      LOG(kError) << "Can't log out of test_elements2_";
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 1";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_1_, pin_1_, password_1_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
-      LOG(kInfo) << "Checking LogIn/LogOut: test_elements1_; credentials 2";
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1_, keyword_2_, pin_2_, password_2_));
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1_));
+
+    EXPECT_EQ(kSuccess, result_logout_1);
+    EXPECT_EQ(kSuccess, result_logout_2);
+
+    {
+      PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+      LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+    }
+    {
+      PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+      LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+    }
+    if (result_logout_1 != kSuccess || result_logout_2 != kSuccess) {
       break;
     }
   }
 #endif
 }
-*/
 
 }  // namespace test
 
