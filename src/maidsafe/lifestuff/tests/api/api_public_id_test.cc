@@ -721,8 +721,8 @@ TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
 }
 
 TEST_F(TwoUsersApiTest, FUNC_ChangeProfilePicture) {
-  NonEmptyString file_1(RandomString(RandomUint32() % (30 * 1024) + (20 * 1024)));
-  NonEmptyString file_2(RandomString(RandomUint32() % (30 * 1024) + (20 * 1024)));
+  const NonEmptyString file_1(RandomString(RandomUint32() % (30 * 1024) + (20 * 1024)));
+  const NonEmptyString file_2(RandomString(RandomUint32() % (30 * 1024) + (20 * 1024)));
   NonEmptyString retrieved_1, retrieved_2;
 
   {

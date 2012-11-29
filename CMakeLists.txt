@@ -263,17 +263,15 @@ if(MAIDSAFE_TESTING)
                           OneUserApiTest.FUNC_LogInAfterCreateUser
                           OneUserApiTest.FUNC_CreatePublicIdCases
                           OneUserApiTest.FUNC_AddInvalidContact
-                          OneUserApiTest.FUNC_ChangeProfilePictureAfterSaveSession
                           TwoUsersApiTest.FUNC_SendFileSaveToGivenPath
                           TwoUsersApiTest.FUNC_SendFileSaveToDefaultLocation
                           TwoUsersApiTest.FUNC_SendFileAcceptToDeletedDefaultLocation
                           TwoUsersApiTest.FUNC_SendFileWithRejection
-                          TwoUsersApiTest.FUNC_ProfilePicture
-                          TwoUsersApiTest.FUNC_ProfilePictureAndLogOut
                           #TwoUsersApiTest.FUNC_RemoveContact
                           #TwoUsersApiTest.FUNC_RemoveContactAddContact
                           TwoUsersApiTest.FUNC_AddContactWithMessage
                           #TwoUsersApiTest.FUNC_AddThenRemoveOfflineUser
+                          TwoUsersApiTest.FUNC_ChangeProfilePicture
                           )
 
   add_project_experimental()
