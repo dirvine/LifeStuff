@@ -14,7 +14,7 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/tests/network_helper.h"
+#include "maidsafe/lifestuff/tests/api/network_helper.h"
 
 #include <algorithm>
 #include <string>

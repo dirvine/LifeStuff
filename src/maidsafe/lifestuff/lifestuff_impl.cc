@@ -132,15 +132,66 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
     Sleep(bptime::milliseconds(100 + RandomUint32() % 1000));
     client_controller_ = std::make_shared<priv::lifestuff_manager::ClientController>(
                              slots_.update_available_slot);
-    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints))
+    if (client_controller_->BootstrapEndpoints(bootstrap_endpoints)) {
       counter = kRetryLimit;
-    else
+    } else {
       LOG(kWarning) << "Failure to initialise client controller. Try #" << counter;
+    }
   }
 
   session_.set_bootstrap_endpoints(bootstrap_endpoints);
 
   state_ = kConnected;
+}
+
+LifeStuffImpl::~LifeStuffImpl() {
+  // !!! DO NOT REMOVE TRY/CATCH. This function MUST NOT THROW !!!
+  try {
+    int result(AttemptCleanQuit());
+    if (result != kSuccess) {
+      LOG(kWarning) << "Quitting has failed in one of the clean up tasks: " << result;
+    }
+
+    boost::system::error_code error_code;
+    fs::remove_all(buffered_path_, error_code);
+    if (error_code) {
+      LOG(kWarning) << "Failed to remove buffered chunk store path: " << error_code.message();
+    }
+
+    asio_service_.Stop();
+  }
+  catch(const std::exception& e) {
+    LOG(kWarning) << "AttemptCleanQuit has failed with exception: " << e.what();
+  }
+}
+
+int LifeStuffImpl::AttemptCleanQuit() {
+  if (state_ == kLoggedIn) {
+    int result;
+    if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
+      result = StopMessagesAndIntros();
+      if (result != kSuccess) {
+        LOG(kWarning) << "Should StopMessagesAndIntros, but failed: " << result;
+        return result;
+      }
+    }
+    if ((kDriveMounted & logged_in_state_) == kDriveMounted) {
+      result = UnMountDrive();
+      if (result != kSuccess) {
+        LOG(kWarning) << "Should UnMountDrive, but failed: " << result;
+        return result;
+      }
+    }
+    if ((kCredentialsLoggedIn & logged_in_state_) == kCredentialsLoggedIn) {
+      result = LogOut();
+      if (result != kSuccess) {
+        LOG(kWarning) << "Should log out, but failed: " << result;
+        return result;
+      }
+    }
+  }
+
+  return kSuccess;
 }
 
 int LifeStuffImpl::MakeAnonymousComponents() {
@@ -167,15 +218,6 @@ int LifeStuffImpl::MakeAnonymousComponents() {
   return kSuccess;
 }
 
-LifeStuffImpl::~LifeStuffImpl() {
-  boost::system::error_code error_code;
-  fs::remove_all(buffered_path_, error_code);
-  if (error_code)
-    LOG(kWarning) << "Failed to remove buffered chunk store path.";
-
-  asio_service_.Stop();
-}
-
 void LifeStuffImpl::ConnectToSignals() {
   logged_in_components_->message_handler.ConnectToChatSignal(slots_.chat_slot);
   logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(
@@ -199,8 +241,9 @@ void LifeStuffImpl::ConnectToSignals() {
            const std::string& removal_message,
            const NonEmptyString& /*timestamp*/) {
          int result(RemoveContact(own_public_id, contact_public_id, removal_message, false));
-         if (result != kSuccess)
+         if (result != kSuccess) {
            LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
+         }
      });
 }
 
@@ -1147,7 +1190,7 @@ int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
   int result(kSuccess);
   result = client_node_->Stop();
   if (result != kSuccess) {
-      LOG(kError) << "Failed to stop client container: " << result;
+    LOG(kError) << "Failed to stop client container: " << result;
     return result;
   }
   Fob maid(session_.passport().SignaturePacketDetails(passport::kMaid, true));
@@ -1193,10 +1236,10 @@ int LifeStuffImpl::CheckStateAndFullAccess() const {
     return kWrongState;
   }
 
-//  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
-//    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
-//    return kWrongLoggedInState;
-//  }
+  if ((kDriveMounted & logged_in_state_) != kDriveMounted) {
+    LOG(kError) << "Incorrect state. Drive should be mounted: " << logged_in_state_;
+    return kWrongLoggedInState;
+  }
 
   SessionAccessLevel session_access_level(session_.session_access_level());
   if (session_access_level != kFullAccess) {

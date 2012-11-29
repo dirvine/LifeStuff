@@ -11,7 +11,10 @@
  *******************************************************************************
  */
 
+#include <set>
+
 #include "boost/filesystem.hpp"
+#include "boost/filesystem/fstream.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 namespace fs = boost::filesystem;
@@ -52,6 +55,23 @@ bool DoRandomEvents(fs::path mount_dir, fs::path mirror_dir);
 void PrintResult(const bptime::ptime &start_time,
                   const bptime::ptime &stop_time,
                   size_t size, TestOperationCode operation_code);
+bool ExcludedFilename(const fs::path &path);
+fs::path GenerateFile(const fs::path &path,
+                      std::uint32_t size = 0,
+                      const std::string &content = "");
+fs::path GenerateDirectory(const fs::path &path);
+void GenerateFileSizes(std::uint32_t max_size,
+                       std::uint32_t min_size,
+                       size_t count,
+                       std::vector<std::uint32_t> *file_sizes);
+std::uint32_t CreateTestTreeStructure(const fs::path &base_path,
+                                      std::vector<fs::path> *directories,
+                                      std::set<fs::path> *files,
+                                      std::uint32_t directory_node_count,
+                                      std::uint32_t file_node_count = 100,
+                                      std::uint32_t max_filesize = 5 * 1024 * 1024,
+                                      std::uint32_t min_size = 1024);
+void CopyRecursiveDirectory(const fs::path &src, const fs::path &dest);
 
 }  // namespace test
 

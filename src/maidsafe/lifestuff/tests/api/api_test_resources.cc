@@ -492,9 +492,36 @@ void RunLogIn(LifeStuff& test_elements,
 
 }  // namespace sleepthreads
 
+OneUserApiTest::OneUserApiTest()
+  : test_dir_(maidsafe::test::CreateTestPath()),
+    keyword_(RandomAlphaNumericString(6)),
+    pin_(CreatePin()),
+    password_(RandomAlphaNumericString(6)),
+    network_(),
+    testing_variables_(),
+    lifestuff_slots_() {}
+
+OneUserApiTest::~OneUserApiTest() { network_.StopLocalNetwork(); }
+
 void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10)); }
 
-void OneUserApiTest::TearDown() { network_.StopLocalNetwork(); }
+TwoUsersApiTest::TwoUsersApiTest()
+  : test_dir_(maidsafe::test::CreateTestPath()),
+    keyword_1_(RandomAlphaNumericString(6)),
+    pin_1_(CreatePin()),
+    password_1_(RandomAlphaNumericString(6)),
+    public_id_1_(RandomAlphaNumericString(5)),
+    keyword_2_(RandomAlphaNumericString(6)),
+    pin_2_(CreatePin()),
+    password_2_(RandomAlphaNumericString(6)),
+    public_id_2_(RandomAlphaNumericString(5)),
+    testing_variables_1_(),
+    testing_variables_2_(),
+    lifestuff_slots_1_(),
+    lifestuff_slots_2_(),
+    network_() {}
+
+TwoUsersApiTest::~TwoUsersApiTest() { network_.StopLocalNetwork(); }
 
 void TwoUsersApiTest::SetUp() {
   ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
@@ -507,8 +534,6 @@ void TwoUsersApiTest::SetUp() {
                                          keyword_1_, pin_1_, password_1_, public_id_1_,
                                          keyword_2_, pin_2_, password_2_, public_id_2_));
 }
-
-void TwoUsersApiTest::TearDown() { network_.StopLocalNetwork(); }
 
 }  // namespace test
 

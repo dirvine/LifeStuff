@@ -88,21 +88,21 @@ set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
                       "${PATH_TO_TESTS}/message_handler_test.cc")
 set(STORAGE_TEST_CC "${PATH_TO_TESTS}/storage_test.cc")
 set(ROUTINGS_HANDLER_TEST_CC "${PATH_TO_TESTS}/routings_handler_test.cc")
-set(API_TEST_CC "${PATH_TO_TESTS}/api/full_api_test.cc"
-                "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
-                "${PATH_TO_TESTS}/api/api_public_id_test.cc"
-                "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_USER_CREDENTIALS_TEST_CC "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
+                                 "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/api/api_public_id_test.cc"
+                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/api/api_virtual_drive_test.cc"
+                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/api/api_real_drive_test.cc")
 set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
                        "${PATH_TO_TESTS}/session_test.cc"
                        "${PATH_TO_TESTS}/utils_test.cc")
-set(VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/virtual_drive_test.cc"
-                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
-set(REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/real_drive_test.cc")
 set(TEST_UTILS_CC "${PATH_TO_TESTS}/test_utils.cc")
 set(TEST_UTILS_H "${PATH_TO_TESTS}/test_utils.h")
 set(TEST_UTILS_FILES ${TEST_UTILS_CC} ${TEST_UTILS_H})
-set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
-set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
+set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/api/network_helper.cc")
+set(NETWORK_HELPER_H "${PATH_TO_TESTS}/api/network_helper.h")
 set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
 set(NETWORK_HELPER_STYLE ${NETWORK_HELPER_FILES})
 
@@ -111,10 +111,11 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${PUBLIC_ID_TEST_CC}
                                         ${STORAGE_TEST_CC}
                                         ${ROUTINGS_HANDLER_TEST_CC}
-                                        ${API_TEST_CC}
+                                        ${API_USER_CREDENTIALS_TEST_CC}
+                                        ${API_PUBLIC_ID_TEST_CC}
+                                        ${API_VIRTUAL_DRIVE_TEST_CC}
+                                        ${API_REAL_DRIVE_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
-                                        ${VIRTUAL_DRIVE_TEST_CC}
-                                        ${REAL_DRIVE_TEST_CC}
                                         ${NETWORK_HELPER_CC}
                                         ${TEST_UTILS_CC})
 
@@ -156,9 +157,10 @@ set_target_properties(lifestuff_python_api PROPERTIES PREFIX ""
                                                       FOLDER "MaidSafe/Python Bindings")
 
 if(MAIDSAFE_TESTING)
-  ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_drive_virtual "Tests/LifeStuff" ${VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_drive_real "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
+  ms_add_executable(TESTlifestuff_api_user_credentials "Tests/LifeStuff" ${API_USER_CREDENTIALS_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_public_id "Tests/LifeStuff" ${API_PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_virtual_drive "Tests/LifeStuff" ${API_VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_real_drive "Tests/LifeStuff" ${API_REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
 endif()
 
@@ -202,11 +204,13 @@ if(MAIDSAFE_TESTING)
                              ${CMAKE_COMMAND} -E echo "#endif  // MAIDSAFE_PD_CLIENT_KEYS_HELPER_H_" >> ${PROJECT_BINARY_DIR}/keys_helper.h
                      VERBATIM
                      )
-  target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_api lifestuff_vault pd_key_helper lifestuff_mgr)
-  target_link_libraries(TESTlifestuff_drive_virtual maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_drive_virtual lifestuff_vault pd_key_helper lifestuff_mgr)
-  target_link_libraries(TESTlifestuff_drive_real maidsafe_drive)
+  target_link_libraries(TESTlifestuff_api_user_credentials maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_user_credentials lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_api_public_id maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_public_id lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_api_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_api_real_drive maidsafe_drive)
   target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager)
   add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
 endif()
@@ -240,13 +244,17 @@ if(MAIDSAFE_TESTING)
                  ${PUBLIC_ID_TEST_CC}
                  ${STORAGE_TEST_CC}
                  ${ROUTINGS_HANDLER_TEST_CC}
-                 ${API_TEST_CC}
-                 ${VIRTUAL_DRIVE_TEST_CC}
-                 ${REAL_DRIVE_TEST_CC}
+                 ${API_USER_CREDENTIALS_TEST_CC}
+                 ${API_PUBLIC_ID_TEST_CC}
+                 ${API_VIRTUAL_DRIVE_TEST_CC}
+                 ${API_REAL_DRIVE_TEST_CC}
                  ${NETWORK_HELPER_STYLE})
 
   add_gtests(TESTlifestuff_general)
-  add_gtests(TESTlifestuff_api)
+  add_gtests(TESTlifestuff_api_user_credentials)
+  add_gtests(TESTlifestuff_api_public_id)
+  add_gtests(TESTlifestuff_api_virtual_drive)
+  add_gtests(TESTlifestuff_api_real_drive)
 
   label_as_critical_tests(SessionTest.BEH_SetsGetsAndReset
                           SessionTest.BEH_SessionName
@@ -263,17 +271,15 @@ if(MAIDSAFE_TESTING)
                           OneUserApiTest.FUNC_LogInAfterCreateUser
                           OneUserApiTest.FUNC_CreatePublicIdCases
                           OneUserApiTest.FUNC_AddInvalidContact
-                          OneUserApiTest.FUNC_ChangeProfilePictureAfterSaveSession
                           TwoUsersApiTest.FUNC_SendFileSaveToGivenPath
                           TwoUsersApiTest.FUNC_SendFileSaveToDefaultLocation
                           TwoUsersApiTest.FUNC_SendFileAcceptToDeletedDefaultLocation
                           TwoUsersApiTest.FUNC_SendFileWithRejection
-                          TwoUsersApiTest.FUNC_ProfilePicture
-                          TwoUsersApiTest.FUNC_ProfilePictureAndLogOut
                           #TwoUsersApiTest.FUNC_RemoveContact
                           #TwoUsersApiTest.FUNC_RemoveContactAddContact
                           TwoUsersApiTest.FUNC_AddContactWithMessage
                           #TwoUsersApiTest.FUNC_AddThenRemoveOfflineUser
+                          TwoUsersApiTest.FUNC_ChangeProfilePicture
                           )
 
   add_project_experimental()
