@@ -54,34 +54,45 @@ struct NonEmptyStringConverter {
   }
 };
 
-// struct PathExtractor {
-//   extract(const boost::filesystem::path& path) ...
-// };
+struct PathExtractor {
+  static void* convertible(PyObject* obj_ptr) {
+    return PyString_Check(obj_ptr) ? obj_ptr : nullptr;
+  }
+  static void construct(PyObject* obj_ptr, bpy::converter::rvalue_from_python_stage1_data* data) {
+    const char* value = PyString_AsString(obj_ptr);
+    assert(value);
+    typedef bpy::converter::rvalue_from_python_storage<boost::filesystem::path> storage_type;
+    void* storage = reinterpret_cast<storage_type*>(data)->storage.bytes;
+    new(storage) boost::filesystem::path(value);
+    data->convertible = storage;
+  }
+};
 
-boost::filesystem::path ExtractPath(const bpy::str& s) {
-  return boost::filesystem::path(std::string(bpy::extract<const char*>(s)));
-}
-
-maidsafe::NonEmptyString ExtractNonEmptyString(const bpy::str& s) {
-  return maidsafe::NonEmptyString(std::string(bpy::extract<const char*>(s)));
-}
-
-// TODO(Steve) get this to work...
-std::string TestConversion(const maidsafe::NonEmptyString& nes) {
-  return nes.string();
-}
+struct NonEmptyStringExtractor {
+  static void* convertible(PyObject* obj_ptr) {
+    return PyString_Check(obj_ptr) ? obj_ptr : nullptr;
+  }
+  static void construct(PyObject* obj_ptr, bpy::converter::rvalue_from_python_stage1_data* data) {
+    const char* value = PyString_AsString(obj_ptr);
+    assert(value);
+    typedef bpy::converter::rvalue_from_python_storage<maidsafe::NonEmptyString> storage_type;
+    void* storage = reinterpret_cast<storage_type*>(data)->storage.bytes;
+    new(storage) maidsafe::NonEmptyString(value);
+    data->convertible = storage;
+  }
+};
 
 }  // namespace
 
 BOOST_PYTHON_MODULE(lifestuff_python_api) {
-  bpy::def("TestConversion", TestConversion);
-
   bpy::to_python_converter<boost::filesystem::path, PathConverter>();
   bpy::to_python_converter<maidsafe::NonEmptyString, NonEmptyStringConverter>();
-//   boost::lvalue_from_pytype<PathExtractor, bpy::str>();
-//   bpy::converter::registry::insert(&ExtractPath, bpy::type_id<boost::filesystem::path>);
-//   bpy::converter::registry::insert(&ExtractNonEmptyString,
-//                                    bpy::type_id<maidsafe::NonEmptyString>);
+  bpy::converter::registry::push_back(&PathExtractor::convertible,
+                                      &PathExtractor::construct,
+                                      bpy::type_id<boost::filesystem::path>());
+  bpy::converter::registry::push_back(&NonEmptyStringExtractor::convertible,
+                                      &NonEmptyStringExtractor::construct,
+                                      bpy::type_id<maidsafe::NonEmptyString>());
 
   bpy::class_<ls::LifeStuff>(
       "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
