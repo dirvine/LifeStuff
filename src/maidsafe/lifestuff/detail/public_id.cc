@@ -954,12 +954,13 @@ void PublicId::ProccessFriendRequest(Contact& contact,
                                      const pca::SignedData& signed_data,
                                      int have_contact) {
   if (have_contact == kSuccess) {
-    if (contact.status == kConfirmed && introduction.inbox_name() == contact.inbox_name.string())
+    if (contact.status == kConfirmed && introduction.inbox_name() == contact.inbox_name.string()) {
       ProcessMisplacedContactRequest(contact, own_public_id);
-    else if (contact.status == kRequestSent)
+    } else if (contact.status == kRequestSent) {
       ProcessRequestWhenExpectingResponse(contact, contacts_handler, own_public_id, introduction);
-    else
+    } else {
       LOG(kError) << "Introduction of type kFriendRequest doesn't match current state!";
+    }
   } else {
     ProcessNewContact(contact, contacts_handler, own_public_id, introduction, signed_data);
   }
@@ -970,10 +971,11 @@ void PublicId::ProccessFriendResponse(Contact& contact,
                                       const NonEmptyString& own_public_id,
                                       const Introduction& introduction,
                                       int have_contact) {
-  if (have_contact == kSuccess && contact.status == kRequestSent)
+  if (have_contact == kSuccess && contact.status == kRequestSent) {
     ProcessContactConfirmation(contact, contacts_handler, own_public_id, introduction);
-  else
+  } else {
     LOG(kError) << "Introduction of type kFriendResponse doesn't match current state!";
+  }
 }
 
 void PublicId::ProcessDefriending(const NonEmptyString& own_public_id,
@@ -1049,12 +1051,13 @@ void PublicId::ProcessLifestuffCardChanged(Contact& contact,
                                            const Introduction& introduction,
                                            int have_contact) {
   if (have_contact == kSuccess &&
-      (contact.status == kConfirmed || contact.status == kPendingResponse))
+      (contact.status == kConfirmed || contact.status == kPendingResponse)) {
     lifestuff_card_updated_signal_(own_public_id,
                                    contact.public_id,
                                    NonEmptyString(introduction.timestamp()));
-  else
+  } else {
     LOG(kError) << "Introduction of type kLifestuffCardChanged doesn't match current state!";
+  }
 }
 
 void PublicId::ProcessNewContact(Contact& contact,
@@ -1206,12 +1209,13 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
                                 const std::string& inbox_name) {
   // Get our MMID name, and MPID private key
   Identity inbox_identity;
-  if (inbox_name.empty())
+  if (inbox_name.empty()) {
     inbox_identity = passport_.SignaturePacketDetails(passport::kMmid,
                                                       true,
                                                       public_id).identity;
-  else
+  } else {
     inbox_identity = Identity(inbox_name);
+  }
 
   Fob mpid(passport_.SignaturePacketDetails(passport::kMpid, true, public_id));
 
@@ -1255,8 +1259,9 @@ int PublicId::InformContactInfo(const NonEmptyString& public_id,
     // Store encrypted intro at recipient's MPID's name
     priv::ChunkId contact_id(MaidsafeContactIdName(recipient_public_id));
     auto callback = [&mutex, &cond_var, &results, i, contact_id] (const bool& response) {
-      if (!response)
+      if (!response) {
         LOG(kError) << "Failed to modify " << Base32Substr(contact_id);
+      }
       utils::ChunkStoreOperationCallback(response, &mutex, &cond_var, &results[i]);
     };
     if (!remote_chunk_store_.Modify(contact_id,

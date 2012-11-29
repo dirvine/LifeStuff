@@ -284,8 +284,9 @@ void Session::set_unique_user_id(const Identity& unique_user_id) {
 }
 
 void Session::set_root_parent_id(const std::string& root_parent_id) {
-  if (root_parent_id.empty())
+  if (root_parent_id.empty()) {
     LOG(kWarning) << "Passed empty root parent ID.";
+  }
 
   std::lock_guard<std::mutex> lock(user_details_mutex_);
   user_details_.root_parent_id = root_parent_id;
@@ -294,16 +295,18 @@ void Session::set_root_parent_id(const std::string& root_parent_id) {
 }
 
 void Session::set_max_space(const int64_t& max_space) {
-  if (max_space == 0)
+  if (max_space == 0) {
     LOG(kWarning) << "Passed zero maximum space.";
+  }
 
   std::lock_guard<std::mutex> lock(user_details_mutex_);
   user_details_.max_space = max_space;
 }
 
 void Session::set_used_space(const int64_t& used_space) {
-  if (used_space > user_details_.max_space)
+  if (used_space > user_details_.max_space) {
     LOG(kWarning) << "Passed used space greater than maximum.";
+  }
 
   std::lock_guard<std::mutex> lock(user_details_mutex_);
   user_details_.used_space = used_space;

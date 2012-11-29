@@ -244,14 +244,8 @@ void RunLogIn(LifeStuff& test_elements,
 
 class OneUserApiTest : public testing::Test {
  public:
-  OneUserApiTest()
-    : test_dir_(maidsafe::test::CreateTestPath()),
-      keyword_(RandomAlphaNumericString(6)),
-      pin_(CreatePin()),
-      password_(RandomAlphaNumericString(6)),
-      network_(),
-      testing_variables_(),
-      lifestuff_slots_() {}
+  OneUserApiTest();
+  ~OneUserApiTest();
 
  protected:
   maidsafe::test::TestPath test_dir_;
@@ -263,28 +257,12 @@ class OneUserApiTest : public testing::Test {
   Slots lifestuff_slots_;
 
   virtual void SetUp();
-
-  virtual void TearDown();
 };
 
 class TwoUsersApiTest : public testing::Test {
  public:
-  TwoUsersApiTest()
-    : test_dir_(maidsafe::test::CreateTestPath()),
-      keyword_1_(RandomAlphaNumericString(6)),
-      pin_1_(CreatePin()),
-      password_1_(RandomAlphaNumericString(6)),
-      public_id_1_(RandomAlphaNumericString(5)),
-      keyword_2_(RandomAlphaNumericString(6)),
-      pin_2_(CreatePin()),
-      password_2_(RandomAlphaNumericString(6)),
-      public_id_2_(RandomAlphaNumericString(5)),
-      testing_variables_1_(),
-      testing_variables_2_(),
-      lifestuff_slots_1_(),
-      lifestuff_slots_2_(),
-      network_() {}
-
+  TwoUsersApiTest();
+  ~TwoUsersApiTest();
  protected:
   maidsafe::test::TestPath test_dir_;
   NonEmptyString keyword_1_;
@@ -302,8 +280,6 @@ class TwoUsersApiTest : public testing::Test {
   NetworkHelper network_;
 
   virtual void SetUp();
-
-  virtual void TearDown();
 };
 
 }  // namespace test

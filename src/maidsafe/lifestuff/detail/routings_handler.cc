@@ -202,10 +202,11 @@ bool RoutingsHandler::Send(const Identity& source_id,
       response_functor = [&] (const std::vector<std::string>& messages) {
                            {
                              std::lock_guard<std::mutex> message_lock(message_mutex);
-                             if (!messages.empty())
+                             if (!messages.empty()) {
                                message_from_routing = messages.front();
-                             else
+                             } else {
                                LOG(kInfo) << "Message count: " << messages.size();
+                             }
                              message_received = true;
                            }
                            condition_variable.notify_one();

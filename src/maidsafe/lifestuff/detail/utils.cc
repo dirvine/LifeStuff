@@ -389,10 +389,11 @@ int CopyDirectoryContent(const fs::path& from, const fs::path& to) {
           return kGeneralError;
         }
       } else {
-        if (fs::exists(*it))
+        if (fs::exists(*it)) {
           LOG(kError) << "Unknown file type found.";
-        else
+        } else {
           LOG(kError) << "Nonexistant file type found.";
+        }
         return kGeneralError;
       }
     }
