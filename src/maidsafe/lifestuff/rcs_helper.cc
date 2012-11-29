@@ -74,7 +74,7 @@ std::shared_ptr<pd::Node> SetupNode(
   int result(node->Start(base_dir / "buffered_chunk_store", peer_endpoints));
   if (result != kSuccess) {
     LOG(kError) << "Failed to start PD client node.  Result: " << result;
-    throw std::exception();
+    throw std::runtime_error("failed to start node");
   }
 
   LOG(kInfo) << "Started PD client node.";

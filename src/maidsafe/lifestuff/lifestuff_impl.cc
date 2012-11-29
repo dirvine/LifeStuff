@@ -51,31 +51,31 @@ const NonEmptyString kDriveLogo("Lifestuff Drive");
 
 void CheckSlots(Slots& slot_functions) {
   if (!slot_functions.chat_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing chat_slot");
   if (!slot_functions.file_success_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing file_success_slot");
   if (!slot_functions.file_failure_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing file_failure_slot");
   if (!slot_functions.new_contact_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing new_contact_slot");
   if (!slot_functions.confirmed_contact_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing confirmed_contact_slot");
   if (!slot_functions.profile_picture_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing profile_picture_slot");
   if (!slot_functions.contact_presence_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing contact_presence_slot");
   if (!slot_functions.contact_deletion_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing contact_deletion_slot");
   if (!slot_functions.lifestuff_card_update_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing lifestuff_card_update_slot");
   if (!slot_functions.network_health_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing network_health_slot");
   if (!slot_functions.immediate_quit_required_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing immediate_quit_required_slot");
   if (!slot_functions.update_available_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing update_available_slot");
   if (!slot_functions.operation_progress_slot)
-    throw std::exception();
+    throw std::invalid_argument("missing operation_progress_slot");
 }
 
 struct LifeStuffImpl::LoggedInComponents {
@@ -195,12 +195,14 @@ int LifeStuffImpl::AttemptCleanQuit() {
 }
 
 int LifeStuffImpl::MakeAnonymousComponents() {
-  remote_chunk_store_ = BuildChunkStore(buffered_path_,
-                                        session_.bootstrap_endpoints(),
-                                        client_node_,
-                                        nullptr);
-  if (!remote_chunk_store_) {
-    LOG(kError) << "Could not initialise chunk store.";
+  try {
+    remote_chunk_store_ = BuildChunkStore(buffered_path_,
+                                          session_.bootstrap_endpoints(),
+                                          client_node_,
+                                          nullptr);
+  }
+  catch(const std::exception& ex) {
+    LOG(kError) << "Could not initialise chunk store: " << ex.what();
     return kInitialiseChunkStoreFailure;
   }
 
