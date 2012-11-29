@@ -36,7 +36,7 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
-#include "maidsafe/lifestuff/tests/network_helper.h"
+#include "maidsafe/lifestuff/tests/api/network_helper.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
