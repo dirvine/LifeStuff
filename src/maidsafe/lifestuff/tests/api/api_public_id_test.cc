@@ -185,64 +185,6 @@ TEST_F(OneUserApiTest, FUNC_AddOwnPublicIdAsContact) {
   EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
 }
 
-TEST_F(OneUserApiTest, FUNC_ChangeProfilePictureAfterSaveSession) {
-  NonEmptyString public_id(RandomAlphaNumericString(5)), retrieved_picture;
-  {
-    PopulateSlots(lifestuff_slots_, testing_variables_);
-    LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-    EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-    EXPECT_EQ(kSuccess, test_elements.CreatePublicId(public_id));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-  }
-
-  for (int n(1001); n > 1; n-=100) {
-    NonEmptyString profile_picture1(RandomString(1177 * n)),
-                   profile_picture2(RandomString(1177 * n));
-    {
-      PopulateSlots(lifestuff_slots_, testing_variables_);
-      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-      EXPECT_EQ(kSuccess, test_elements.ChangeProfilePicture(public_id, profile_picture1));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture1 == retrieved_picture);
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    }
-
-    {
-      PopulateSlots(lifestuff_slots_, testing_variables_);
-      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture1 == retrieved_picture);
-      EXPECT_EQ(kSuccess, test_elements.ChangeProfilePicture(public_id, profile_picture2));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture2 == retrieved_picture);
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    }
-
-    {
-      PopulateSlots(lifestuff_slots_, testing_variables_);
-      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture2 == retrieved_picture);
-      EXPECT_EQ(kSuccess, test_elements.ChangeProfilePicture(public_id, profile_picture1));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture1 == retrieved_picture);
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    }
-
-    {
-      PopulateSlots(lifestuff_slots_, testing_variables_);
-      LifeStuff test_elements(lifestuff_slots_, *test_dir_);
-      EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, pin_, password_));
-      retrieved_picture = test_elements.GetOwnProfilePicture(public_id);
-      EXPECT_TRUE(profile_picture1 == retrieved_picture);
-      EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
-    }
-  }
-}
-
 TEST_F(TwoUsersApiTest, FUNC_CreateSamePublicIdConsecutively) {
   NonEmptyString new_public_id(RandomAlphaNumericString(6));
   {
@@ -590,94 +532,6 @@ TEST(TwoUsersApiTest, FUNC_SendFileWithRejection) {
 }
 */
 
-TEST_F(TwoUsersApiTest, FUNC_ProfilePicture) {
-  NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
-  {
-    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
-    // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, file_content2));
-    Sleep(bptime::seconds(1));
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-  }
-  {
-    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-    while (!testing_variables_1_.picture_updated)
-      Sleep(bptime::milliseconds(100));
-
-    file_content1 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
-    EXPECT_TRUE(file_content2 == file_content1);
-    EXPECT_NE(kSuccess, test_elements1.ChangeProfilePicture(public_id_1_, NonEmptyString(" ")));
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-  }
-  {
-    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
-    // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-  }
-  {
-    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-    while (!testing_variables_1_.picture_updated)
-      Sleep(bptime::milliseconds(100));
-
-    file_content1 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
-    EXPECT_TRUE(kBlankProfilePicture == file_content1);
-
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-  }
-}
-
-TEST_F(TwoUsersApiTest, FUNC_ProfilePictureAndLogOut) {
-  NonEmptyString file_content1(RandomString(1)), file_content2(RandomString(5 * 1024));
-  {
-    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
-    // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, file_content2));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-  }
-
-  {
-    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-    file_content1 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
-    EXPECT_TRUE(file_content2 == file_content1);
-    EXPECT_NE(kSuccess, test_elements1.ChangeProfilePicture(public_id_1_, NonEmptyString(" ")));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-  }
-
-  {
-    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
-    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
-    // Setting of profile image
-    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
-  }
-
-  {
-    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
-    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
-    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
-    file_content1 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
-    EXPECT_TRUE(kBlankProfilePicture == file_content1);
-    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
-  }
-}
-
 TEST_F(TwoUsersApiTest, FUNC_RemoveContact) {
   NonEmptyString removal_message("It's not me, it's you.");
   {
@@ -863,6 +717,75 @@ TEST_F(TwoUsersApiTest, FUNC_AddThenRemoveOfflineUser) {
     EXPECT_EQ(1, test_elements2.GetContacts(public_id_2_).size());
 
     DoFullLogOut(test_elements2);
+  }
+}
+
+TEST_F(TwoUsersApiTest, FUNC_ChangeProfilePicture) {
+  const NonEmptyString file_1(RandomString((RandomUint32() % 30 + 20) * 1024));
+  const NonEmptyString file_2(RandomString((RandomUint32() % 30 + 20) * 1024));
+  NonEmptyString retrieved_1, retrieved_2;
+
+  {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    retrieved_2 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
+    EXPECT_EQ(kBlankProfilePicture, retrieved_2);
+    retrieved_1 = test_elements1.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(kBlankProfilePicture, retrieved_1);
+    EXPECT_EQ(kSuccess, test_elements1.ChangeProfilePicture(public_id_1_, file_1));
+    retrieved_1 = test_elements1.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(file_1, retrieved_1);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+  }
+  {
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+    retrieved_1 = test_elements2.GetContactProfilePicture(public_id_1_, public_id_2_);
+    EXPECT_EQ(file_1, retrieved_1);
+    retrieved_2 = test_elements2.GetOwnProfilePicture(public_id_2_);
+    EXPECT_EQ(kBlankProfilePicture, retrieved_2);
+    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, file_2));
+    retrieved_2 = test_elements2.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(file_2, retrieved_2);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+  }
+  {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    retrieved_2 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
+    EXPECT_EQ(file_2, retrieved_2);
+    retrieved_1 = test_elements1.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(file_1, retrieved_1);
+    EXPECT_NE(kSuccess, test_elements1.ChangeProfilePicture(public_id_1_, NonEmptyString(" ")));
+    retrieved_1 = test_elements1.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(file_1, retrieved_1);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
+  }
+  {
+    PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
+    LifeStuff test_elements2(lifestuff_slots_2_, *test_dir_ / "elements2");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements2, keyword_2_, pin_2_, password_2_));
+    retrieved_1 = test_elements2.GetContactProfilePicture(public_id_1_, public_id_2_);
+    EXPECT_EQ(file_1, retrieved_1);
+    retrieved_2 = test_elements2.GetOwnProfilePicture(public_id_2_);
+    EXPECT_EQ(file_2, retrieved_2);
+    EXPECT_EQ(kSuccess, test_elements2.ChangeProfilePicture(public_id_2_, kBlankProfilePicture));
+    retrieved_2 = test_elements2.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(kBlankProfilePicture, retrieved_2);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements2));
+  }
+  {
+    PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
+    LifeStuff test_elements1(lifestuff_slots_1_, *test_dir_ / "elements1");
+    EXPECT_EQ(kSuccess, DoFullLogIn(test_elements1, keyword_1_, pin_1_, password_1_));
+    retrieved_2 = test_elements1.GetContactProfilePicture(public_id_1_, public_id_2_);
+    EXPECT_EQ(kBlankProfilePicture, retrieved_2);
+    retrieved_1 = test_elements1.GetOwnProfilePicture(public_id_1_);
+    EXPECT_EQ(file_1, retrieved_1);
+    EXPECT_EQ(kSuccess, DoFullLogOut(test_elements1));
   }
 }
 

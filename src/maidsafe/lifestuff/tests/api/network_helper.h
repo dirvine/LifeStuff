@@ -14,8 +14,8 @@
 * ============================================================================
 */
 
-#ifndef MAIDSAFE_LIFESTUFF_TESTS_NETWORK_HELPER_H_
-#define MAIDSAFE_LIFESTUFF_TESTS_NETWORK_HELPER_H_
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_API_NETWORK_HELPER_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_API_NETWORK_HELPER_H_
 
 #include <memory>
 #include <utility>
@@ -63,4 +63,4 @@ class NetworkHelper {
 
 }  // namespace maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_TESTS_NETWORK_HELPER_H_
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_API_NETWORK_HELPER_H_
