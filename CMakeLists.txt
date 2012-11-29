@@ -98,6 +98,9 @@ set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
 set(VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/virtual_drive_test.cc"
                           "${PATH_TO_TESTS}/api/api_test_resources.cc")
 set(REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/real_drive_test.cc")
+set(TEST_UTILS_CC "${PATH_TO_TESTS}/test_utils.cc")
+set(TEST_UTILS_H "${PATH_TO_TESTS}/test_utils.h")
+set(TEST_UTILS_FILES ${TEST_UTILS_CC} ${TEST_UTILS_H})
 set(NETWORK_HELPER_CC "${PATH_TO_TESTS}/network_helper.cc")
 set(NETWORK_HELPER_H "${PATH_TO_TESTS}/network_helper.h")
 set(NETWORK_HELPER_FILES ${NETWORK_HELPER_CC} ${NETWORK_HELPER_H})
@@ -112,10 +115,12 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${LIFESTUFF_TESTS_CC}
                                         ${VIRTUAL_DRIVE_TEST_CC}
                                         ${REAL_DRIVE_TEST_CC}
-                                        ${NETWORK_HELPER_CC})
+                                        ${NETWORK_HELPER_CC}
+                                        ${TEST_UTILS_CC})
 
 source_group("Tests Header Files" FILES ${PROJECT_BINARY_DIR}/keys_helper.h
-                                        ${NETWORK_HELPER_H})
+                                        ${NETWORK_HELPER_H}
+                    ${TEST_UTILS_H})
 
 source_group("Tests Proto Files" FILES ${NETWORK_HELPER_PROTOS})
 
@@ -142,10 +147,18 @@ if(MAIDSAFE_TESTING)
 endif()
 
 ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
+
+add_library(lifestuff_python_api SHARED ${PATH_TO_SRC}/python_bindings/lifestuff_python_api.cc)
+target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
+set_target_properties(lifestuff_python_api PROPERTIES PREFIX ""
+                                                      DEBUG_POSTFIX ""
+                                                      LABELS Lifestuff
+                                                      FOLDER "MaidSafe/Python Bindings")
+
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api "Tests/LifeStuff" ${API_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_virtual_drive "Tests/LifeStuff" ${VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_real_drive "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC})
+  ms_add_executable(TESTlifestuff_drive_virtual "Tests/LifeStuff" ${VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_drive_real "Tests/LifeStuff" ${REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
   ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
 endif()
 
@@ -191,13 +204,14 @@ if(MAIDSAFE_TESTING)
                      )
   target_link_libraries(TESTlifestuff_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
   add_dependencies(TESTlifestuff_api lifestuff_vault pd_key_helper lifestuff_mgr)
-  target_link_libraries(TESTlifestuff_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr)
-  target_link_libraries(TESTlifestuff_real_drive maidsafe_drive)
+  target_link_libraries(TESTlifestuff_drive_virtual maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_drive_virtual lifestuff_vault pd_key_helper lifestuff_mgr)
+  target_link_libraries(TESTlifestuff_drive_real maidsafe_drive)
   target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager)
   add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
 endif()
 
+include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${PROJECT_BINARY_DIR})
 
 rename_outdated_built_exes()
