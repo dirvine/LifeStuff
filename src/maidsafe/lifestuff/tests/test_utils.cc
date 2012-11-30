@@ -11,9 +11,10 @@
  *******************************************************************************
  */
 
+#include "maidsafe/lifestuff/tests/test_utils.h"
+
 #include <random>
 
-#include "maidsafe/lifestuff/tests/test_utils.h"
 #include "maidsafe/common/utils.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/log.h"
@@ -115,7 +116,7 @@ fs::path CreateTestDirectoriesAndFiles(fs::path const& parent) {
   fs::path directory(CreateTestDirectory(parent)), check;
   int64_t file_size(0);
   std::mt19937 generator(RandomUint32());
-  std::uniform_int_distribution<> distribution(2,4);
+  std::uniform_int_distribution<> distribution(2, 4);
   size_t r1 = distribution(generator), r2, r3, r4;
 
   boost::system::error_code error_code;

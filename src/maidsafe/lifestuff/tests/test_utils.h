@@ -11,7 +11,13 @@
  *******************************************************************************
  */
 
+#ifndef MAIDSAFE_LIFESTUFF_TESTS_TEST_UTILS_H_
+#define MAIDSAFE_LIFESTUFF_TESTS_TEST_UTILS_H_
+
+#include <cstdint>
 #include <set>
+#include <string>
+#include <vector>
 
 #include "boost/filesystem.hpp"
 #include "boost/filesystem/fstream.hpp"
@@ -26,11 +32,7 @@ namespace lifestuff {
 
 namespace test {
 
-enum TestOperationCode {
-  kCopy = 0,
-  kRead = 1,
-  kCompare = 2
-};
+enum TestOperationCode { kCopy, kRead, kCompare };
 
 fs::path CreateTestFileWithContent(fs::path const& parent, const std::string &content);
 fs::path CreateTestFileWithSize(fs::path const& parent, size_t size);
@@ -47,30 +49,28 @@ bool CompareDirectoryEntries(fs::path const& drive_path, fs::path const& disk_pa
 bool CompareFileContents(fs::path const& path1, fs::path const& path2);
 fs::path LocateNthFile(fs::path const& path, size_t n);
 fs::path LocateNthDirectory(fs::path const& path, size_t n);
-fs::path FindDirectoryOrFile(fs::path const& path,
-                              fs::path const& find);
+fs::path FindDirectoryOrFile(fs::path const& path, fs::path const& find);
 int64_t CalculateUsedSpace(fs::path const& path);
 bool DoRandomEvents(fs::path mount_dir, fs::path mirror_dir);
 
 void PrintResult(const bptime::ptime &start_time,
-                  const bptime::ptime &stop_time,
-                  size_t size, TestOperationCode operation_code);
+                 const bptime::ptime &stop_time,
+                 size_t size,
+                 TestOperationCode operation_code);
 bool ExcludedFilename(const fs::path &path);
-fs::path GenerateFile(const fs::path &path,
-                      std::uint32_t size = 0,
-                      const std::string &content = "");
+fs::path GenerateFile(const fs::path &path, uint32_t size = 0, const std::string &content = "");
 fs::path GenerateDirectory(const fs::path &path);
-void GenerateFileSizes(std::uint32_t max_size,
-                       std::uint32_t min_size,
+void GenerateFileSizes(uint32_t max_size,
+                       uint32_t min_size,
                        size_t count,
-                       std::vector<std::uint32_t> *file_sizes);
-std::uint32_t CreateTestTreeStructure(const fs::path &base_path,
-                                      std::vector<fs::path> *directories,
-                                      std::set<fs::path> *files,
-                                      std::uint32_t directory_node_count,
-                                      std::uint32_t file_node_count = 100,
-                                      std::uint32_t max_filesize = 5 * 1024 * 1024,
-                                      std::uint32_t min_size = 1024);
+                       std::vector<uint32_t> *file_sizes);
+uint32_t CreateTestTreeStructure(const fs::path &base_path,
+                                 std::vector<fs::path> *directories,
+                                 std::set<fs::path> *files,
+                                 uint32_t directory_node_count,
+                                 uint32_t file_node_count = 100,
+                                 uint32_t max_filesize = 5 * 1024 * 1024,
+                                 uint32_t min_size = 1024);
 void CopyRecursiveDirectory(const fs::path &src, const fs::path &dest);
 
 }  // namespace test
@@ -78,3 +78,5 @@ void CopyRecursiveDirectory(const fs::path &src, const fs::path &dest);
 }  // namespace lifestuff
 
 }  // namespace maidsafe
+
+#endif  // MAIDSAFE_LIFESTUFF_TESTS_TEST_UTILS_H_
