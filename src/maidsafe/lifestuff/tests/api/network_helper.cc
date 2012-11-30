@@ -17,6 +17,7 @@
 #include "maidsafe/lifestuff/tests/api/network_helper.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 
 #include "boost/algorithm/string.hpp"
@@ -297,7 +298,6 @@ bool StartRemaningVaults(
   if (!WaitForProcesses(pd::kVaultExecutable(), vault_count)) {
     LOG(kError) << "Failed waiting for vaults setup";
     return false;
-    testing::AssertionFailure();
   }
 
   Sleep(boost::posix_time::seconds(5));
