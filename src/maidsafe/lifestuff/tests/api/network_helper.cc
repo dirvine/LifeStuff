@@ -336,9 +336,8 @@ bool StartLifestuffManager(const fs::path& test_path,
   // Startup LifeStuffManager
   boost::system::error_code error_code;
   uint16_t port(maidsafe::test::GetRandomPort());
-  priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port,
-                                                                         test_path,
-                                                                         pd::kVaultExecutable());
+  priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(
+      port, test_path, pd::kVaultExecutable(), std::vector<std::string>());
   std::string args("--log_private I");
   args += " --port " + boost::lexical_cast<std::string>(port);
   args += " --root_dir " + (test_path / "lifestuff_manager").string();
