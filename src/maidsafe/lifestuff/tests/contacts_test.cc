@@ -206,8 +206,8 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
 
 TEST_F(ContactsTest, BEH_ListContacts_Status) {
   Contact msc(contact_);
-  int indexing(0);
-  int status_index(0);
+  uint16_t indexing(0);
+  uint16_t status_index(0);
   std::vector<ContactStatus> types;
   types.push_back(kUninitialised);
   types.push_back(kRequestSent);
