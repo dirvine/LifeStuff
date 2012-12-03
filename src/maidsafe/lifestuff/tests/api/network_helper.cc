@@ -17,6 +17,7 @@
 #include "maidsafe/lifestuff/tests/api/network_helper.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <string>
 
 #include "boost/algorithm/string.hpp"
@@ -297,7 +298,6 @@ bool StartRemaningVaults(
   if (!WaitForProcesses(pd::kVaultExecutable(), vault_count)) {
     LOG(kError) << "Failed waiting for vaults setup";
     return false;
-    testing::AssertionFailure();
   }
 
   Sleep(boost::posix_time::seconds(5));
@@ -336,9 +336,8 @@ bool StartLifestuffManager(const fs::path& test_path,
   // Startup LifeStuffManager
   boost::system::error_code error_code;
   uint16_t port(maidsafe::test::GetRandomPort());
-  priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(port,
-                                                                         test_path,
-                                                                         pd::kVaultExecutable());
+  priv::lifestuff_manager::ClientController::SetTestEnvironmentVariables(
+      port, test_path, pd::kVaultExecutable(), std::vector<std::string>());
   std::string args("--log_private I");
   args += " --port " + boost::lexical_cast<std::string>(port);
   args += " --root_dir " + (test_path / "lifestuff_manager").string();
