@@ -157,10 +157,14 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
 else()
   target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
 endif()
+if(WIN32)
+  set_target_properties(lifestuff_python_api PROPERTIES SUFFIX ".pyd")
+endif()
 set_target_properties(lifestuff_python_api PROPERTIES PREFIX ""
                                                       DEBUG_POSTFIX ""
                                                       LABELS Lifestuff
                                                       FOLDER "MaidSafe/Python Bindings")
+
 
 if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api_user_credentials "Tests/LifeStuff" ${API_USER_CREDENTIALS_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
