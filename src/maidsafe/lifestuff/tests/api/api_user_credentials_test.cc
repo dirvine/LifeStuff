@@ -766,6 +766,7 @@ TEST_F(OneUserApiTest, FUNC_LogInAfterCreateUser) {
     ++i;
     Sleep(bptime::milliseconds(100));
   }
+
   LOG(kInfo) << "\n\nCHECKING STATE OF 2ND AND 3RD INSTANCES...\n\n";
   EXPECT_TRUE(testing_variables_.immediate_quit_required);
   EXPECT_EQ(kConnected, test_elements.state());

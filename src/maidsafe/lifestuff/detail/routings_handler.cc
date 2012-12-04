@@ -63,14 +63,16 @@ RoutingsHandler::RoutingDetails::RoutingDetails(const Fob& owner_credentials,
 
 RoutingsHandler::RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                                  Session& session,
-                                 const ValidatedMessageFunction& validated_message_signal)
+                                 const ValidatedMessageFunction& validated_message_signal,
+                                 boost::asio::io_service& service)
     : chunk_store_(&chunk_store),
       routing_objects_(),
       routing_objects_mutex_(),
       session_(session),
       validated_message_signal_(validated_message_signal),
       cs_mutex_(),
-      stopped_(false) {}
+      stopped_(false),
+      asio_service_(service) {}
 
 RoutingsHandler::~RoutingsHandler() {
   stopped_ = true;
@@ -278,6 +280,15 @@ void RoutingsHandler::OnRequestReceived(const Identity& receiver_id,
                                         const NonEmptyString& wrapped_message,
                                         const NodeId& sender_id,
                                         const routing::ReplyFunctor& reply_functor) {
+  asio_service_.post([this, receiver_id, wrapped_message, sender_id, reply_functor] () {
+                       DoOnRequestReceived(receiver_id, wrapped_message, sender_id, reply_functor);
+                     });
+}
+
+void RoutingsHandler::DoOnRequestReceived(const Identity& receiver_id,
+                                          const NonEmptyString& wrapped_message,
+                                          const NodeId& sender_id,
+                                          const routing::ReplyFunctor& reply_functor) {
   LOG(kInfo) << "receiver: " << DebugId(NodeId(receiver_id)) << ", sender: " << DebugId(sender_id);
   if (stopped_) {
     LOG(kWarning) << "Stopped. Dropping.";

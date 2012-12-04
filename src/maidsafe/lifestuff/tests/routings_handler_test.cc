@@ -111,7 +111,8 @@ class RoutingsHandlerTest : public routing::test::GenericNetwork {
         };
     return std::make_shared<RoutingsHandler>(*remote_chunkstore_,
                                              session_,
-                                             validated_message_functor);
+                                             validated_message_functor,
+                                             asio_service_.service());
   }
 
   void set_messages_expected(size_t messages_expected) { messages_expected_ = messages_expected; }

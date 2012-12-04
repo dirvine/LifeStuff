@@ -211,7 +211,8 @@ int LifeStuffImpl::MakeAnonymousComponents() {
                           session_,
                           [this] (const NonEmptyString& message, std::string& response) {
                             return HandleRoutingsHandlerMessage(message, response);
-                          });
+                          },
+                          asio_service_.service());
   user_credentials_ = std::make_shared<UserCredentials>(*remote_chunk_store_,
                                                         session_,
                                                         asio_service_.service(),

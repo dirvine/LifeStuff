@@ -44,7 +44,8 @@ class RoutingsHandler {
  public:
   explicit RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
                            Session& session,
-                           const ValidatedMessageFunction& validated_message_signal);
+                           const ValidatedMessageFunction& validated_message_signal,
+                           boost::asio::io_service& service);
 
   ~RoutingsHandler();
 
@@ -82,7 +83,7 @@ class RoutingsHandler {
   ValidatedMessageFunction validated_message_signal_;
   std::mutex cs_mutex_;
   volatile bool stopped_;
-
+  boost::asio::io_service& asio_service_;
 
   RoutingsHandler(const RoutingsHandler&);
   RoutingsHandler& operator=(const RoutingsHandler&);
@@ -91,6 +92,11 @@ class RoutingsHandler {
                          const NonEmptyString& wrapped_message,
                          const NodeId& group_claim,
                          const routing::ReplyFunctor& reply_functor);
+
+  void DoOnRequestReceived(const Identity& owner_id,
+                           const NonEmptyString& wrapped_message,
+                           const NodeId& group_claim,
+                           const routing::ReplyFunctor& reply_functor);
 
   void OnPublicKeyRequested(const NodeId& node_id,
                             const routing::GivePublicKeyFunctor& give_key);
