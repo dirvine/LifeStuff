@@ -108,6 +108,12 @@ struct NonEmptyStringConverter {
   }
 };
 
+// struct SlotsConverter {
+//   static PyObject* convert(const maidsafe::lifestuff::Slots& slots) {
+//     return bpy::incref(&slots);
+//   }
+// };
+
 struct PathExtractor {
   static void* convertible(PyObject* obj_ptr) {
     return PyString_Check(obj_ptr) ? obj_ptr : nullptr;
@@ -138,7 +144,7 @@ struct NonEmptyStringExtractor {
 
 struct SlotsExtractor {
   static void* convertible(PyObject* obj_ptr) {
-    return PyDict_Check(obj_ptr) ? obj_ptr : nullptr;
+    return PyList_Check(obj_ptr) ? obj_ptr : nullptr;
   }
   static void construct(PyObject*, bpy::converter::rvalue_from_python_stage1_data* data) {
     typedef bpy::converter::rvalue_from_python_storage<maidsafe::lifestuff::Slots> storage_type;
@@ -171,6 +177,7 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
 //   });
   bpy::to_python_converter<boost::filesystem::path, PathConverter>();
   bpy::to_python_converter<maidsafe::NonEmptyString, NonEmptyStringConverter>();
+//   bpy::to_python_converter<maidsafe::lifestuff::Slots, SlotsConverter>();
   bpy::converter::registry::push_back(&PathExtractor::convertible,
                                       &PathExtractor::construct,
                                       bpy::type_id<boost::filesystem::path>());
