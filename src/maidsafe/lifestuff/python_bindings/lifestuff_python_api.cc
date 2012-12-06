@@ -59,43 +59,6 @@ namespace ls = maidsafe::lifestuff;
 
 namespace {
 
-void SetEmptySlots(maidsafe::lifestuff::Slots* pslots) {
-  assert(pslots);
-  auto three_strings_func = [](const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto three_plus_one_strings_func = [](const maidsafe::NonEmptyString&,
-                                        const maidsafe::NonEmptyString&,
-                                        const std::string&,
-                                        const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto four_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto five_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->chat_slot = four_strings_func;
-  pslots->file_success_slot = five_strings_func;
-  pslots->file_failure_slot = three_strings_func;
-  pslots->new_contact_slot = three_plus_one_strings_func;
-  pslots->confirmed_contact_slot = three_strings_func;
-  pslots->profile_picture_slot = three_strings_func;
-  pslots->contact_presence_slot = [](const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     maidsafe::lifestuff::ContactPresence) {};  // NOLINT
-  pslots->contact_deletion_slot = three_plus_one_strings_func;
-  pslots->lifestuff_card_update_slot = three_strings_func;
-  pslots->network_health_slot = [](const int&) {};  // NOLINT
-  pslots->immediate_quit_required_slot = [] {};  // NOLINT
-  pslots->update_available_slot = [](const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->operation_progress_slot = [](maidsafe::lifestuff::Operation,
-                                       maidsafe::lifestuff::SubTask) {};  // NOLINT
-}
-
 struct PathConverter {
   static PyObject* convert(const boost::filesystem::path& path) {
     return bpy::incref(bpy::str(path.c_str()).ptr());
@@ -113,6 +76,87 @@ struct NonEmptyStringConverter {
 //     return bpy::incref(&slots);
 //   }
 // };
+
+void SetEmptySlots(maidsafe::lifestuff::Slots* pslots, std::vector<PyObject*>& v) {
+  assert(pslots);
+  pslots->chat_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3, const maidsafe::NonEmptyString& s4) {
+        PyObject_CallObject(v[0],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3), NonEmptyStringConverter::convert(s4)));
+      };
+  pslots->file_success_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3, const maidsafe::NonEmptyString& s4,
+      const maidsafe::NonEmptyString& s5) {
+        PyObject_CallObject(v[1],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3), NonEmptyStringConverter::convert(s4),
+             NonEmptyStringConverter::convert(s5)));
+      };
+  pslots->file_failure_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3) {
+        PyObject_CallObject(v[2],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3)));
+      };
+  pslots->new_contact_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const std::string& s3, const maidsafe::NonEmptyString& s4) {
+        PyObject_CallObject(v[3],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             boost::python::converter::arg_to_python<std::string>(s3),
+             NonEmptyStringConverter::convert(s4)));
+      };
+  pslots->confirmed_contact_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3) {
+        PyObject_CallObject(v[4],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3)));
+      };
+  pslots->profile_picture_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3) {
+        PyObject_CallObject(v[5],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3)));
+      };
+  pslots->contact_presence_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3, maidsafe::lifestuff::ContactPresence /*presence*/) {
+        PyObject_CallObject(v[6],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3)));
+      };
+  pslots->contact_deletion_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const std::string& s3, const maidsafe::NonEmptyString& s4) {
+        PyObject_CallObject(v[7],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             boost::python::converter::arg_to_python<std::string>(s3),
+             NonEmptyStringConverter::convert(s4)));
+      };
+  pslots->lifestuff_card_update_slot = [v](
+      const maidsafe::NonEmptyString& s1, const maidsafe::NonEmptyString& s2,
+      const maidsafe::NonEmptyString& s3) {
+        PyObject_CallObject(v[8],
+            (NonEmptyStringConverter::convert(s1), NonEmptyStringConverter::convert(s2),
+             NonEmptyStringConverter::convert(s3)));
+      };
+  pslots->network_health_slot = [v](const int& i) {
+      boost::python::call<void>(v[9], i); };
+  pslots->immediate_quit_required_slot = [v]() { boost::python::call<void>(v[10]);; };
+  pslots->update_available_slot =  [v](const maidsafe::NonEmptyString& s1) {
+        PyObject_CallObject(v[11], NonEmptyStringConverter::convert(s1));
+      };
+  pslots->operation_progress_slot = [v](maidsafe::lifestuff::Operation /*operation*/,
+                                        maidsafe::lifestuff::SubTask /*sub_task*/) {
+        boost::python::call<void>(v[12], "O_P get called");
+      };
+}
 
 struct PathExtractor {
   static void* convertible(PyObject* obj_ptr) {
@@ -146,12 +190,27 @@ struct SlotsExtractor {
   static void* convertible(PyObject* obj_ptr) {
     return PyList_Check(obj_ptr) ? obj_ptr : nullptr;
   }
-  static void construct(PyObject*, bpy::converter::rvalue_from_python_stage1_data* data) {
+  static void construct(PyObject* obj_ptr, bpy::converter::rvalue_from_python_stage1_data* data) {
     typedef bpy::converter::rvalue_from_python_storage<maidsafe::lifestuff::Slots> storage_type;
     void* storage = reinterpret_cast<storage_type*>(data)->storage.bytes;
     auto pslots = new(storage) maidsafe::lifestuff::Slots();
-    SetEmptySlots(pslots);
-    // TODO(Steve) connect slots as per passed in dictionary
+
+    using namespace boost::python;
+    list l(handle<>(borrowed(obj_ptr)));
+    // Grab pointer to memory into which to construct the new std::vector<T>
+    void* l_storage =
+        ((boost::python::converter::rvalue_from_python_storage<std::vector<PyObject*> >*)
+        data)->storage.bytes;
+    // in-place construct the new std::vector<T> using the character data
+    // extracted from the python object
+    std::vector<PyObject*>& v = *(new (l_storage) std::vector<PyObject*>());
+    // populate the vector from list contains !!!
+    int le = len(l);
+    v.resize(le);
+    for(int i = 0;i < le; ++i)
+      v[i] = extract<PyObject*>(l[i]);
+
+    SetEmptySlots(pslots, v);
     data->convertible = storage;
   }
 };
