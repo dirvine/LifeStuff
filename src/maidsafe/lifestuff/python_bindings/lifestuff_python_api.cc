@@ -27,11 +27,14 @@
 #  pragma warning(disable: 4100 4127 4244)
 #endif
 #include "boost/python.hpp"
+#include "boost/python/suite/indexing/map_indexing_suite.hpp"
+#include "boost/python/suite/indexing/vector_indexing_suite.hpp"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
@@ -45,10 +48,6 @@
  *
  * TODO
  * - extend slots to actually call Python functions passed via dictionary
- * - implement converter for ContactPresence to Python object (as in ContactPresenceFunction)
- * - implement converter for Operation to Python object (as in OperationProgressFunction)
- * - implement converter for SubTask to Python object (as in OperationProgressFunction)
- * - implement converter for ContactMap to Python object (as in GetContacts)
  * - implement converter for std::vector<NonEmptyString> to Python object (as in PublicIdsList)
  * - implement converter for Python object to SocialInfoMap (as in Get/SetLifestuffCard)
  * - handle API functions that take arguments as pointers/references
@@ -58,7 +57,6 @@ namespace bpy = boost::python;
 namespace ls = maidsafe::lifestuff;
 
 namespace {
-
 struct PathConverter {
   static PyObject* convert(const boost::filesystem::path& path) {
     return bpy::incref(bpy::str(path.c_str()).ptr());
@@ -68,6 +66,13 @@ struct PathConverter {
 struct NonEmptyStringConverter {
   static PyObject* convert(const maidsafe::NonEmptyString& nes) {
     return bpy::incref(bpy::str(nes.string().c_str()).ptr());
+  }
+};
+
+template<class T1, class T2>
+struct PairToTupleConverter {
+  static PyObject* convert(const std::pair<T1, T2>& pair) {
+    return bpy::incref(bpy::make_tuple(pair.first, pair.second).ptr());
   }
 };
 
@@ -229,6 +234,34 @@ BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(accept_sent_file_overloads, AcceptSentFil
 }  // namespace
 
 BOOST_PYTHON_MODULE(lifestuff_python_api) {
+  bpy::enum_<ls::ContactPresence>("ContactPresence")
+      .value("kOffline", ls::ContactPresence::kOffline)
+      .value("kOnline", ls::ContactPresence::kOnline);
+
+  bpy::enum_<ls::Operation>("Operation")
+      .value("kCreateUser", ls::Operation::kCreateUser)
+      .value("kLogIn", ls::Operation::kLogIn)
+      .value("kLogOut", ls::Operation::kLogOut);
+
+  bpy::enum_<ls::SubTask>("SubTask")
+      .value("kInitialiseAnonymousComponents", ls::SubTask::kInitialiseAnonymousComponents)
+      .value("kCreateUserCredentials", ls::SubTask::kCreateUserCredentials)
+      .value("kCreateVault", ls::SubTask::kCreateVault)
+      .value("kInitialiseClientComponents", ls::SubTask::kInitialiseClientComponents)
+      .value("kRetrieveUserCredentials", ls::SubTask::kRetrieveUserCredentials)
+      .value("kStoreUserCredentials", ls::SubTask::kStoreUserCredentials)
+      .value("kWaitForNetworkOperations", ls::SubTask::kWaitForNetworkOperations)
+      .value("kCleanUp", ls::SubTask::kCleanUp);
+
+  bpy::enum_<ls::ContactStatus>("ContactStatus")
+      .value("kAll", ls::ContactStatus::kAll)
+      .value("kUninitialised", ls::ContactStatus::kUninitialised)
+      .value("kRequestSent", ls::ContactStatus::kRequestSent)
+      .value("kPendingResponse", ls::ContactStatus::kPendingResponse)
+      .value("kConfirmed", ls::ContactStatus::kConfirmed)
+      .value("kBlocked", ls::ContactStatus::kBlocked);
+
+
   maidsafe::log::Logging::Instance().Initialise(0, nullptr);
   LOG(kInfo) << "Initialising LifeStuff Python API";
 //   bpy::register_exception_translator<std::exception>([](const std::exception& ex) {
@@ -236,6 +269,8 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
 //   });
   bpy::to_python_converter<boost::filesystem::path, PathConverter>();
   bpy::to_python_converter<maidsafe::NonEmptyString, NonEmptyStringConverter>();
+  bpy::to_python_converter<std::pair<ls::ContactStatus, ls::ContactPresence>,
+      PairToTupleConverter<ls::ContactStatus, ls::ContactPresence> >();
 //   bpy::to_python_converter<maidsafe::lifestuff::Slots, SlotsConverter>();
   bpy::converter::registry::push_back(&PathExtractor::convertible,
                                       &PathExtractor::construct,
@@ -246,6 +281,14 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
   bpy::converter::registry::push_back(&SlotsExtractor::convertible,
                                       &SlotsExtractor::construct,
                                       bpy::type_id<maidsafe::lifestuff::Slots>());
+
+  bpy::class_<std::map<maidsafe::NonEmptyString,
+      std::pair<ls::ContactStatus, ls::ContactPresence> >>("ContactMap")
+      .def(bpy::map_indexing_suite<std::map<maidsafe::NonEmptyString,
+           std::pair<ls::ContactStatus, ls::ContactPresence>>>());
+
+  bpy::class_<std::vector<maidsafe::NonEmptyString> >("NonEmptyStringVector")
+      .def(bpy::vector_indexing_suite<std::vector<maidsafe::NonEmptyString>, true >());
 
   bpy::class_<ls::LifeStuff>(
       "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
