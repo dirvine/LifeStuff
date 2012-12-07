@@ -48,8 +48,6 @@
  *
  * TODO
  * - extend slots to actually call Python functions passed via dictionary
- * - implement converter for std::vector<NonEmptyString> to Python object (as in PublicIdsList)
- * - implement converter for Python object to SocialInfoMap (as in Get/SetLifestuffCard)
  * - handle API functions that take arguments as pointers/references
  */
 
@@ -289,6 +287,9 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
 
   bpy::class_<std::vector<maidsafe::NonEmptyString> >("NonEmptyStringVector")
       .def(bpy::vector_indexing_suite<std::vector<maidsafe::NonEmptyString>, true >());
+
+  bpy::class_<std::map<maidsafe::NonEmptyString, std::string> >("SocialInfoMap")
+      .def(bpy::map_indexing_suite<std::map<maidsafe::NonEmptyString, std::string> >());
 
   bpy::class_<ls::LifeStuff>(
       "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
