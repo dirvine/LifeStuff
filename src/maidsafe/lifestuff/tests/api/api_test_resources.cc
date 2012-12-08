@@ -14,8 +14,11 @@
 * ============================================================================
 */
 
+#include <cstdlib>
 #include <string>
 #include <vector>
+
+#include "boost/preprocessor/stringize.hpp"
 
 #include "maidsafe/lifestuff/tests/api/api_test_resources.h"
 
@@ -492,18 +495,35 @@ void RunLogIn(LifeStuff& test_elements,
 
 }  // namespace sleepthreads
 
+namespace check_network {
+
+const fs::path kToolsPath(BOOST_PP_STRINGIZE(TOOLS_PATH));
+
+bool NetworkRunning() {
+  if (kToolsPath.empty())
+    return false;
+
+  fs::path python_script_path(kToolsPath / "check_for_network.py");
+  std::string command("python " + python_script_path.string());
+  int vaults_available(std::system(command.c_str()));
+  return vaults_available == 0;
+}
+
+}  // namespace check_network
+
 OneUserApiTest::OneUserApiTest()
   : test_dir_(maidsafe::test::CreateTestPath()),
     keyword_(RandomAlphaNumericString(6)),
     pin_(CreatePin()),
     password_(RandomAlphaNumericString(6)),
-    network_(),
     testing_variables_(),
     lifestuff_slots_() {}
 
-OneUserApiTest::~OneUserApiTest() { network_.StopLocalNetwork(); }
+OneUserApiTest::~OneUserApiTest() {}
 
-void OneUserApiTest::SetUp() { ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10)); }
+void OneUserApiTest::SetUp() {
+  ASSERT_TRUE(check_network::NetworkRunning()) << "Network verification failure.";
+}
 
 TwoUsersApiTest::TwoUsersApiTest()
   : test_dir_(maidsafe::test::CreateTestPath()),
@@ -518,13 +538,12 @@ TwoUsersApiTest::TwoUsersApiTest()
     testing_variables_1_(),
     testing_variables_2_(),
     lifestuff_slots_1_(),
-    lifestuff_slots_2_(),
-    network_() {}
+    lifestuff_slots_2_() {}
 
-TwoUsersApiTest::~TwoUsersApiTest() { network_.StopLocalNetwork(); }
+TwoUsersApiTest::~TwoUsersApiTest() {}
 
 void TwoUsersApiTest::SetUp() {
-  ASSERT_TRUE(network_.StartLocalNetwork(test_dir_, 10));
+  ASSERT_TRUE(check_network::NetworkRunning()) << "Network verification failure.";
   PopulateSlots(lifestuff_slots_1_, testing_variables_1_);
   PopulateSlots(lifestuff_slots_2_, testing_variables_2_);
   ASSERT_EQ(kSuccess,

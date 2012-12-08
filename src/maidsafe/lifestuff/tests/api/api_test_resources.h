@@ -36,7 +36,6 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
-#include "maidsafe/lifestuff/tests/api/network_helper.h"
 
 namespace args = std::placeholders;
 namespace ba = boost::asio;
@@ -252,7 +251,6 @@ class OneUserApiTest : public testing::Test {
   NonEmptyString keyword_;
   NonEmptyString pin_;
   NonEmptyString password_;
-  NetworkHelper network_;
   TestingVariables testing_variables_;
   Slots lifestuff_slots_;
 
@@ -277,7 +275,6 @@ class TwoUsersApiTest : public testing::Test {
   TestingVariables testing_variables_2_;
   Slots lifestuff_slots_1_;
   Slots lifestuff_slots_2_;
-  NetworkHelper network_;
 
   virtual void SetUp();
 };
