@@ -47,7 +47,6 @@ set(PATH_TO_INCLUDE ${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff)
 set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
 set(PATH_TO_DETAIL ${PATH_TO_SRC}/detail)
 set(PATH_TO_TESTS ${PATH_TO_SRC}/tests)
-set(PATH_TO_COMMAND_LINE ${PATH_TO_SRC}/command_line)
 
 ####    CODE    ####
 file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api.cc"
@@ -65,10 +64,7 @@ set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
                          "${PATH_TO_INCLUDE}/lifestuff.h"
                          "${PATH_TO_INCLUDE}/return_codes.h")
 
-file(GLOB SOURCE_FILES_COMMAND_LINE_DIR "${PATH_TO_COMMAND_LINE}/*.cc")
-set(ALL_FILES_COMMAND_LINE_DIR ${SOURCE_FILES_COMMAND_LINE_DIR})
-
-set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR} ${ALL_FILES_COMMAND_LINE_DIR})
+set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
 list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
                            "${PATH_TO_DETAIL}/data_atlas.pb.cc")
 
@@ -79,7 +75,6 @@ source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
                                          "${PATH_TO_INCLUDE}/return_codes.h")
 source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
 source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
-source_group("LifeStuff Command Line Source Files" FILES ${SOURCE_FILES_COMMAND_LINE_DIR})
 
 ####    TESTS    ####
 set(TESTS_MAIN_CC "${PATH_TO_TESTS}/tests_main.cc")
@@ -168,7 +163,6 @@ if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api_public_id "Tests/LifeStuff" ${API_PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_api_virtual_drive "Tests/LifeStuff" ${API_VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
   ms_add_executable(TESTlifestuff_api_real_drive "Tests/LifeStuff" ${API_REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
-  ms_add_executable(command_line_lifestuff "Tools" ${ALL_FILES_COMMAND_LINE_DIR})
 endif()
 
 target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
@@ -180,8 +174,6 @@ if(MAIDSAFE_TESTING)
   target_link_libraries(TESTlifestuff_api_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
   add_dependencies(TESTlifestuff_api_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
   target_link_libraries(TESTlifestuff_api_real_drive maidsafe_drive ${BoostRegexLibs})
-  target_link_libraries(command_line_lifestuff maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostRegexLibs})
-  add_dependencies(command_line_lifestuff lifestuff_vault pd_key_helper lifestuff_mgr)
 endif()
 
 include_directories(${PYTHON_INCLUDE_DIRS})
