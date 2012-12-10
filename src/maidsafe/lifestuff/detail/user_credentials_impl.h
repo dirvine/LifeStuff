@@ -103,7 +103,6 @@ class UserCredentialsImpl {
   Session& session_;
   passport::Passport& passport_;
   RoutingsHandler& routings_handler_;
-  std::mutex single_threaded_class_mutex_;
   boost::asio::io_service& asio_service_;
   boost::asio::deadline_timer session_saver_timer_;
   bool session_saver_timer_active_, session_saved_once_;

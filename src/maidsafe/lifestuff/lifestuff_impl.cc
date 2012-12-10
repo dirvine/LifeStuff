@@ -112,7 +112,8 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_d
       slots_(slot_functions),
       state_(kZeroth),
       logged_in_state_(kBaseState),
-      immediate_quit_required_signal_() {
+      immediate_quit_required_signal_(),
+      single_threaded_class_mutex_() {
   CheckSlots(slots_);
 
   // Initialisation
@@ -411,6 +412,7 @@ int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
 }
 
 int LifeStuffImpl::LogOut(bool clear_maid_routing) {
+  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
   if (state_ != kLoggedIn) {
     LOG(kError) << "Should be logged in to log out.";
     return kWrongState;
@@ -570,6 +572,7 @@ int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
 
 int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
                                  const NonEmptyString& password) {
+  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -595,6 +598,7 @@ int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
 }
 
 int LifeStuffImpl::ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password) {
+  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;
@@ -621,6 +625,7 @@ int LifeStuffImpl::ChangePin(const NonEmptyString& new_pin, const NonEmptyString
 
 int LifeStuffImpl::ChangePassword(const NonEmptyString& new_password,
                                   const NonEmptyString& current_password) {
+  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
   int result(CheckStateAndFullAccess());
   if (result != kSuccess)
     return result;

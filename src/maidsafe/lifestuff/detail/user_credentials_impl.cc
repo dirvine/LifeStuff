@@ -97,7 +97,6 @@ UserCredentialsImpl::UserCredentialsImpl(priv::chunk_store::RemoteChunkStore& re
       session_(session),
       passport_(session_.passport()),
       routings_handler_(routings_handler),
-      single_threaded_class_mutex_(),
       asio_service_(service),
       session_saver_timer_(asio_service_),
       session_saver_timer_active_(false),
@@ -129,7 +128,6 @@ int UserCredentialsImpl::LogIn(const NonEmptyString& keyword,
 int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
                                              const NonEmptyString& pin,
                                              const NonEmptyString& password) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
@@ -515,7 +513,6 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
 int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
                                     const NonEmptyString& pin,
                                     const NonEmptyString& password) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
@@ -825,7 +822,6 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::SaveSession(bool log_out) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   if (log_out) {
     session_saver_timer_active_ = false;
@@ -919,8 +915,6 @@ void UserCredentialsImpl::ModifyIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
-
   int result(CheckPinValidity(new_pin));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
@@ -932,7 +926,6 @@ int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
 }
 
 int UserCredentialsImpl::ChangeKeyword(const NonEmptyString& new_keyword) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckKeywordValidity(new_keyword));
   if (result != kSuccess) {
@@ -1050,7 +1043,6 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePassword(const NonEmptyString& new_password) {
-  std::unique_lock<std::mutex> lock(single_threaded_class_mutex_);
 
   int result(CheckPasswordValidity(new_password));
   if (result != kSuccess) {

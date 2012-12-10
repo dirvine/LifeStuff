@@ -157,6 +157,7 @@ class LifeStuffImpl {
   LifeStuffState state_;
   uint8_t logged_in_state_;
   boost::signals2::signal<void()> immediate_quit_required_signal_;
+  std::mutex single_threaded_class_mutex_;
 
   int AttemptCleanQuit();
   void ConnectToSignals();

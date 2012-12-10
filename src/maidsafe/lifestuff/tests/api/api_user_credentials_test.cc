@@ -467,42 +467,48 @@ TEST_F(OneUserApiTest, FUNC_ChangeCredentialsAndLogOut) {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullCreateUser(test_elements, keyword_, pin_, password_));
-    std::thread thread_pin([&] {
-                             sleepthreads::RunChangePin(test_elements,
+    std::thread thread_pin([&test_elements, &result, &new_pin, this] {
+                             sleepthreads::RunChangePin(std::ref(test_elements),
                                                         std::ref(result),
                                                         new_pin,
                                                         password_,
                                                         std::make_pair(0, 0));
-                             });
+                           });
+    Sleep(boost::posix_time::milliseconds(200));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    thread_pin.join();
   }
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, keyword_, new_pin, password_));
-    boost::thread thread_keyword([&] {
-                                 sleepthreads::RunChangeKeyword(test_elements,
+    std::thread thread_keyword([&test_elements, &result, &new_keyword, this] {
+                                 sleepthreads::RunChangeKeyword(std::ref(test_elements),
                                                                 std::ref(result),
                                                                 new_keyword,
                                                                 password_,
                                                                 std::make_pair(0, 0));
-                                 });
+                               });
+    Sleep(boost::posix_time::milliseconds(200));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    thread_keyword.join();
   }
 
   {
     PopulateSlots(lifestuff_slots_, testing_variables_);
     LifeStuff test_elements(lifestuff_slots_, *test_dir_);
     EXPECT_EQ(kSuccess, DoFullLogIn(test_elements, new_keyword, new_pin, password_));
-    std::thread thread_password([&] {
-                                  sleepthreads::RunChangePassword(test_elements,
+    std::thread thread_password([&test_elements, &result, &new_password, this] {
+                                  sleepthreads::RunChangePassword(std::ref(test_elements),
                                                                   std::ref(result),
                                                                   new_password,
                                                                   password_,
                                                                   std::make_pair(0, 0));
-                                  });
+                                });
+    Sleep(boost::posix_time::milliseconds(200));
     EXPECT_EQ(kSuccess, DoFullLogOut(test_elements));
+    thread_password.join();
   }
 }
 
