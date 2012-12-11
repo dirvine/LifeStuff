@@ -159,6 +159,54 @@ struct SlotsExtractor {
   }
 };
 
+class LifestuffWrapper : public ls::LifeStuff {
+ public :
+  LifestuffWrapper(PyObject* obj_ptr,
+                   const ls::Slots& slot_functions,
+                   const fs::path& base_directory)
+      : LifeStuff(slot_functions, base_directory),
+        self(obj_ptr) {}
+
+  LifestuffWrapper(PyObject* obj_ptr, const ls::LifeStuff& lifestuff)
+      : LifeStuff(lifestuff), self(obj_ptr) {}
+
+  ~LifestuffWrapper() {}
+
+  virtual int GetLifestuffCard(const maidsafe::NonEmptyString& my_public_id,
+                               const std::string& contact_public_id,
+                               ls::SocialInfoMap& social_info) {
+    return bpy::call_method<int>(self,
+                                 "GetLifestuffCard",
+                                 my_public_id,
+                                 contact_public_id,
+                                 std::ref(social_info));
+  }
+
+  virtual int AcceptSentFile(const maidsafe::NonEmptyString& identifier,
+                             const fs::path& absolute_path = fs::path(),
+                             std::string* file_name = nullptr) {
+    return bpy::call_method<int>(self,
+                                 "AcceptSentFile",
+                                 identifier,
+                                 absolute_path,
+                                 bpy::ptr(file_name));
+  }
+
+  virtual int ReadHiddenFile(const fs::path& absolute_path, std::string* content) {
+    return bpy::call_method<int>(self, "ReadHiddenFile", absolute_path, bpy::ptr(content));
+  }
+
+  virtual int SearchHiddenFiles(const fs::path& absolute_path,
+                                std::vector<std::string>* results) {
+    return bpy::call_method<int>(self, "SearchHiddenFiles", absolute_path, bpy::ptr(results));
+  }
+
+ private :
+  LifestuffWrapper(const LifestuffWrapper&);
+  LifestuffWrapper& operator=(const LifestuffWrapper&);
+  PyObject* self;
+};
+
 #ifdef __GNUC__
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Weffc++"
@@ -232,52 +280,52 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
   bpy::class_<std::map<maidsafe::NonEmptyString, std::string> >("SocialInfoMap")
       .def(bpy::map_indexing_suite<std::map<maidsafe::NonEmptyString, std::string> >());
 
-  bpy::class_<ls::LifeStuff>(
+  bpy::class_<ls::LifeStuff, LifestuffWrapper>(
       "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
 
       // Credential operations
-      .def("CreateUser", &ls::LifeStuff::CreateUser, create_user_overloads())
-      .def("CreatePublicId", &ls::LifeStuff::CreatePublicId)
-      .def("LogIn", &ls::LifeStuff::LogIn)
-      .def("LogOut", &ls::LifeStuff::LogOut)
-      .def("MountDrive", &ls::LifeStuff::MountDrive)
-      .def("UnMountDrive", &ls::LifeStuff::UnMountDrive)
-      .def("StartMessagesAndIntros", &ls::LifeStuff::StartMessagesAndIntros)
-      .def("StopMessagesAndIntros", &ls::LifeStuff::StopMessagesAndIntros)
-      .def("CheckPassword", &ls::LifeStuff::CheckPassword)
-      .def("ChangeKeyword", &ls::LifeStuff::ChangeKeyword)
-      .def("ChangePin", &ls::LifeStuff::ChangePin)
-      .def("ChangePassword", &ls::LifeStuff::ChangePassword)
-//       .def("ChangePublicId", &ls::LifeStuff::ChangePublicId)
-      .def("LeaveLifeStuff", &ls::LifeStuff::LeaveLifeStuff)
+      .def("CreateUser", &LifestuffWrapper::CreateUser, create_user_overloads())
+      .def("CreatePublicId", &LifestuffWrapper::CreatePublicId)
+      .def("LogIn", &LifestuffWrapper::LogIn)
+      .def("LogOut", &LifestuffWrapper::LogOut)
+      .def("MountDrive", &LifestuffWrapper::MountDrive)
+      .def("UnMountDrive", &LifestuffWrapper::UnMountDrive)
+      .def("StartMessagesAndIntros", &LifestuffWrapper::StartMessagesAndIntros)
+      .def("StopMessagesAndIntros", &LifestuffWrapper::StopMessagesAndIntros)
+      .def("CheckPassword", &LifestuffWrapper::CheckPassword)
+      .def("ChangeKeyword", &LifestuffWrapper::ChangeKeyword)
+      .def("ChangePin", &LifestuffWrapper::ChangePin)
+      .def("ChangePassword", &LifestuffWrapper::ChangePassword)
+//       .def("ChangePublicId", &LifestuffWrapper::ChangePublicId)
+      .def("LeaveLifeStuff", &LifestuffWrapper::LeaveLifeStuff)
 
       // Contact operations
-      .def("AddContact", &ls::LifeStuff::AddContact)
-      .def("ConfirmContact", &ls::LifeStuff::ConfirmContact)
-      .def("DeclineContact", &ls::LifeStuff::DeclineContact)
-      .def("RemoveContact", &ls::LifeStuff::RemoveContact)
-      .def("ChangeProfilePicture", &ls::LifeStuff::ChangeProfilePicture)
-      .def("GetOwnProfilePicture", &ls::LifeStuff::GetOwnProfilePicture)
-      .def("GetContactProfilePicture", &ls::LifeStuff::GetContactProfilePicture)
-      .def("GetLifestuffCard", &ls::LifeStuff::GetLifestuffCard)
-      .def("SetLifestuffCard", &ls::LifeStuff::SetLifestuffCard)
-      .def("GetContacts", &ls::LifeStuff::GetContacts, get_contacts_overloads())
-      .def("PublicIdsList", &ls::LifeStuff::PublicIdsList)
+      .def("AddContact", &LifestuffWrapper::AddContact)
+      .def("ConfirmContact", &LifestuffWrapper::ConfirmContact)
+      .def("DeclineContact", &LifestuffWrapper::DeclineContact)
+      .def("RemoveContact", &LifestuffWrapper::RemoveContact)
+      .def("ChangeProfilePicture", &LifestuffWrapper::ChangeProfilePicture)
+      .def("GetOwnProfilePicture", &LifestuffWrapper::GetOwnProfilePicture)
+      .def("GetContactProfilePicture", &LifestuffWrapper::GetContactProfilePicture)
+      .def("GetLifestuffCard", &LifestuffWrapper::GetLifestuffCard)
+      .def("SetLifestuffCard", &LifestuffWrapper::SetLifestuffCard)
+      .def("GetContacts", &LifestuffWrapper::GetContacts, get_contacts_overloads())
+      .def("PublicIdsList", &LifestuffWrapper::PublicIdsList)
 
       // Messaging
-      .def("SendChatMessage", &ls::LifeStuff::SendChatMessage)
-      .def("SendFile", &ls::LifeStuff::SendFile)
-      .def("AcceptSentFile", &ls::LifeStuff::AcceptSentFile, accept_sent_file_overloads())
-      .def("RejectSentFile", &ls::LifeStuff::RejectSentFile)
+      .def("SendChatMessage", &LifestuffWrapper::SendChatMessage)
+      .def("SendFile", &LifestuffWrapper::SendFile)
+      .def("AcceptSentFile", &LifestuffWrapper::AcceptSentFile, accept_sent_file_overloads())
+      .def("RejectSentFile", &LifestuffWrapper::RejectSentFile)
 
       // Filesystem
-      .def("ReadHiddenFile", &ls::LifeStuff::ReadHiddenFile)
-      .def("WriteHiddenFile", &ls::LifeStuff::WriteHiddenFile)
-      .def("DeleteHiddenFile", &ls::LifeStuff::DeleteHiddenFile)
-      .def("SearchHiddenFiles", &ls::LifeStuff::SearchHiddenFiles)
+      .def("ReadHiddenFile", &LifestuffWrapper::ReadHiddenFile)
+      .def("WriteHiddenFile", &LifestuffWrapper::WriteHiddenFile)
+      .def("DeleteHiddenFile", &LifestuffWrapper::DeleteHiddenFile)
+      .def("SearchHiddenFiles", &LifestuffWrapper::SearchHiddenFiles)
 
       // getters
-      .def("state", &ls::LifeStuff::state)
-      .def("logged_in_state", &ls::LifeStuff::logged_in_state)
-      .def("mount_path", &ls::LifeStuff::mount_path);
+      .def("state", &LifestuffWrapper::state)
+      .def("logged_in_state", &LifestuffWrapper::logged_in_state)
+      .def("mount_path", &LifestuffWrapper::mount_path);
 }

@@ -47,7 +47,7 @@ class LifeStuffImpl;
 class LifeStuff {
  public:
   LifeStuff(const Slots& slot_functions, const fs::path& base_directory);
-  ~LifeStuff();
+  virtual ~LifeStuff();
 
   /// Credential operations
   int CreateUser(const NonEmptyString& keyword,
@@ -86,9 +86,9 @@ class LifeStuff {
   NonEmptyString GetOwnProfilePicture(const NonEmptyString& my_public_id);
   NonEmptyString GetContactProfilePicture(const NonEmptyString& my_public_id,
                                           const NonEmptyString& contact_public_id);
-  int GetLifestuffCard(const NonEmptyString& my_public_id,
-                       const std::string& contact_public_id,
-                       SocialInfoMap& social_info);
+  virtual int GetLifestuffCard(const NonEmptyString& my_public_id,
+                               const std::string& contact_public_id,
+                               SocialInfoMap& social_info);
   int SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info);
   ContactMap GetContacts(const NonEmptyString& my_public_id,
                          uint16_t bitwise_status = kConfirmed | kRequestSent);
@@ -101,19 +101,19 @@ class LifeStuff {
   int SendFile(const NonEmptyString& sender_public_id,
                const NonEmptyString& receiver_public_id,
                const fs::path& absolute_path);
-  int AcceptSentFile(const NonEmptyString& identifier,
-                     const fs::path& absolute_path = fs::path(),
-                     std::string* file_name = nullptr);
+  virtual int AcceptSentFile(const NonEmptyString& identifier,
+                             const fs::path& absolute_path = fs::path(),
+                             std::string* file_name = nullptr);
   int RejectSentFile(const NonEmptyString& identifier);
 
   /// Filesystem
-  int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
+  virtual int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
   int WriteHiddenFile(const fs::path& absolute_path,
                       const NonEmptyString& content,
                       bool overwrite_existing);
   int DeleteHiddenFile(const fs::path& absolute_path);
-  int SearchHiddenFiles(const fs::path& absolute_path,
-                        std::vector<std::string>* results);
+  virtual int SearchHiddenFiles(const fs::path& absolute_path,
+                                std::vector<std::string>* results);
 
   ///
   int state() const;
