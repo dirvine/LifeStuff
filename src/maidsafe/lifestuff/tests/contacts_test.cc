@@ -178,7 +178,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Rank_LastContact) {
   for (int n = 1; n < 21; n++) {
     msc.rank = RandomUint32() % 10;
     msc.last_contact = RandomUint32() % 10;
-    msc.public_id = NonEmptyString("pub_name_" + IntToString(n));
+    msc.public_id = NonEmptyString("pub_name_" + std::to_string(n));
     ASSERT_EQ(0, sch_.AddContact(msc));
   }
 
@@ -220,7 +220,7 @@ TEST_F(ContactsTest, BEH_ListContacts_Status) {
       msc.rank = RandomUint32() % 10;
       msc.last_contact = RandomUint32() % 10;
       msc.status = types[status_index];
-      msc.public_id = NonEmptyString("pub_name_" + IntToString(indexing));
+      msc.public_id = NonEmptyString("pub_name_" + std::to_string(indexing));
       ASSERT_EQ(0, sch_.AddContact(msc));
       ++indexing;
     }

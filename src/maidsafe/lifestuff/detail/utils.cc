@@ -311,7 +311,7 @@ std::string GetNameInPath(const fs::path& save_path, const std::string& file_nam
   while (fs::exists(save_path / path_file_name, ec) && index++ < limit) {
     if (ec)
       continue;
-    path_file_name = (stem + " (" + IntToString(index) + ")" + extension);
+    path_file_name = (stem + " (" + std::to_string(index) + ")" + extension);
   }
   if (index == limit)
     path_file_name.clear();
