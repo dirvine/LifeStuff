@@ -32,6 +32,7 @@
 #include "maidsafe/common/log.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
+#include "maidsafe/lifestuff/securestring_api.h"
 
 
 namespace fs = boost::filesystem;
@@ -47,7 +48,9 @@ class LifeStuff {
   explicit LifeStuff(const Slots& callback_functions);
   ~LifeStuff();
 
-  LifeStuffReturn LogIn();
+  LifeStuffReturn LogIn(const SecureString& pin,
+                        const SecureString& pwd,
+                        const SecureString& keyword);
   LifeStuffReturn LogOut();
 
   void MountDrive();
@@ -57,37 +60,13 @@ class LifeStuff {
   //  optional <vault> location of vault to be associated with user
   LifeStuffReturn CreateUser(const fs::path& vault = fs::path());
   // Creates a new public id. Requires Pin, Pwd & Keyword to have been successfully set
-  SecureStringReturn CreatePublicId(const std::string& public_id);
-  SecureStringReturn ChangePublicId(const std::string& public_id);
+  bool CreatePublicId(const std::string& public_id);
+  bool ChangePublicId(const std::string& old_public_id, const std::string& new_public_id);
 
   //  Credential operations
-  //  SecureString for Pin, Pwd and Keyword
-  //  for SecureString of type <target>, Insert/Replace <character> at <position>
-  SecureStringReturn SecureStringInsert(SecureStringType target,
-                                        uint8_t position,
-                                        char character);
-
-  //  for credential type <target>, remove <length> characters starting at <position>
-  SecureStringReturn SecureStringRemove(SecureStringType target,
-                                        uint8_t position,
-                                        uint8_t length);
-
-  //  for SecureString of type <target>, <position> matches <character>
-  SecureStringReturn SecureStringMatchChar(SecureStringType target,
-                                           uint8_t position,
-                                           char character);
-
-  //  check credential type <target> against regular expression <regex>
-  bool SecureStringValidate(SecureStringType target, std::string regex);
-
-  //  compares <source> and <target> credentials
-  bool SecureStringCompare(SecureStringType source, SecureStringType target);
-
-  //  establishes if credential of type <target> is empty/null
-  bool SecureStringIsEmptyOrNull(SecureStringType target);
-
-  //  clears content of credential type <target>
-  SecureStringReturn SecureStringClear(SecureStringType target);
+  void SetPin(const SecureString& pin);
+  void SetPwd(const SecureString& pwd);
+  void SetKeyWord(const SecureString& key_word);
 
 
   /// Vault Operations
