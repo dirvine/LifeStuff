@@ -36,15 +36,39 @@
 
 #include "maidsafe/common/types.h"
 
+#include "maidsafe/lifestuff/return_codes.h"
+
 namespace maidsafe {
 
 namespace lifestuff {
 
 enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
-enum ContactPresence { kOffline, kOnline };
-enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
 
+struct LifeStuffReturn {
+  // constructed based on exception.error_code() then get translated into LifeStuff ReturnCode
+  ReturnCode return_code;
+  char* msg;  // exception.what()
+};
+
+/// Secure String
+enum class SecureStringType : int {
+  kPin = 1,
+  kPwd,
+  kKeyWord,
+  kConfirmPin,
+  kConfirmPwd,
+  kConfirmKeyWord,
+  kUndefined
+};
+enum class SecureStringReturn : int {
+  kSuccess = 0,
+  kFailed = 1
+};
+
+/// Contact Related Return Types
+typedef uint16_t ContactRank;
+enum ContactPresence { kOffline, kOnline };
 enum ContactStatus {
   kAll = 0x00,
   kUninitialised = 0x01,
@@ -53,7 +77,10 @@ enum ContactStatus {
   kConfirmed = 0x08,
   kBlocked = 0x10
 };
+typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
 
+/// State Related Return Types
+enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
 enum LoggedInState {
   kBaseState = 0x00,
   kCredentialsLoggedIn = 0x01,
@@ -61,6 +88,14 @@ enum LoggedInState {
   kMessagesAndIntrosStarted = 0x04
 };
 
+/// Share levels
+enum ShareLevel {
+  kOwner = 0,
+  kGroup,
+  kWorld
+};
+
+/// Constants
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint8_t kThreads(5);
@@ -75,10 +110,9 @@ const NonEmptyString kBlankProfilePicture("BlankPicture");
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kMyStuff("My Stuff");
 const std::string kDownloadStuff("Accepted Files");
-
 const std::string kHiddenFileExtension(".ms_hidden");
 
-/// General
+/// General Call Back function signatures
 typedef std::function<void(const NonEmptyString&, const NonEmptyString&, const NonEmptyString&)>
         ThreeStringsFunction;
 typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
@@ -92,30 +126,54 @@ typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
                            const NonEmptyString&,
                            const NonEmptyString&)>
         FiveStringsFunction;
+typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&)>
+        SixStringsFunction;
 
-typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
-typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
-typedef std::map<std::string, int> StringIntMap;
-typedef std::map<NonEmptyString, std::string> SocialInfoMap;
-typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
-typedef std::function<bool(const NonEmptyString&, std::string&)> ValidatedMessageFunction;
+/// Operation Result
+// success or failure for SendMsg, ShareElement, AddContact, ShareVault and SendFile
+enum class LifeStuffOpertion : int {
+  kAddContact = 1,
+  kSendMsg,
+  kSendFile,
+  kShareElement,
+  kShareVault
+};
+// Own public ID, Contact public ID, LifeStuffOpertion, sequence_id, result
+typedef std::function<void(   // NOLINT (Jeremy)
+    NonEmptyString, NonEmptyString, LifeStuffOpertion, NonEmptyString, int)> OpertionResultFunction;
 
+/// Message Received : notification, chat and email
+// Own public ID, Contact public ID, sequence_id, Message, Timestamp
+typedef FiveStringsFunction MsgFunction;
 
-/// Chat
-// Own public ID, Contact public ID, Message, Timestamp
-typedef FourStringsFunction ChatFunction;
+/// Element shared
+// Own public ID, Contact public ID, sequence_id, element_path, data_map_hash, Timestamp
+typedef SixStringsFunction ElementShareFunction;
 
 /// File transfer
-// Own public ID, Contact public ID, Timestamp
-typedef ThreeStringsFunction FileTransferFailureFunction;
-// Own public ID, Contact public ID, File name, File ID, Timestamp
-typedef FiveStringsFunction FileTransferSuccessFunction;
+// Own public ID, Contact public ID, sequence_id, file_name, data_map_hash, Timestamp
+typedef SixStringsFunction FileTransferFunction;
 
-/// Contact info
-// Own & other public ID, Timestamp
-typedef ThreeStringsFunction ContactConfirmationFunction;
-// Own & other public ID, Timestamp
-typedef ThreeStringsFunction ContactProfilePictureFunction;
+/// Vault shared
+struct VaultInfo {
+  NonEmptyString id;
+  uint64_t size_in_KB;
+  uint64_t free_space_in_KB;
+  int rank;
+};
+// Own public ID, Contact public ID, sequence_id, vault_info, Timestamp
+typedef std::function<void(   // NOLINT (Jeremy)
+    NonEmptyString, NonEmptyString, NonEmptyString, VaultInfo, NonEmptyString)> VaultShareFunction;
+
+/// Contact
+// Own public ID, Contact public ID, sequence_id, introduction_msg, Timestamp
+typedef FiveStringsFunction ContactRequestFunction;
+// Own public ID, Contact public ID, Timestamp, contact_presence
 typedef std::function<void(const NonEmptyString&,          // Own public ID
                            const NonEmptyString&,          // Contact public ID
                            const NonEmptyString&,          // Timestamp
@@ -125,19 +183,7 @@ typedef std::function<void(const NonEmptyString&,          // Own public ID
 typedef std::function<void(const NonEmptyString&,          // Own public ID
                            const NonEmptyString&,          // Contact public ID
                            const std::string&,             // Message
-                           const NonEmptyString&)> ContactDeletionReceivedFunction;
-// Own public ID, Contact public ID, Message, Timestamp  // For when deletion has been processed
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const std::string&,             // Message
                            const NonEmptyString&)> ContactDeletionFunction;
-// Own & other public ID, Message, Timestamp
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const std::string&,             // Message
-                           const NonEmptyString&)> NewContactFunction;
-// Lifestuff Card change: Own & other public ID, Timestamp
-typedef ThreeStringsFunction LifestuffCardUpdateFunction;
 
 /// New version update
 typedef std::function<void(NonEmptyString)> UpdateAvailableFunction;  // NOLINT (Dan)
@@ -148,12 +194,12 @@ typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
 /// Quitting
 typedef std::function<void()> ImmediateQuitRequiredFunction;
 
-enum class Operation : int {
+/// Operation Progress Report for multi-stage operations
+enum class MultiSateOperation : int {
   kCreateUser = -1,
   kLogIn = -2,
   kLogOut = -3
 };
-
 enum class SubTask : int {
   kInitialiseAnonymousComponents = -1001,
   kCreateUserCredentials = -1002,
@@ -164,35 +210,21 @@ enum class SubTask : int {
   kWaitForNetworkOperations = -1007,
   kCleanUp = -1008
 };
-
-typedef std::function<void(Operation, SubTask)> OperationProgressFunction;
+// multi_stage_operation, sub_task
+typedef std::function<void(MultiSateOperation, SubTask)> OperationProgressFunction;
 
 struct Slots {
-  Slots() : chat_slot(),
-            file_success_slot(),
-            file_failure_slot(),
-            new_contact_slot(),
-            confirmed_contact_slot(),
-            profile_picture_slot(),
-            contact_presence_slot(),
-            contact_deletion_slot(),
-            lifestuff_card_update_slot(),
-            network_health_slot(),
-            immediate_quit_required_slot(),
-            update_available_slot(),
-            operation_progress_slot() {}
-  ChatFunction chat_slot;
-  FileTransferSuccessFunction file_success_slot;
-  FileTransferFailureFunction file_failure_slot;
-  NewContactFunction new_contact_slot;
-  ContactConfirmationFunction confirmed_contact_slot;
-  ContactProfilePictureFunction profile_picture_slot;
+  OpertionResultFunction operation_result_slot;
+  MsgFunction msg_slot;
+  ElementShareFunction element_share_slot;
+  FileTransferFunction file_transfer_slot;
+  VaultShareFunction vault_share_slot;
+  ContactRequestFunction contact_request_slot;
   ContactPresenceFunction contact_presence_slot;
   ContactDeletionFunction contact_deletion_slot;
-  LifestuffCardUpdateFunction lifestuff_card_update_slot;
+  UpdateAvailableFunction update_available_slot;
   NetworkHealthFunction network_health_slot;
   ImmediateQuitRequiredFunction immediate_quit_required_slot;
-  UpdateAvailableFunction update_available_slot;
   OperationProgressFunction operation_progress_slot;
 };
 

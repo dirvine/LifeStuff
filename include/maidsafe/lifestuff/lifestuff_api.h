@@ -24,8 +24,6 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 
-#include <list>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -46,82 +44,227 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  LifeStuff(const Slots& slot_functions, const fs::path& base_directory);
+  explicit LifeStuff(const Slots& callback_functions);
   ~LifeStuff();
 
-  /// Credential operations
-  int CreateUser(const NonEmptyString& keyword,
-                 const NonEmptyString& pin,
-                 const NonEmptyString& password,
-                 const fs::path& chunk_store = fs::path());
-  int CreatePublicId(const NonEmptyString& public_id);
-  int LogIn(const NonEmptyString& keyword,
-            const NonEmptyString& pin,
-            const NonEmptyString& password);
-  int LogOut();
-  int MountDrive();
-  int UnMountDrive();
-  int StartMessagesAndIntros();
-  int StopMessagesAndIntros();
+  LifeStuffReturn LogIn();
+  LifeStuffReturn LogOut();
 
-  int CheckPassword(const NonEmptyString& password);
-  int ChangeKeyword(const NonEmptyString& new_keyword, const NonEmptyString& password);
-  int ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password);
-  int ChangePassword(const NonEmptyString& new_password, const NonEmptyString& current_password);
-  int ChangePublicId(const NonEmptyString& public_id, const NonEmptyString& password);
+  void MountDrive();
+  void UnMountDrive();
 
-  int LeaveLifeStuff();  // ='(
+  //  Creates a new lifestuff user. Requires Pin, Pwd & Keyword to have been successfully set
+  //  optional <vault> location of vault to be associated with user
+  LifeStuffReturn CreateUser(const fs::path& vault = fs::path());
+  // Creates a new public id. Requires Pin, Pwd & Keyword to have been successfully set
+  SecureStringReturn CreatePublicId(const std::string& public_id);
+  SecureStringReturn ChangePublicId(const std::string& public_id);
+
+  //  Credential operations
+  //  SecureString for Pin, Pwd and Keyword
+  //  for SecureString of type <target>, Insert/Replace <character> at <position>
+  SecureStringReturn SecureStringInsert(SecureStringType target, uint8_t position, char character);
+  SecureStringReturn SecureStringReplace(SecureStringType target, uint8_t position, char character);
+
+  //  for credential type <target>, remove <length> characters starting at <position>
+  SecureStringReturn SecureStringRemove(SecureStringType target, uint8_t position, uint8_t length);
+
+  //  check credential type <target> against regular expression <regex>
+  bool SecureStringValidate(SecureStringType target, std::string regex);
+
+  //  compares <source> and <target> credentials
+  bool SecureStringCompare(SecureStringType source, SecureStringType target);
+
+  //  establishes if credential of type <target> is empty/null
+  bool SecureStringIsEmptyOrNull(SecureStringType target);
+
+  //  clears content of credential type <target>
+  SecureStringReturn SecureStringClear(SecureStringType target);
+
+
+  /// Vault Operations
+  //  registers a new vault at <vault_root> of size <vault_capacity> (kB) (TODO - check appropriate
+  //  unit for this) to account <my_public_id>
+  LifeStuffReturn AddNewVault(const std::string& my_public_id,
+                              uint64_t vault_capacity,
+                              const fs::path& vault_root);
+
+  //  shares vault <vault_id> between account <my_public_id> and <contact_public_id>
+  LifeStuffReturn ShareVault(const std::string& my_public_id,
+                             const std::string& contact_public_id,
+                             const std::string& vault_id,
+                             const std::string& request_id);
+
+  //  returns vault information for all vaults registered to <my_public_id>
+  std::vector<VaultInfo> GetVaultInfo(const std::string& my_public_id);
+
+  //  accept share vault request from <sender_public_id> specified by <request_id>
+  LifeStuffReturn AcceptShareVault(const std::string& sender_public_id,
+                                   const std::string& request_id);
+
+  //  reject share vault request from <sender_public_id> specified by <request_id>
+  void RejectShareVault(const std::string& sender_public_id, const std::string& request_id);
+
+
+  /// Vault Statistics Info
+  uint64_t NetworkPopulation(const std::string& my_public_id);
+
+  uint64_t AverageDedupSizeInKB(const std::string& my_public_id);
+
+  float AverageDedupPercentage(const std::string& my_public_id);
+
+  uint64_t AverageDiskStoredSizeInKB(const std::string& my_public_id);
+
 
   /// Contact operations
-  int AddContact(const NonEmptyString& my_public_id,
-                 const NonEmptyString& contact_public_id,
-                 const std::string& message);
-  int ConfirmContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
-  int DeclineContact(const NonEmptyString& my_public_id, const NonEmptyString& contact_public_id);
-  int RemoveContact(const NonEmptyString& my_public_id,
-                    const NonEmptyString& contact_public_id,
-                    const std::string& removal_message);
-  int ChangeProfilePicture(const NonEmptyString& my_public_id,
-                           const NonEmptyString& profile_picture_contents);
-  NonEmptyString GetOwnProfilePicture(const NonEmptyString& my_public_id);
-  NonEmptyString GetContactProfilePicture(const NonEmptyString& my_public_id,
-                                          const NonEmptyString& contact_public_id);
-  int GetLifestuffCard(const NonEmptyString& my_public_id,
-                       const std::string& contact_public_id,
-                       SocialInfoMap& social_info);
-  int SetLifestuffCard(const NonEmptyString& my_public_id, const SocialInfoMap& social_info);
-  ContactMap GetContacts(const NonEmptyString& my_public_id,
-                         uint16_t bitwise_status = kConfirmed | kRequestSent);
-  std::vector<NonEmptyString> PublicIdsList() const;
+  //  sends a request identified by <request_id> from <my_public_id> to add <contact_public_id>
+  //  as a contact, with optional <message>
+  LifeStuffReturn AddContact(const std::string& my_public_id,
+                             const std::string& contact_public_id,
+                             const std::string& message,
+                             const std::string& request_id);
 
-  /// Messaging
-  int SendChatMessage(const NonEmptyString& sender_public_id,
-                      const NonEmptyString& receiver_public_id,
-                      const NonEmptyString& message);
-  int SendFile(const NonEmptyString& sender_public_id,
-               const NonEmptyString& receiver_public_id,
-               const fs::path& absolute_path);
-  int AcceptSentFile(const NonEmptyString& identifier,
-                     const fs::path& absolute_path = fs::path(),
-                     std::string* file_name = nullptr);
-  int RejectSentFile(const NonEmptyString& identifier);
+  //  confirms add contact request <request_id> from <contact_public_id>
+  void ConfirmContact(const std::string& my_public_id,
+                      const std::string& contact_public_id,
+                      const std::string& request_id);
+
+  //  declines add contact request <request_id> from <contact_public_id>
+  void DeclineContact(const std::string& my_public_id,
+                      const std::string& contact_public_id,
+                      const std::string& request_id);
+
+  //  removes <contact_public_id> from <my_public_id> contact list, with optional <removal_message>
+  LifeStuffReturn RemoveContact(const std::string& my_public_id,
+                                const std::string& contact_public_id,
+                                const std::string& removal_message);
+
+  //  blocks <contact_public_id> from sending requests/messages/files to <my_public_id>
+  LifeStuffReturn BlockContact(const std::string& my_public_id,
+                               const std::string& contact_public_id);
+
+  //  removes any block on <contact_public_id> by <my_public_id>
+  LifeStuffReturn UnBlockContact(const std::string& my_public_id,
+                                 const std::string& contact_public_id);
+
+  //  flags <contact_public_id> as spam by <my_public_id>. Will result in a decrease of
+  //  <contact_public_id> ranking
+  LifeStuffReturn FlagContactAsSpam(const std::string& my_public_id,
+                                    const std::string& contact_public_id);
+
+  //  reverses any lowering of <contact_public_id> ranking as a result of having been marked as spam
+  //  by <my_public_id>
+  LifeStuffReturn RemoveSpamFlag(const std::string& my_public_id,
+                                 const std::string& contact_public_id);
+
+  //  returns vector of contact public ids for <my_public_id>. List returned will be made up of
+  //  confirmed contacts or requested contacts or both, depending on <bitwise_status>
+  std::vector<std::string> GetContacts(const std::string& my_public_id,
+                                       uint16_t bitwise_status = kConfirmed | kRequestSent) const;
+
+  //  returns rank of <contact_public_id>
+  ContactRank GetContactRank(const std::string& my_public_id,
+                             const std::string& contact_public_id) const;
+
+  //  returns current contact status of <contact_public_id>
+  ContactStatus GetContactStatus(const std::string& my_public_id,
+                                 const std::string& contact_public_id) const;
+
+  //  returns current online/offline status of <contact_public_id>
+  ContactPresence GetContactPresence(const std::string& my_public_id,
+                                     const std::string& contact_public_id) const;
+
+  /// Share File / Directory
+  //  Personal info can be created under a structured directory, allowing multi-level access rights
+  //  An <share_level> setting of kOwner = non shared data
+  //                              kGroup = privately shared data
+  //                              kWorld = globally shared data
+  LifeStuffReturn SetShareLevel(const std::string& my_public_id,
+                                const fs::path& relative_path,
+                                ShareLevel share_level);
+
+  LifeStuffReturn GetShareLevel(const std::string& my_public_id,
+                                const fs::path& relative_path,
+                                ShareLevel* share_level);
+
+  /// Sharing
+  //  sends an offer from <my_public_id> to share <relative_path> with <receiver_public_id>
+  //  identified by <request_id>
+  LifeStuffReturn ShareElement(const std::string& my_public_id,
+                               const std::string& receiver_public_id,
+                               const fs::path& relative_path,
+                               const std::string& request_id);
+
+  LifeStuffReturn AcceptShareElement(const std::string& request_id,
+                                     const fs::path& relative_path = fs::path(),
+                                     std::string* file_name = nullptr);
+
+  //  rejects offer of share from <sender_public_id>, identified by <request_id>
+  void RejectShareElement(const std::string& sender_public_id,
+                          const std::string& request_id);
+
+
+  //  sends element at <relative_path> from <my_public_id> to <receiver_public_id> with optional
+  //  <message>, identified by <request_id>
+  LifeStuffReturn SendElement(const std::string& my_public_id,
+                              const std::string& receiver_public_id,
+                              const fs::path& relative_path,
+                              const std::string& message,
+                              const std::string& request_id);
+
+  //  accepts the element sent by <sender_public_id> corresponding to the <request_id>
+  LifeStuffReturn AcceptSentElement(const std::string& sender_public_id,
+                                    const std::string& request_id);
+
+  //  rejects the element sent by <sender_public_id> corresponding to the <request_id>
+  void RejectSentElement(const std::string& sender_public_id,
+                         const std::string& request_id);
+
+  /// Messaging / Notification / Email
+  //  sends message with content <message> from <sender_public_id> to <receiver_public_id>,
+  //  identified by <request_id>
+  LifeStuffReturn SendMessage(const std::string& sender_public_id,
+                              const std::string& receiver_public_id,
+                              const std::string& message,
+                              const std::string& request_id);
+
+
+  /// Subscribe
+  //  subscribes <my_public_id> to any updates of <relative_path> belonging to <receiver_public_id>
+  LifeStuffReturn Subscribe(const std::string& my_public_id,
+                            const std::string& receiver_public_id,
+                            const fs::path& relative_path);
+
+  //  unsubscribes <my_public_id> from any subsequent updates of <relative_path> belonging to
+  //  <receiver_public_id>
+  LifeStuffReturn UnSubscribe(const std::string& my_public_id,
+                              const std::string& receiver_public_id,
+                              const fs::path& relative_path);
+
+  //  returns list of who has subscribed to <relative_path>
+  std::vector<std::string> GetSubscribers(const std::string& my_public_id,
+                                          const fs::path& relative_path);
 
   /// Filesystem
-  int ReadHiddenFile(const fs::path& absolute_path, std::string* content) const;
-  int WriteHiddenFile(const fs::path& absolute_path,
-                      const NonEmptyString& content,
-                      bool overwrite_existing);
-  int DeleteHiddenFile(const fs::path& absolute_path);
-  int SearchHiddenFiles(const fs::path& absolute_path,
-                        std::vector<std::string>* results);
+  LifeStuffReturn ReadHiddenFile(const fs::path& relative_path, std::string* content) const;
 
-  ///
-  int state() const;
-  int logged_in_state() const;
-  fs::path mount_path() const;
+  LifeStuffReturn WriteHiddenFile(const fs::path& relative_path,
+                                  const std::string& content,
+                                  bool overwrite_existing);
+
+  LifeStuffReturn DeleteHiddenFile(const fs::path& relative_path);
+
+  LifeStuffReturn SearchHiddenFiles(const fs::path& relative_path,
+                                    std::vector<std::string>* results);
+
+
+//  /// legacy - establish if required
+//  LifeStuffState state() const;
+//  LoggedInState logged_in_state() const;
+//  fs::path mount_path() const;
 
  private:
-  std::shared_ptr<LifeStuffImpl> lifestuff_impl_;
+  std::unique_ptr<LifeStuffImpl> lifestuff_impl_;
 };
 
 }  // namespace lifestuff
