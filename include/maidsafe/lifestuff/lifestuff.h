@@ -75,7 +75,8 @@ enum ContactStatus {
   kRequestSent = 0x02,
   kPendingResponse = 0x04,
   kConfirmed = 0x08,
-  kBlocked = 0x10
+  kBlocked = 0x10,
+  kSpamer = 0x20
 };
 typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
 

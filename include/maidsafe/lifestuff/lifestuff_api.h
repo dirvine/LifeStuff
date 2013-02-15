@@ -63,11 +63,19 @@ class LifeStuff {
   //  Credential operations
   //  SecureString for Pin, Pwd and Keyword
   //  for SecureString of type <target>, Insert/Replace <character> at <position>
-  SecureStringReturn SecureStringInsert(SecureStringType target, uint8_t position, char character);
-  SecureStringReturn SecureStringReplace(SecureStringType target, uint8_t position, char character);
+  SecureStringReturn SecureStringInsert(SecureStringType target,
+                                        uint8_t position,
+                                        char character);
 
   //  for credential type <target>, remove <length> characters starting at <position>
-  SecureStringReturn SecureStringRemove(SecureStringType target, uint8_t position, uint8_t length);
+  SecureStringReturn SecureStringRemove(SecureStringType target,
+                                        uint8_t position,
+                                        uint8_t length);
+
+  //  for SecureString of type <target>, <position> matches <character>
+  SecureStringReturn SecureStringMatchChar(SecureStringType target,
+                                           uint8_t position,
+                                           char character);
 
   //  check credential type <target> against regular expression <regex>
   bool SecureStringValidate(SecureStringType target, std::string regex);
@@ -258,9 +266,11 @@ class LifeStuff {
                                     std::vector<std::string>* results);
 
 
+  LifeStuffState state() const;
+  LoggedInState logged_in_state() const;
+  bool ReadyForLogOut() const;
+
 //  /// legacy - establish if required
-//  LifeStuffState state() const;
-//  LoggedInState logged_in_state() const;
 //  fs::path mount_path() const;
 
  private:
