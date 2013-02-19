@@ -53,9 +53,9 @@ class LifeStuff {
   std::string GetPublicId() const;
 
   //  Credential operations
-  void SetPin(const SecureString& pin);
-  void SetPwd(const SecureString& pwd);
-  void SetKeyWord(const SecureString& key_word);
+  bool ChangePin(const SecureString& old_pin, const SecureString& new_pin);
+  bool ChangePwd(const SecureString& old_pwd, const SecureString& new_pwd);
+  bool ChangeKeyword(const SecureString& old_keyword, const SecureString& new_keyword);
 
 
   /// Vault Operations
