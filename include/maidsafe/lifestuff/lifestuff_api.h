@@ -1,25 +1,13 @@
-/*
-* ============================================================================
-*
-* Copyright [2012] maidsafe.net limited
-*
-* Description:  Definition of system-wide constants/enums/structs
-* Version:      1.0
-* Created:      2012-03-27
-* Revision:     none
-* Compiler:     gcc
-* Company:      maidsafe.net limited
-*
-* The following source code is property of maidsafe.net limited and is not
-* meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
-* www.maidsafe.net.
-*
-* You are not free to copy, amend or otherwise use this source code without
-* the explicit written permission of the board of directors of maidsafe.net.
-*
-* ============================================================================
-*/
+/***************************************************************************************************
+ *  Copyright 2013 MaidSafe.net limited                                                            *
+ *                                                                                                 *
+ *  The following source code is property of MaidSafe.net limited and is not meant for external    *
+ *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
+ *  this directory and also on www.maidsafe.net.                                                   *
+ *                                                                                                 *
+ *  You are not free to copy, amend or otherwise use this source code without the explicit         *
+ *  written permission of the board of directors of MaidSafe.net.                                  *
+ **************************************************************************************************/
 
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
@@ -45,7 +33,7 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  explicit LifeStuff(const Slots& callback_functions);
+  LifeStuff();
   ~LifeStuff();
 
   LifeStuffReturn LogIn(const SecureString& pin,
@@ -62,6 +50,7 @@ class LifeStuff {
   // Creates a new public id. Requires Pin, Pwd & Keyword to have been successfully set
   bool CreatePublicId(const std::string& public_id);
   bool ChangePublicId(const std::string& old_public_id, const std::string& new_public_id);
+  std::string GetPublicId() const;
 
   //  Credential operations
   void SetPin(const SecureString& pin);
@@ -83,7 +72,7 @@ class LifeStuff {
                              const std::string& request_id);
 
   //  returns vault information for all vaults registered to <my_public_id>
-  std::vector<VaultInfo> GetVaultInfo(const std::string& my_public_id);
+  std::vector<VaultUsageInfo> GetVaultInfo(const std::string& my_public_id);
 
   //  accept share vault request from <sender_public_id> specified by <request_id>
   LifeStuffReturn AcceptShareVault(const std::string& sender_public_id,
@@ -93,7 +82,7 @@ class LifeStuff {
   void RejectShareVault(const std::string& sender_public_id, const std::string& request_id);
 
 
-  /// Vault Statistics Info
+  /// Network Info
   uint64_t NetworkPopulation(const std::string& my_public_id);
 
   uint64_t AverageDedupSizeInKB(const std::string& my_public_id);
@@ -125,6 +114,9 @@ class LifeStuff {
   LifeStuffReturn RemoveContact(const std::string& my_public_id,
                                 const std::string& contact_public_id,
                                 const std::string& removal_message);
+
+  LifeStuffReturn RemoveContact(const std::string& my_public_id,
+                                const std::string& contact_public_id);
 
   //  blocks <contact_public_id> from sending requests/messages/files to <my_public_id>
   LifeStuffReturn BlockContact(const std::string& my_public_id,

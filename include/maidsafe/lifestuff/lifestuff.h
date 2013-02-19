@@ -161,11 +161,12 @@ typedef SixStringsFunction ElementShareFunction;
 typedef SixStringsFunction FileTransferFunction;
 
 /// Vault shared
-struct VaultInfo {
+struct VaultUsageInfo {
   NonEmptyString id;
   uint64_t size_in_KB;
   uint64_t free_space_in_KB;
   int rank;
+  // include owner id(s)?
 };
 // Own public ID, Contact public ID, sequence_id, vault_info, Timestamp
 typedef std::function<void(   // NOLINT (Jeremy)
