@@ -38,7 +38,8 @@ class SecureString {
   bool HasCharAt(uint8_t position, char character) const;
 
   //  check against regular expression <regex>
-  bool IsValid(const std::tr1::regex& regex) const;
+  bool IsValid(const std::regex& regex) const;
+  bool IsValid(const std::string& regex) const;
 
   //  check whether equal to <target> credentials
   bool IsEqualTo(const SecureString& target) const;
