@@ -68,8 +68,7 @@ class LifeStuff {
   //  shares vault <vault_id> between account <my_public_id> and <contact_public_id>
   LifeStuffReturn ShareVault(const std::string& my_public_id,
                              const std::string& contact_public_id,
-                             const std::string& vault_id,
-                             const std::string& request_id);
+                             const std::string& vault_id);
 
   //  returns vault information for all vaults registered to <my_public_id>
   std::vector<VaultUsageInfo> GetVaultInfo(const std::string& my_public_id);
@@ -97,18 +96,15 @@ class LifeStuff {
   //  as a contact, with optional <message>
   LifeStuffReturn AddContact(const std::string& my_public_id,
                              const std::string& contact_public_id,
-                             const std::string& message,
-                             const std::string& request_id);
+                             const std::string& message);
 
   //  confirms add contact request <request_id> from <contact_public_id>
   void ConfirmContact(const std::string& my_public_id,
-                      const std::string& contact_public_id,
-                      const std::string& request_id);
+                      const std::string& contact_public_id);
 
   //  declines add contact request <request_id> from <contact_public_id>
   void DeclineContact(const std::string& my_public_id,
-                      const std::string& contact_public_id,
-                      const std::string& request_id);
+                      const std::string& contact_public_id);
 
   //  removes <contact_public_id> from <my_public_id> contact list, with optional <removal_message>
   LifeStuffReturn RemoveContact(const std::string& my_public_id,
@@ -171,11 +167,11 @@ class LifeStuff {
   //  identified by <request_id>
   LifeStuffReturn ShareElement(const std::string& my_public_id,
                                const std::string& receiver_public_id,
-                               const fs::path& relative_path,
-                               const std::string& request_id);
+                               const fs::path& relative_path);
 
-  LifeStuffReturn AcceptShareElement(const std::string& request_id,
-                                     const fs::path& relative_path = fs::path(),
+  LifeStuffReturn AcceptShareElement(const std::string& sender_public_id,
+                                     const std::string& request_id,
+                                     const fs::path& relative_path,
                                      std::string* file_name = nullptr);
 
   //  rejects offer of share from <sender_public_id>, identified by <request_id>
@@ -184,12 +180,11 @@ class LifeStuff {
 
 
   //  sends element at <relative_path> from <my_public_id> to <receiver_public_id> with optional
-  //  <message>, identified by <request_id>
+  //  <message>
   LifeStuffReturn SendElement(const std::string& my_public_id,
                               const std::string& receiver_public_id,
                               const fs::path& relative_path,
-                              const std::string& message,
-                              const std::string& request_id);
+                              const std::string& message);
 
   //  accepts the element sent by <sender_public_id> corresponding to the <request_id>
   LifeStuffReturn AcceptSentElement(const std::string& sender_public_id,
@@ -201,12 +196,9 @@ class LifeStuff {
 
   /// Messaging / Notification / Email
   //  sends message with content <message> from <sender_public_id> to <receiver_public_id>,
-  //  identified by <request_id>
   LifeStuffReturn SendMessage(const std::string& sender_public_id,
                               const std::string& receiver_public_id,
-                              const std::string& message,
-                              const std::string& request_id);
-
+                              const std::string& message);
 
   /// Subscribe
   //  subscribes <my_public_id> to any updates of <relative_path> belonging to <receiver_public_id>
