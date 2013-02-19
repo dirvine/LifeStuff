@@ -52,18 +52,9 @@ struct LifeStuffReturn {
 };
 
 /// Secure String
-enum class SecureStringType : int {
-  kPin = 1,
-  kPwd,
-  kKeyWord,
-  kConfirmPin,
-  kConfirmPwd,
-  kConfirmKeyWord,
-  kUndefined
-};
 enum class SecureStringReturn : int {
-  kSuccess = 0,
-  kFailed = 1
+  kFailed = -1,
+  kSuccess = 0
 };
 
 /// Contact Related Return Types
@@ -137,27 +128,31 @@ typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
 
 /// Operation Result
 // success or failure for SendMsg, ShareElement, AddContact, ShareVault and SendFile
-enum class LifeStuffOpertion : int {
+enum class LifeStuffOperation : int {
   kAddContact = 1,
   kSendMsg,
   kSendFile,
   kShareElement,
   kShareVault
 };
-// Own public ID, Contact public ID, LifeStuffOpertion, sequence_id, result
-typedef std::function<void(   // NOLINT (Jeremy)
-    NonEmptyString, NonEmptyString, LifeStuffOpertion, NonEmptyString, int)> OpertionResultFunction;
+
+// Own public ID, Contact public ID, LifeStuffOpertion, request_id, result
+typedef std::function<void(const NonEmptyString&,
+                           const NonEmptyString&,
+                           LifeStuffOperation,
+                           const NonEmptyString&,
+                           int)> OpertionResultFunction;
 
 /// Message Received : notification, chat and email
-// Own public ID, Contact public ID, sequence_id, Message, Timestamp
+// Own public ID, Contact public ID, request_id, Message, Timestamp
 typedef FiveStringsFunction MsgFunction;
 
 /// Element shared
-// Own public ID, Contact public ID, sequence_id, element_path, data_map_hash, Timestamp
+// Own public ID, Contact public ID, request_id, element_path, data_map_hash, Timestamp
 typedef SixStringsFunction ElementShareFunction;
 
 /// File transfer
-// Own public ID, Contact public ID, sequence_id, file_name, data_map_hash, Timestamp
+// Own public ID, Contact public ID, request_id, file_name, data_map_hash, Timestamp
 typedef SixStringsFunction FileTransferFunction;
 
 /// Vault shared
@@ -168,19 +163,25 @@ struct VaultUsageInfo {
   int rank;
   // include owner id(s)?
 };
-// Own public ID, Contact public ID, sequence_id, vault_info, Timestamp
-typedef std::function<void(   // NOLINT (Jeremy)
-    NonEmptyString, NonEmptyString, NonEmptyString, VaultInfo, NonEmptyString)> VaultShareFunction;
+
+// Own public ID, Contact public ID, request_id, vault_info, Timestamp
+typedef std::function<void(const NonEmptyString&,
+                           const NonEmptyString&,
+                           const NonEmptyString&,
+                           const VaultUsageInfo&,
+                           const NonEmptyString&)> VaultShareFunction;
 
 /// Contact
-// Own public ID, Contact public ID, sequence_id, introduction_msg, Timestamp
+// Own public ID, Contact public ID, request_id, introduction_msg, Timestamp
 typedef FiveStringsFunction ContactRequestFunction;
+
 // Own public ID, Contact public ID, Timestamp, contact_presence
 typedef std::function<void(const NonEmptyString&,          // Own public ID
                            const NonEmptyString&,          // Contact public ID
                            const NonEmptyString&,          // Timestamp
                            ContactPresence presence)>      // online/offline
         ContactPresenceFunction;
+
 // Own public ID, Contact public ID, Message, Timestamp
 typedef std::function<void(const NonEmptyString&,          // Own public ID
                            const NonEmptyString&,          // Contact public ID
@@ -197,7 +198,7 @@ typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
 typedef std::function<void()> ImmediateQuitRequiredFunction;
 
 /// Operation Progress Report for multi-stage operations
-enum class MultiSateOperation : int {
+enum class MultiStageOperation : int {
   kCreateUser = -1,
   kLogIn = -2,
   kLogOut = -3
@@ -213,7 +214,7 @@ enum class SubTask : int {
   kCleanUp = -1008
 };
 // multi_stage_operation, sub_task
-typedef std::function<void(MultiSateOperation, SubTask)> OperationProgressFunction;
+typedef std::function<void(MultiStageOperation, SubTask)> OperationProgressFunction;
 
 struct Slots {
   OpertionResultFunction operation_result_slot;
