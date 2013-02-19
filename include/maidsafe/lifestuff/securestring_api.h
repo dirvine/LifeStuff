@@ -20,8 +20,8 @@ namespace maidsafe {
 namespace lifestuff {
 
 enum class SecureStringReturn : int {
-  kSuccess = 0,
-  kFailed = 1
+  kFailed = -1,
+  kSuccess = 0
 };
 
 class SecureStringImpl;

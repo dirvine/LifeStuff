@@ -51,12 +51,6 @@ struct LifeStuffReturn {
   char* msg;  // exception.what()
 };
 
-/// Secure String
-enum class SecureStringReturn : int {
-  kFailed = -1,
-  kSuccess = 0
-};
-
 /// Contact Related Return Types
 typedef uint16_t ContactRank;
 enum ContactPresence { kOffline, kOnline };
