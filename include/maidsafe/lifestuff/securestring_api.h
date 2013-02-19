@@ -13,6 +13,7 @@
 #define MAIDSAFE_LIFESTUFF_SECURESTRING_API_H_
 
 #include <string>
+#include <regex>
 
 namespace maidsafe {
 
@@ -37,13 +38,15 @@ class SecureString {
   bool HasCharAt(uint8_t position, char character) const;
 
   //  check against regular expression <regex>
-  bool IsValid(const std::string& regex) const;
+  bool IsValid(const std::tr1::regex& regex) const;
 
   //  check whether equal to <target> credentials
   bool IsEqualTo(const SecureString& target) const;
+  bool IsEqualTo(const std::string& target) const;
 
   //  check whether contains <target> credentials
   bool Contains(const SecureString& target) const;
+  bool Contains(const std::string& target) const;
 
   //  establishes if is empty/null
   bool IsEmptyOrNull() const;
