@@ -40,23 +40,26 @@ class SecureStringImpl;
 
 class SecureString {
  public:
-  //  Insert/Replace <character> at <position>
+  //  Insert <character> at <position>
   SecureStringReturn InsertChar(uint8_t position, char character);
 
   //  Remove <length> characters starting at <position>
   SecureStringReturn RemoveChars(uint8_t position, uint8_t length);
 
   //  <position> matches <character>
-  bool HasCharAt(uint8_t position, char character);
+  bool HasCharAt(uint8_t position, char character) const;
 
   //  check against regular expression <regex>
-  bool IsValid(const std::string& regex);
+  bool IsValid(const std::string& regex) const;
 
-  //  compares <source> and <target> credentials
-  bool IsEqualTo(const SecureString& target);
+  //  check whether equal to <target> credentials
+  bool IsEqualTo(const SecureString& target) const;
+
+  //  check whether contains <target> credentials
+  bool Contains(const SecureString& target) const;
 
   //  establishes if is empty/null
-  bool IsEmptyOrNull();
+  bool IsEmptyOrNull() const;
 
   //  clears content
   SecureStringReturn Clear();
