@@ -149,36 +149,7 @@ class LifeStuff {
   ContactPresence GetContactPresence(const std::string& my_public_id,
                                      const std::string& contact_public_id) const;
 
-  /// Share File / Directory
-  //  Personal info can be created under a structured directory, allowing multi-level access rights
-  //  An <share_level> setting of kOwner = non shared data
-  //                              kGroup = privately shared data
-  //                              kWorld = globally shared data
-  LifeStuffReturn SetShareLevel(const std::string& my_public_id,
-                                const fs::path& relative_path,
-                                ShareLevel share_level);
-
-  LifeStuffReturn GetShareLevel(const std::string& my_public_id,
-                                const fs::path& relative_path,
-                                ShareLevel* share_level);
-
-  /// Sharing
-  //  sends an offer from <my_public_id> to share <relative_path> with <receiver_public_id>
-  //  identified by <request_id>
-  LifeStuffReturn ShareElement(const std::string& my_public_id,
-                               const std::string& receiver_public_id,
-                               const fs::path& relative_path);
-
-  LifeStuffReturn AcceptShareElement(const std::string& sender_public_id,
-                                     const std::string& request_id,
-                                     const fs::path& relative_path,
-                                     std::string* file_name = nullptr);
-
-  //  rejects offer of share from <sender_public_id>, identified by <request_id>
-  void RejectShareElement(const std::string& sender_public_id,
-                          const std::string& request_id);
-
-
+  /// Send Element
   //  sends element at <relative_path> from <my_public_id> to <receiver_public_id> with optional
   //  <message>
   LifeStuffReturn SendElement(const std::string& my_public_id,
@@ -194,11 +165,34 @@ class LifeStuff {
   void RejectSentElement(const std::string& sender_public_id,
                          const std::string& request_id);
 
-  /// Messaging / Notification / Email
-  //  sends message with content <message> from <sender_public_id> to <receiver_public_id>,
-  LifeStuffReturn SendMessage(const std::string& sender_public_id,
-                              const std::string& receiver_public_id,
-                              const std::string& message);
+  /// Share File / Directory
+  //  Personal info can be created under a structured directory, allowing multi-level access rights
+  //  An <share_level> setting of kOwner = non shared data
+  //                              kGroup = privately shared data
+  //                              kWorld = globally shared data
+  LifeStuffReturn SetShareLevel(const std::string& my_public_id,
+                                const fs::path& relative_path,
+                                ShareLevel share_level);
+
+  LifeStuffReturn GetShareLevel(const std::string& my_public_id,
+                                const fs::path& relative_path,
+                                ShareLevel* share_level);
+
+  /// Public Sharing
+  //  sends an offer from <my_public_id> to share <relative_path> with <receiver_public_id>
+  //  identified by <request_id>
+  LifeStuffReturn ShareElement(const std::string& my_public_id,
+                               const std::string& receiver_public_id,
+                               const fs::path& relative_path);
+
+  LifeStuffReturn AcceptShareElement(const std::string& sender_public_id,
+                                     const std::string& request_id,
+                                     const fs::path& relative_path,
+                                     std::string* file_name = nullptr);
+
+  //  rejects offer of share from <sender_public_id>, identified by <request_id>
+  void RejectShareElement(const std::string& sender_public_id,
+                          const std::string& request_id);
 
   /// Subscribe
   //  subscribes <my_public_id> to any updates of <relative_path> belonging to <receiver_public_id>
@@ -212,9 +206,16 @@ class LifeStuff {
                               const std::string& receiver_public_id,
                               const fs::path& relative_path);
 
-  //  returns list of who has subscribed to <relative_path>
-  std::vector<std::string> GetSubscribers(const std::string& my_public_id,
-                                          const fs::path& relative_path);
+  /// For both Share and Subscribe
+  //  returns list of who are following (by sharing or subscribe) <relative_path>
+  std::vector<std::string> GetFollowers(const std::string& my_public_id,
+                                        const fs::path& relative_path);
+
+  /// Messaging / Notification / Email
+  //  sends message with content <message> from <sender_public_id> to <receiver_public_id>,
+  LifeStuffReturn SendMessage(const std::string& sender_public_id,
+                              const std::string& receiver_public_id,
+                              const std::string& message);
 
   /// Filesystem
   LifeStuffReturn ReadHiddenFile(const fs::path& relative_path, std::string* content) const;
