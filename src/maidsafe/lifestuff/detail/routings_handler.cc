@@ -109,7 +109,6 @@ bool RoutingsHandler::AddRoutingObject(
   routing::Functors functors;
   Identity id(routing_details->fob.identity);
   functors.message_received = [this, id] (const std::string& wrapped_message,
-                                          const NodeId& group_claim,
                                           const bool& /*cache_lookup*/,
                                           const routing::ReplyFunctor& reply_functor) {
                                 OnRequestReceived(id,
