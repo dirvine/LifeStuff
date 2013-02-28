@@ -12,27 +12,12 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
 
-#include <list>
-#include <map>
-#include <set>
-#include <string>
-#include <vector>
-
-#include "boost/function.hpp"
-#include "boost/signals2.hpp"
-#include "boost/asio/io_service.hpp"
-#include "boost/filesystem/path.hpp"
-#include "boost/thread/thread.hpp"
-
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-
-namespace bs2 = boost::signals2;
-namespace fs = boost::filesystem;
 
 namespace maidsafe {
 namespace lifestuff {
@@ -155,10 +140,6 @@ class UserCredentials {
                               const std::string& pin,
                               const std::string& password,
                               NonEmptyString& new_data_atlas);
-
-  void SessionSaver(const boost::posix_time::seconds& interval,
-                    const boost::system::error_code& error_code);
-
  private:
   passport::Passport passport_;
   ClientNfs& client_nfs_;

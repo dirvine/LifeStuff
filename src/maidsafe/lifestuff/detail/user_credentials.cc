@@ -77,121 +77,129 @@ void UserCredentials::CreateUser(const Keyword& keyword, const Pin& pin, const P
   CheckInputs(keyword, pin, password);
   passport_.CreateFobs();
   passport_.ConfirmFobs();
-  
+  // create user id
+  // join unauthorised
+  // store unsigned, Maid, Pmid, Anmaid
+  // start vault
+  // start client
+  // register vault
+  // store keys properly
+  // generate/store Mid and Tmid
   return;
 }
 
 void UserCredentials::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
   CheckInputs(keyword, pin, password);
 
-  std::string mid_packet, smid_packet;
-  result = GetUserInfo(keyword, pin, password, false, mid_packet, smid_packet);
-  if (result != kSuccess) {
-    LOG(kInfo) << "UserCredentials::LogIn - failed to get user info.";
-    return result;
-  }
-
-  // Check other running instances
-  if (!test_) {
-    result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
-    if (result != kSuccess) {
-      LOG(kInfo) << "UserCredentials::LogIn - Failure to deal with other running instances.";
-      return result;
-    }
-  }
-
-  session_.set_keyword(keyword);
-  session_.set_pin(pin);
-  session_.set_password(password);
-  session_.set_session_access_level(kFullAccess);
-  session_.set_session_name();
-
-  session_saved_once_ = false;
-//  StartSessionSaver();
-
-  return kSuccess;
+  return;
+//  std::string mid_packet, smid_packet;
+//  result = GetUserInfo(keyword, pin, password, false, mid_packet, smid_packet);
+//  if (result != kSuccess) {
+//    LOG(kInfo) << "UserCredentials::LogIn - failed to get user info.";
+//    return result;
+//  }
+//
+//  // Check other running instances
+//  if (!test_) {
+//    result = CheckForOtherRunningInstances(keyword, pin, password, mid_packet, smid_packet);
+//    if (result != kSuccess) {
+//      LOG(kInfo) << "UserCredentials::LogIn - Failure to deal with other running instances.";
+//      return result;
+//    }
+//  }
+//
+//  session_.set_keyword(keyword);
+//  session_.set_pin(pin);
+//  session_.set_password(password);
+//  session_.set_session_access_level(kFullAccess);
+//  session_.set_session_name();
+//
+//  session_saved_once_ = false;
+////  StartSessionSaver();
+//
+//  return kSuccess;
 }
 
-int UserCredentials::CheckForOtherRunningInstances(const NonEmptyString& keyword,
-                                                   const NonEmptyString& pin,
-                                                   const NonEmptyString& password,
-                                                   std::string& mid_packet,
-                                                   std::string& smid_packet) {
-  // Start MAID routing
-  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
-  if (!routings_handler_.AddRoutingObject(maid,
-                                          session_.bootstrap_endpoints(),
-                                          NonEmptyString(maid.identity),
-                                          nullptr)) {
-    LOG(kError) << "Failed to add MAID routing object to check for running instances.";
-    return -1;
-  }
-
-  // Message self and wait for response
-  std::string logout_request_acknowledgement;
-  NonEmptyString request_logout;
-  pending_session_marker_ = RandomString(64);
-  GenerateLogoutRequest(NonEmptyString(pending_session_marker_), request_logout);
-  bool successful_send(routings_handler_.Send(maid.identity,
-                                              maid.identity,
-                                              maid.keys.public_key,
-                                              request_logout,
-                                              &logout_request_acknowledgement));
-  if (!successful_send) {
-    if (logout_request_acknowledgement.empty()) {
-      LOG(kWarning) << "Timed out. Not necessarily a failure.";
-    } else {
-      LOG(kError) << "Sending failed.";
-      return -1;
-    }
-  }
-
-  // If other instances exist wait for log out message
-  if (!logout_request_acknowledgement.empty()) {
-    // Check logout_request_acknowledgement
-    OtherInstanceMessage other_instance_message;
-    if (!other_instance_message.ParseFromString(logout_request_acknowledgement) ||
-        other_instance_message.message_type() != 1) {
-      LOG(kError) << "Message response is not of the type expected.";
-      return -1;
-    }
-    LogoutProceedings proceedings;
-    if (!proceedings.ParseFromString(other_instance_message.serialised_message()) ||
-        !proceedings.has_session_acknowledger()) {
-      LOG(kError) << "Message has wrong format.";
-      return -1;
-    }
-
-    if (proceedings.session_acknowledger() != pending_session_marker_) {
-      LOG(kError) << "Session marker not replicated in acknowlegdement";
-      return -1;
-    }
-
-    std::unique_lock<std::mutex> lock(completed_log_out_mutex_);
-    if (!completed_log_out_conditional_.wait_for(lock,
-                                                 std::chrono::minutes(1),
-                                                 [&] () { return completed_log_out_; })) {
-      LOG(kError) << "Timed out waiting for other party to report logout. "
-                  << "Failure! Too dangerous to log in.";
-      return kNoLogoutResponse;
-    }
-
-    // Check response is valid
-    if (completed_log_out_message_ != pending_session_marker_) {
-      LOG(kError) << "Session marker does not match marker sent in request.";
-      return -1;
-    }
-
-    // Run GetUserInfo again
-    int result(GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet));
-    if (result != kSuccess) {
-      LOG(kInfo) << "UserCredentials::LogIn - Failed to get user info after remote logout.";
-      return result;
-    }
-  }
-
-  return kSuccess;
-}
+//int UserCredentials::CheckForOtherRunningInstances(const NonEmptyString& keyword,
+//                                                   const NonEmptyString& pin,
+//                                                   const NonEmptyString& password,
+//                                                   std::string& mid_packet,
+//                                                   std::string& smid_packet) {
+//  // Start MAID routing
+//  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, true));
+//  if (!routings_handler_.AddRoutingObject(maid,
+//                                          session_.bootstrap_endpoints(),
+//                                          NonEmptyString(maid.identity),
+//                                          nullptr)) {
+//    LOG(kError) << "Failed to add MAID routing object to check for running instances.";
+//    return -1;
+//  }
+//
+//  // Message self and wait for response
+//  std::string logout_request_acknowledgement;
+//  NonEmptyString request_logout;
+//  pending_session_marker_ = RandomString(64);
+//  GenerateLogoutRequest(NonEmptyString(pending_session_marker_), request_logout);
+//  bool successful_send(routings_handler_.Send(maid.identity,
+//                                              maid.identity,
+//                                              maid.keys.public_key,
+//                                              request_logout,
+//                                              &logout_request_acknowledgement));
+//  if (!successful_send) {
+//    if (logout_request_acknowledgement.empty()) {
+//      LOG(kWarning) << "Timed out. Not necessarily a failure.";
+//    } else {
+//      LOG(kError) << "Sending failed.";
+//      return -1;
+//    }
+//  }
+//
+//  // If other instances exist wait for log out message
+//  if (!logout_request_acknowledgement.empty()) {
+//    // Check logout_request_acknowledgement
+//    OtherInstanceMessage other_instance_message;
+//    if (!other_instance_message.ParseFromString(logout_request_acknowledgement) ||
+//        other_instance_message.message_type() != 1) {
+//      LOG(kError) << "Message response is not of the type expected.";
+//      return -1;
+//    }
+//    LogoutProceedings proceedings;
+//    if (!proceedings.ParseFromString(other_instance_message.serialised_message()) ||
+//        !proceedings.has_session_acknowledger()) {
+//      LOG(kError) << "Message has wrong format.";
+//      return -1;
+//    }
+//
+//    if (proceedings.session_acknowledger() != pending_session_marker_) {
+//      LOG(kError) << "Session marker not replicated in acknowlegdement";
+//      return -1;
+//    }
+//
+//    std::unique_lock<std::mutex> lock(completed_log_out_mutex_);
+//    if (!completed_log_out_conditional_.wait_for(lock,
+//                                                 std::chrono::minutes(1),
+//                                                 [&] () { return completed_log_out_; })) {
+//      LOG(kError) << "Timed out waiting for other party to report logout. "
+//                  << "Failure! Too dangerous to log in.";
+//      return kNoLogoutResponse;
+//    }
+//
+//    // Check response is valid
+//    if (completed_log_out_message_ != pending_session_marker_) {
+//      LOG(kError) << "Session marker does not match marker sent in request.";
+//      return -1;
+//    }
+//
+//    // Run GetUserInfo again
+//    int result(GetUserInfo(keyword, pin, password, true, mid_packet, smid_packet));
+//    if (result != kSuccess) {
+//      LOG(kInfo) << "UserCredentials::LogIn - Failed to get user info after remote logout.";
+//      return result;
+//    }
+//  }
+//
+//  return kSuccess;
+//}
 
 void UserCredentials::LogOut() {
   // SaveSession(true); !!!
@@ -450,44 +458,44 @@ void UserCredentials::LogOut() {
 //  }
 //}
 
-void UserCredentials::StoreAnmaid(OperationResults& results) {
-  Fob anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
-  priv::ChunkId packet_name;
-  NonEmptyString packet_content;
-
-  CreateSignaturePacketInfo(anmaid, packet_name, packet_content);
-  if (!remote_chunk_store_->Store(packet_name,
-                                  packet_content,
-                                  [&] (bool result) { StoreMaid(result, results); },
-                                  anmaid)) {
-    LOG(kError) << "Failed to store ANMAID.";
-    StoreMaid(false, results);
-  }
-}
-
-void UserCredentials::StoreMaid(bool result, OperationResults& results) {
-  if (!result) {
-    LOG(kError) << "Anmaid failed to store.";
-    OperationCallback(false, results, 3);
-    return;
-  }
-
-  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, false));
-  Fob anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
-
-  priv::ChunkId maid_name(SignaturePacketName(maid.identity));
-  pca::SignedData signed_maid;
-  signed_maid.set_signature(maid.validation_token.string());
-  asymm::EncodedPublicKey maid_string_public_key(asymm::EncodeKey(maid.keys.public_key));
-  signed_maid.set_data(maid_string_public_key.string());
-  if (!remote_chunk_store_->Store(maid_name,
-                                  NonEmptyString(signed_maid.SerializeAsString()),
-                                  [&] (bool result) { StorePmid(result, results); },
-                                  anmaid)) {
-    LOG(kError) << "Failed to store MAID.";
-    StorePmid(false, results);
-  }
-}
+//void UserCredentials::StoreAnmaid(OperationResults& results) {
+//  Fob anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
+//  priv::ChunkId packet_name;
+//  NonEmptyString packet_content;
+//
+//  CreateSignaturePacketInfo(anmaid, packet_name, packet_content);
+//  if (!remote_chunk_store_->Store(packet_name,
+//                                  packet_content,
+//                                  [&] (bool result) { StoreMaid(result, results); },
+//                                  anmaid)) {
+//    LOG(kError) << "Failed to store ANMAID.";
+//    StoreMaid(false, results);
+//  }
+//}
+//
+//void UserCredentials::StoreMaid(bool result, OperationResults& results) {
+//  if (!result) {
+//    LOG(kError) << "Anmaid failed to store.";
+//    OperationCallback(false, results, 3);
+//    return;
+//  }
+//
+//  Fob maid(passport_.SignaturePacketDetails(passport::kMaid, false));
+//  Fob anmaid(passport_.SignaturePacketDetails(passport::kAnmaid, false));
+//
+//  priv::ChunkId maid_name(SignaturePacketName(maid.identity));
+//  pca::SignedData signed_maid;
+//  signed_maid.set_signature(maid.validation_token.string());
+//  asymm::EncodedPublicKey maid_string_public_key(asymm::EncodeKey(maid.keys.public_key));
+//  signed_maid.set_data(maid_string_public_key.string());
+//  if (!remote_chunk_store_->Store(maid_name,
+//                                  NonEmptyString(signed_maid.SerializeAsString()),
+//                                  [&] (bool result) { StorePmid(result, results); },
+//                                  anmaid)) {
+//    LOG(kError) << "Failed to store MAID.";
+//    StorePmid(false, results);
+//  }
+//}
 
 //void UserCredentials::StorePmid(bool result, OperationResults& results) {
 //  if (!result) {
@@ -1098,31 +1106,6 @@ void UserCredentials::StoreMaid(bool result, OperationResults& results) {
 //  }
 //}
 //
-//void UserCredentials::SessionSaver(const bptime::seconds& interval,
-//                                       const boost::system::error_code& error_code) {
-//  LOG(kVerbose) << "UserCredentials::SessionSaver!!! Wooohooooo";
-//  if (error_code) {
-//    if (error_code != boost::asio::error::operation_aborted) {
-//      LOG(kError) << "Refresh timer error: " << error_code.message();
-//    } else {
-//      return;
-//    }
-//  }
-//
-//  if (!session_saver_timer_active_) {
-//    LOG(kInfo) << "Timer process cancelled.";
-//    return;
-//  }
-//
-//  if (session_.session_access_level() == kFullAccess) {
-//    int result = SaveSession(false);
-//    LOG(kInfo) << "Session saver result: " << result;
-//  }
-//
-//  session_saver_timer_.async_wait([=] (const boost::system::error_code& error_code) {
-//                                    this->SessionSaver(bptime::seconds(interval), error_code);
-//                                  });
-//}
 //
 //void UserCredentials::LogoutCompletedArrived(const std::string& session_marker) {
 //  std::lock_guard<std::mutex> lock(completed_log_out_mutex_);
@@ -1175,100 +1158,100 @@ bool UserCredentials::AcceptableWordPattern(const Identity& word) {
   return !boost::regex_search(word.string().begin(), word.string().end(), space);
 }
 
-void UserCredentials::GetUserInfo(const Keyword& keyword,
-                                  const Pin& pin,
-                                  const Password& password,
-                                  const bool& compare_names,
-                                  std::string& mid_packet,
-                                  std::string& smid_packet) {
-  if (compare_names) {
-    std::string re_mid_packet;
-    std::string re_smid_packet;
-
-    uint32_t int_pin(StringToIntPin(pin));
-    priv::ChunkId mid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
-    priv::ChunkId smid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
-
-    boost::thread mid_thread([&] { re_mid_packet = remote_chunk_store_->Get(mid_name, Fob()); });  // NOLINT (Dan)
-    boost::thread smid_thread([&] { re_smid_packet = remote_chunk_store_->Get(smid_name, Fob()); });  // NOLINT (Dan)
-
-    mid_thread.join();
-    smid_thread.join();
-
-    if (re_mid_packet.empty()) {
-      LOG(kError) << "No MID found.";
-      return kIdPacketNotFound;
-    }
-    if (re_smid_packet.empty()) {
-      LOG(kError) << "No SMID found.";
-      return kIdPacketNotFound;
-    }
-
-    if (mid_packet == re_mid_packet && smid_packet == re_smid_packet) {
-      LOG(kInfo) << "MID and SMID are up to date.";
-      return kSuccess;
-    }
-  }
-
-  // Obtain MID, TMID
-  int mid_tmid_result(kSuccess);
-  std::string tmid_packet;
-  boost::thread mid_tmid_thread([&] {
-                                  GetIdAndTemporaryId(keyword,
-                                                      pin,
-                                                      password,
-                                                      false,
-                                                      &mid_tmid_result,
-                                                      &mid_packet,
-                                                      &tmid_packet);
-                                });
-  // Obtain SMID, STMID
-  int smid_stmid_result(kSuccess);
-  std::string stmid_packet;
-  boost::thread smid_stmid_thread([&] {
-                                    GetIdAndTemporaryId(keyword,
-                                                        pin,
-                                                        password,
-                                                        true,
-                                                        &smid_stmid_result,
-                                                        &smid_packet,
-                                                        &stmid_packet);
-                                  });
-
-  // Wait for them to finish
-  mid_tmid_thread.join();
-  smid_stmid_thread.join();
-  LOG(kInfo) << "mid_tmid_result: " << mid_tmid_result << " - "
-             << std::boolalpha << mid_packet.empty() << " - " << tmid_packet.empty();
-  LOG(kInfo) << "smid_stmid_result: " << smid_stmid_result << " - "
-             << std::boolalpha << smid_packet.empty() << " - " << stmid_packet.empty();
-
-  // Evaluate MID & TMID
-  if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
-    LOG(kInfo) << "User doesn't exist: " << keyword.string() << ", " << pin.string();
-    return kLoginUserNonExistence;
-  }
-
-  if (mid_tmid_result == kCorruptedPacket && smid_stmid_result == kCorruptedPacket) {
-    LOG(kError) << "Account corrupted. Should never happen: "
-                << keyword.string() << ", " << pin.string();
-    return kLoginAccountCorrupted;
-  }
-
-  int result(HandleSerialisedDataMaps(keyword, pin, password, tmid_packet, stmid_packet));
-  if (result != kSuccess) {
-    if (result == kTryAgainLater) {
-      return kLoginSessionNotYetSaved;
-    } else if (result == kUsingNextToLastSession) {
-      return kLoginUsingNextToLastSession;
-    } else {
-      LOG(kError) << "Failed to initialise session: " << result;
-      return kLoginAccountCorrupted;
-    }
-  }
-
-  return kSuccess;
-}
+//void UserCredentials::GetUserInfo(const Keyword& keyword,
+//                                  const Pin& pin,
+//                                  const Password& password,
+//                                  const bool& compare_names,
+//                                  std::string& mid_packet,
+//                                  std::string& smid_packet) {
+//  if (compare_names) {
+//    std::string re_mid_packet;
+//    std::string re_smid_packet;
+//
+//    uint32_t int_pin(StringToIntPin(pin));
+//    priv::ChunkId mid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
+//    priv::ChunkId smid_name(ModifiableName(Identity(passport::MidName(keyword, int_pin, false))));
+//
+//    boost::thread mid_thread([&] { re_mid_packet = remote_chunk_store_->Get(mid_name, Fob()); });  // NOLINT (Dan)
+//    boost::thread smid_thread([&] { re_smid_packet = remote_chunk_store_->Get(smid_name, Fob()); });  // NOLINT (Dan)
+//
+//    mid_thread.join();
+//    smid_thread.join();
+//
+//    if (re_mid_packet.empty()) {
+//      LOG(kError) << "No MID found.";
+//      return kIdPacketNotFound;
+//    }
+//    if (re_smid_packet.empty()) {
+//      LOG(kError) << "No SMID found.";
+//      return kIdPacketNotFound;
+//    }
+//
+//    if (mid_packet == re_mid_packet && smid_packet == re_smid_packet) {
+//      LOG(kInfo) << "MID and SMID are up to date.";
+//      return kSuccess;
+//    }
+//  }
+//
+//  // Obtain MID, TMID
+//  int mid_tmid_result(kSuccess);
+//  std::string tmid_packet;
+//  boost::thread mid_tmid_thread([&] {
+//                                  GetIdAndTemporaryId(keyword,
+//                                                      pin,
+//                                                      password,
+//                                                      false,
+//                                                      &mid_tmid_result,
+//                                                      &mid_packet,
+//                                                      &tmid_packet);
+//                                });
+//  // Obtain SMID, STMID
+//  int smid_stmid_result(kSuccess);
+//  std::string stmid_packet;
+//  boost::thread smid_stmid_thread([&] {
+//                                    GetIdAndTemporaryId(keyword,
+//                                                        pin,
+//                                                        password,
+//                                                        true,
+//                                                        &smid_stmid_result,
+//                                                        &smid_packet,
+//                                                        &stmid_packet);
+//                                  });
+//
+//  // Wait for them to finish
+//  mid_tmid_thread.join();
+//  smid_stmid_thread.join();
+//  LOG(kInfo) << "mid_tmid_result: " << mid_tmid_result << " - "
+//             << std::boolalpha << mid_packet.empty() << " - " << tmid_packet.empty();
+//  LOG(kInfo) << "smid_stmid_result: " << smid_stmid_result << " - "
+//             << std::boolalpha << smid_packet.empty() << " - " << stmid_packet.empty();
+//
+//  // Evaluate MID & TMID
+//  if (mid_tmid_result == kIdPacketNotFound && smid_stmid_result == kIdPacketNotFound) {
+//    LOG(kInfo) << "User doesn't exist: " << keyword.string() << ", " << pin.string();
+//    return kLoginUserNonExistence;
+//  }
+//
+//  if (mid_tmid_result == kCorruptedPacket && smid_stmid_result == kCorruptedPacket) {
+//    LOG(kError) << "Account corrupted. Should never happen: "
+//                << keyword.string() << ", " << pin.string();
+//    return kLoginAccountCorrupted;
+//  }
+//
+//  int result(HandleSerialisedDataMaps(keyword, pin, password, tmid_packet, stmid_packet));
+//  if (result != kSuccess) {
+//    if (result == kTryAgainLater) {
+//      return kLoginSessionNotYetSaved;
+//    } else if (result == kUsingNextToLastSession) {
+//      return kLoginUsingNextToLastSession;
+//    } else {
+//      LOG(kError) << "Failed to initialise session: " << result;
+//      return kLoginAccountCorrupted;
+//    }
+//  }
+//
+//  return kSuccess;
+//}
 
 }  // namespace lifestuff
 }  // namespace maidsafe
