@@ -56,7 +56,7 @@ class SecureString {
   SecureStringReturn Clear();
 
  private:
-  std::unique_ptr<SecureStringImpl> securestring_impl_;
+  std::unique_ptr<SecureStringImpl> secure_string_impl_;
 };
 
 }  // namespace lifestuff

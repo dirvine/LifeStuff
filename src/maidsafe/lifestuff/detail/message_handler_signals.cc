@@ -22,36 +22,36 @@ namespace maidsafe {
 
 namespace lifestuff {
 
-/// Extra library connections
-bs2::connection MessageHandler::ConnectToChatSignal(const ChatFunction& function) {
-  return chat_signal_.connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToFileTransferSuccessSignal(
-    const FileTransferSuccessFunction& function) {
-  return file_transfer_success_signal_.connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToFileTransferFailureSignal(
-    const FileTransferFailureFunction& function) {
-  return file_transfer_failure_signal_.connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToContactPresenceSignal(
-    const ContactPresenceFunction& function) {
-  return contact_presence_signal_.connect(function);
-}
-
-bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
-    const ContactProfilePictureFunction& function) {
-  return contact_profile_picture_signal_.connect(function);
-}
-
-/// Intra library connections
-bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
-    const ParseAndSaveDataMapSignal::slot_type& function) {
-  return parse_and_save_data_map_signal_.connect(function);
-}
+///// Extra library connections
+//bs2::connection MessageHandler::ConnectToChatSignal(const ChatFunction& function) {
+//  return chat_signal_.connect(function);
+//}
+//
+//bs2::connection MessageHandler::ConnectToFileTransferSuccessSignal(
+//    const FileTransferSuccessFunction& function) {
+//  return file_transfer_success_signal_.connect(function);
+//}
+//
+//bs2::connection MessageHandler::ConnectToFileTransferFailureSignal(
+//    const FileTransferFailureFunction& function) {
+//  return file_transfer_failure_signal_.connect(function);
+//}
+//
+//bs2::connection MessageHandler::ConnectToContactPresenceSignal(
+//    const ContactPresenceFunction& function) {
+//  return contact_presence_signal_.connect(function);
+//}
+//
+//bs2::connection MessageHandler::ConnectToContactProfilePictureSignal(
+//    const ContactProfilePictureFunction& function) {
+//  return contact_profile_picture_signal_.connect(function);
+//}
+//
+///// Intra library connections
+//bs2::connection MessageHandler::ConnectToParseAndSaveDataMapSignal(
+//    const ParseAndSaveDataMapSignal::slot_type& function) {
+//  return parse_and_save_data_map_signal_.connect(function);
+//}
 
 }  // namespace lifestuff
 
