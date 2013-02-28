@@ -23,7 +23,7 @@ namespace lifestuff {
 class ClientMaid {
  public:
   typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
-  
+
   ClientMaid(ClientNfs& client_nfs_);
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
