@@ -1,19 +1,19 @@
-/***************************************************************************************************
- *  Copyright 2012 maidsafe.net limited                                                            *
- *                                                                                                 *
- *  The following source code is property of maidsafe.net limited and is not meant for external    *
- *  use. The use of this code is governed by the license file LICENSE.TXT found in the root of     *
- *  this directory and also on www.maidsafe.net.                                                   *
- *                                                                                                 *
- *  You are not free to copy, amend or otherwise use this source code without the explicit written *
- *  permission of the board of directors of maidsafe.net.                                          *
- **************************************************************************************************/
-/**
- * @file  routings_handler.h
- * @brief Provides a class for processing messages using Routing.
- * @date  2012-09-03
- */
-
+///***************************************************************************************************
+// *  Copyright 2012 maidsafe.net limited                                                            *
+// *                                                                                                 *
+// *  The following source code is property of maidsafe.net limited and is not meant for external    *
+// *  use. The use of this code is governed by the license file LICENSE.TXT found in the root of     *
+// *  this directory and also on www.maidsafe.net.                                                   *
+// *                                                                                                 *
+// *  You are not free to copy, amend or otherwise use this source code without the explicit written *
+// *  permission of the board of directors of maidsafe.net.                                          *
+// **************************************************************************************************/
+///**
+// * @file  routings_handler.h
+// * @brief Provides a class for processing messages using Routing.
+// * @date  2012-09-03
+// */
+//
 //#ifndef MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_
 //#define MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_
 //
@@ -28,14 +28,11 @@
 //
 //#include "maidsafe/common/rsa.h"
 //
-//#include "maidsafe/private/chunk_store/remote_chunk_store.h"
-//
 //#include "maidsafe/routing/routing_api.h"
 //
 //#include "maidsafe/lifestuff/lifestuff.h"
 //
 //namespace maidsafe {
-//
 //namespace lifestuff {
 //
 //class Session;
@@ -44,8 +41,7 @@
 // public:
 //  explicit RoutingsHandler(priv::chunk_store::RemoteChunkStore& chunk_store,
 //                           Session& session,
-//                           const ValidatedMessageFunction& validated_message_signal,
-//                           boost::asio::io_service& service);
+//                           const ValidatedMessageFunction& validated_message_signal);
 //
 //  ~RoutingsHandler();
 //
@@ -83,7 +79,6 @@
 //  ValidatedMessageFunction validated_message_signal_;
 //  std::mutex cs_mutex_;
 //  volatile bool stopped_;
-//  boost::asio::io_service& asio_service_;
 //
 //  RoutingsHandler(const RoutingsHandler&);
 //  RoutingsHandler& operator=(const RoutingsHandler&);
@@ -111,7 +106,6 @@
 //};
 //
 //}  // namespace lifestuff
-//
 //}  // namespace maidsafe
 //
 //#endif  // MAIDSAFE_LIFESTUFF_DETAIL_ROUTINGS_HANDLER_H_

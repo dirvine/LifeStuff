@@ -21,21 +21,29 @@
 #include "maidsafe/nfs/nfs.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/detail/client_maid.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
+#include "maidsafe/lifestuff_manager/client_controller.h"
 
 namespace maidsafe {
 namespace lifestuff {
-
-class MessageHandler;
 
 class LifeStuffImpl {
  public:
   typedef maidsafe::routing::Routing Routing;
   typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
+  typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
+  typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
+  typedef maidsafe::lifestuff_manager::ClientController ClientController;
+  typedef maidsafe::lifestuff_manager::EndPoint EndPoint;
+  typedef boost::asio::ip::udp::endpoint UdpEndPoint;
   typedef passport::Maid Maid;
+  typedef passport::Pmid Pmid;
+  typedef passport::Anmaid Anmaid;
+  typedef passport::Mid Mid;
+  typedef passport::Tmid Tmid;
+  typedef passport::Anmid Anmid;
 
-  LifeStuffImpl();
+  LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -49,12 +57,23 @@ class LifeStuffImpl {
 
  private:
 
-  Maid GetMaid();
+  const Slots& CheckSlots(const Slots& slots);
 
+  void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
+  void CheckKeywordValidity(const Keyword& keyword);
+  void CheckPinValidity(const Pin& pin);
+  void CheckPasswordValidity(const Password& password);
+  bool AcceptableWordSize(const Identity& word);
+  bool AcceptableWordPattern(const Identity& word);
+
+  std::vector<UdpEndPoint> GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
+
+  Slots slots_;
+  passport::Passport passport_;
   Routing routing_;
-  ClientNfs client_nfs_;
-  ClientMaid client_maid_;
-  UserCredentials user_credentials_;
+  ClientNfsPtr client_nfs_;
+  UserCredentialsPtr user_credentials_;
+  ClientController client_controller_;
 };
 
 }  // namespace lifestuff

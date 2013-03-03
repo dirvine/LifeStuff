@@ -55,15 +55,15 @@ class UserCredentials {
   bool IsOwnSessionTerminationMessage(const std::string& session_marker);
 
  private:
-  UserCredentials &operator=(const UserCredentials&);
+  UserCredentials& operator=(const UserCredentials&);
   UserCredentials(const UserCredentials&);
 
-  void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
+  /*void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
   void CheckKeywordValidity(const Keyword& keyword);
   void CheckPinValidity(const Pin& pin);
   void CheckPasswordValidity(const Password& password);
   bool AcceptableWordSize(const Identity& word);
-  bool AcceptableWordPattern(const Identity& word);
+  bool AcceptableWordPattern(const Identity& word);*/
 
   void GetUserInfo(const Keyword& keyword,
                    const Pin& pin,

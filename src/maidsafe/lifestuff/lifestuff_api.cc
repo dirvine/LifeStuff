@@ -20,8 +20,8 @@
 namespace maidsafe {
 namespace lifestuff {
 
-LifeStuff::LifeStuff()
-  : lifestuff_impl_(new LifeStuffImpl()) {}
+LifeStuff::LifeStuff(const Slots& slots)
+  : lifestuff_impl_(new LifeStuffImpl(slots)) {}
 
 LifeStuff::~LifeStuff() {}
 

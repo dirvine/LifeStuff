@@ -28,7 +28,7 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  LifeStuff();
+  LifeStuff(const Slots& slots);
   ~LifeStuff();
 
   void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);

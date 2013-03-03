@@ -18,7 +18,6 @@
 #include "boost/thread/condition_variable.hpp"
 #include "boost/thread/mutex.hpp"
 #include "boost/thread/thread.hpp"
-#include "boost/regex.hpp"
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -73,23 +72,12 @@ UserCredentials::UserCredentials(ClientNfs& client_nfs)
 
 UserCredentials::~UserCredentials() {}
 
-void UserCredentials::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
-  CheckInputs(keyword, pin, password);
-  passport_.CreateFobs();
-  passport_.ConfirmFobs();
-  // create user id
-  // join unauthorised
-  // store unsigned, Maid, Pmid, Anmaid
-  // start vault
-  // start client
-  // register vault
-  // store keys properly
-  // generate/store Mid and Tmid
+void UserCredentials::CreateUser(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
   return;
 }
 
-void UserCredentials::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
-  CheckInputs(keyword, pin, password);
+void UserCredentials::LogIn(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
+  //CheckInputs(keyword, pin, password);
 
   return;
 //  std::string mid_packet, smid_packet;
@@ -472,7 +460,7 @@ void UserCredentials::LogOut() {
 //    StoreMaid(false, results);
 //  }
 //}
-//
+
 //void UserCredentials::StoreMaid(bool result, OperationResults& results) {
 //  if (!result) {
 //    LOG(kError) << "Anmaid failed to store.";
@@ -1118,45 +1106,45 @@ void UserCredentials::LogOut() {
 //  return pending_session_marker_ == session_marker;
 //}
 
-void UserCredentials::CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password) {
-  CheckKeywordValidity(keyword);
-  CheckPinValidity(pin);
-  CheckPasswordValidity(password);
-  return;
-}
-
-void UserCredentials::CheckKeywordValidity(const Keyword& keyword) {
-  if (!AcceptableWordSize(keyword.data))
-    ThrowError(LifeStuffErrors::kKeywordSizeInvalid);
-  if (!AcceptableWordPattern(keyword.data))
-    ThrowError(LifeStuffErrors::kKeywordPatternInvalid);
-  return;
-}
-
-void UserCredentials::CheckPinValidity(const Pin& pin) {
-  if (pin.data.string().size() != kPinSize)
-    ThrowError(LifeStuffErrors::kPinSizeInvalid);
-  if (boost::lexical_cast<int>(pin.data.string()) < 1)
-    ThrowError(LifeStuffErrors::kPinPatternInvalid);
-  return;
-}
-
-void UserCredentials::CheckPasswordValidity(const Password& password) {
-  if (!AcceptableWordSize(password.data))
-    ThrowError(LifeStuffErrors::kPasswordSizeInvalid);
-  if (!AcceptableWordPattern(password.data))
-    ThrowError(LifeStuffErrors::kPasswordPatternInvalid);
-  return;
-}
-
-bool UserCredentials::AcceptableWordSize(const Identity& word) {
-  return word.string().size() >= kMinWordSize && word.string().size() <= kMaxWordSize;
-}
-
-bool UserCredentials::AcceptableWordPattern(const Identity& word) {
-  boost::regex space(" ");
-  return !boost::regex_search(word.string().begin(), word.string().end(), space);
-}
+//void UserCredentials::CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password) {
+//  CheckKeywordValidity(keyword);
+//  CheckPinValidity(pin);
+//  CheckPasswordValidity(password);
+//  return;
+//}
+//
+//void UserCredentials::CheckKeywordValidity(const Keyword& keyword) {
+//  if (!AcceptableWordSize(keyword.data))
+//    ThrowError(LifeStuffErrors::kKeywordSizeInvalid);
+//  if (!AcceptableWordPattern(keyword.data))
+//    ThrowError(LifeStuffErrors::kKeywordPatternInvalid);
+//  return;
+//}
+//
+//void UserCredentials::CheckPinValidity(const Pin& pin) {
+//  if (pin.data.string().size() != kPinSize)
+//    ThrowError(LifeStuffErrors::kPinSizeInvalid);
+//  if (boost::lexical_cast<int>(pin.data.string()) < 1)
+//    ThrowError(LifeStuffErrors::kPinPatternInvalid);
+//  return;
+//}
+//
+//void UserCredentials::CheckPasswordValidity(const Password& password) {
+//  if (!AcceptableWordSize(password.data))
+//    ThrowError(LifeStuffErrors::kPasswordSizeInvalid);
+//  if (!AcceptableWordPattern(password.data))
+//    ThrowError(LifeStuffErrors::kPasswordPatternInvalid);
+//  return;
+//}
+//
+//bool UserCredentials::AcceptableWordSize(const Identity& word) {
+//  return word.string().size() >= kMinWordSize && word.string().size() <= kMaxWordSize;
+//}
+//
+//bool UserCredentials::AcceptableWordPattern(const Identity& word) {
+//  boost::regex space(" ");
+//  return !boost::regex_search(word.string().begin(), word.string().end(), space);
+//}
 
 //void UserCredentials::GetUserInfo(const Keyword& keyword,
 //                                  const Pin& pin,

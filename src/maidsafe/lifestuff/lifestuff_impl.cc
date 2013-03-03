@@ -17,6 +17,8 @@
 #include <utility>
 #include <vector>
 
+#include "boost/regex.hpp"
+
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
@@ -32,18 +34,47 @@ namespace lifestuff {
 const int kRetryLimit(10);
 const NonEmptyString kDriveLogo("Lifestuff Drive");
 
-LifeStuffImpl::LifeStuffImpl()
-  : routing_(nullptr),
-    client_nfs_(routing_, GetMaid()),
-    user_credentials_(client_nfs_),
-    client_maid_(client_nfs_) {}
+LifeStuffImpl::LifeStuffImpl(const Slots& slots)
+  : slots_(CheckSlots(slots)),
+    passport_(),
+    routing_(nullptr),
+    client_nfs_(),
+    user_credentials_(),
+    client_controller_(slots_.update_available_slot) {}
 
 LifeStuffImpl::~LifeStuffImpl() {
   
 }
 
-void LifeStuffImpl::CreateUser(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
-
+void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
+  CheckInputs(keyword, pin, password);
+  passport_.CreateFobs();
+  client_nfs_.reset(new ClientNfs(routing_, passport_.Get<Maid>(false)));
+  user_credentials_.reset(new UserCredentials(*client_nfs_));
+  // join unauthorised
+  routing::Functors functors;  // Setup valid functors!
+  std::vector<EndPoint> bootstrap_endpoints;
+  client_controller_.GetBootstrapNodes(bootstrap_endpoints);
+  routing_.Join(functors, GetUdpEndpoints(bootstrap_endpoints));
+  // store unsigned, Maid, Pmid, Anmaid
+  routing::ResponseFunctor response_functor;
+  // client_nfs_->Put<Maid>(passport_.Get<Maid>(false), passport_.Get<Pmid>(false).name(), response_functor);
+  // client_nfs_->Put<Pmid>(passport_.Get<Pmid>(false), passport_.Get<Pmid>(false).name(), response_functor);
+  // client_nfs_->Put<Anmaid>(passport_.Get<Anmaid>(false), passport_.Get<Pmid>(false).name(), response_functor);
+  // start vault
+  client_controller_.StartVault(passport_.Get<Pmid>(false), passport_.Get<Maid>(false).name(), boost::filesystem::path());  // Pass a vaild path!
+  // start client
+  // register vault
+  // store keys properly
+  passport_.ConfirmFobs();
+  // generate/store Mid and Tmid
+  uint32_t pin_value(boost::lexical_cast<uint32_t>(pin.data.string()));
+  Mid::name_type user_id(Mid::GenerateName(NonEmptyString(keyword.data), pin_value));
+  Tmid::name_type tmid_name(password.data);
+  UserPassword user_password(keyword.data);  // ambiguous naming???
+  passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(user_password, pin_value, tmid_name));
+  Mid mid(user_id, encrypted_tmid_name, passport_.Get<Anmid>(true));
+  return;
 }
 
 void LifeStuffImpl::LogIn(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
@@ -66,9 +97,83 @@ void LifeStuffImpl::CheckPassword(const Password& /*password*/) {
 
 }
 
-LifeStuffImpl::Maid LifeStuffImpl::GetMaid() {
-  // Aye right...
-  return Maid(Maid::signer_type());
+const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
+  if (!slots.operation_result_slot)
+    throw std::invalid_argument("missing operation_result_slot");
+  if (!slots.msg_slot)
+    throw std::invalid_argument("missing msg_slot");
+  if (!slots.element_share_slot)
+    throw std::invalid_argument("missing element_share_slot");
+  if (!slots.file_transfer_slot)
+    throw std::invalid_argument("missing file_transfer_slot");
+  if (!slots.vault_share_slot)
+    throw std::invalid_argument("missing vault_share_slot");
+  if (!slots.contact_request_slot)
+    throw std::invalid_argument("missing contact_request_slot");
+  if (!slots.contact_presence_slot)
+    throw std::invalid_argument("missing contact_presence_slot");
+  if (!slots.contact_deletion_slot)
+    throw std::invalid_argument("missing contact_deletion_slot");
+  if (!slots.update_available_slot)
+    throw std::invalid_argument("missing update_available_slot");
+  if (!slots.network_health_slot)
+    throw std::invalid_argument("missing network_health_slot");
+  if (!slots.immediate_quit_required_slot)
+    throw std::invalid_argument("missing immediate_quit_required_slot");
+  if (!slots.operation_progress_slot)
+    throw std::invalid_argument("missing operation_progress_slot");
+  return slots;
+}
+
+void LifeStuffImpl::CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password) {
+  CheckKeywordValidity(keyword);
+  CheckPinValidity(pin);
+  CheckPasswordValidity(password);
+  return;
+}
+
+void LifeStuffImpl::CheckKeywordValidity(const Keyword& keyword) {
+  if (!AcceptableWordSize(keyword.data))
+    ThrowError(LifeStuffErrors::kKeywordSizeInvalid);
+  if (!AcceptableWordPattern(keyword.data))
+    ThrowError(LifeStuffErrors::kKeywordPatternInvalid);
+  return;
+}
+
+void LifeStuffImpl::CheckPinValidity(const Pin& pin) {
+  if (pin.data.string().size() != kPinSize)
+    ThrowError(LifeStuffErrors::kPinSizeInvalid);
+  if (boost::lexical_cast<int>(pin.data.string()) < 1)
+    ThrowError(LifeStuffErrors::kPinPatternInvalid);
+  return;
+}
+
+void LifeStuffImpl::CheckPasswordValidity(const Password& password) {
+  if (!AcceptableWordSize(password.data))
+    ThrowError(LifeStuffErrors::kPasswordSizeInvalid);
+  if (!AcceptableWordPattern(password.data))
+    ThrowError(LifeStuffErrors::kPasswordPatternInvalid);
+  return;
+}
+
+bool LifeStuffImpl::AcceptableWordSize(const Identity& word) {
+  return word.string().size() >= kMinWordSize && word.string().size() <= kMaxWordSize;
+}
+
+bool LifeStuffImpl::AcceptableWordPattern(const Identity& word) {
+  boost::regex space(" ");
+  return !boost::regex_search(word.string().begin(), word.string().end(), space);
+}
+
+std::vector<LifeStuffImpl::UdpEndPoint> LifeStuffImpl::GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints) {
+  std::vector<UdpEndPoint> peer_endpoints;
+  for (auto& endpoint : bootstrap_endpoints) {
+    UdpEndPoint udp_endpoint;
+    udp_endpoint.address(boost::asio::ip::address::from_string(endpoint.first));
+    udp_endpoint.port(endpoint.second);
+    peer_endpoints.push_back(udp_endpoint);
+  }
+  return peer_endpoints;
 }
 
 }  // namespace lifestuff
