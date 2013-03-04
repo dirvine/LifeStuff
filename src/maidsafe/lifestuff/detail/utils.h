@@ -33,11 +33,66 @@
 //
 //namespace fs = boost::filesystem;
 //
-//namespace maidsafe {
-//
-//namespace encrypt { struct DataMap; }
-//
-//namespace lifestuff {
+
+#include "maidsafe/nfs/client_utils.h"
+
+namespace maidsafe {
+namespace lifestuff {
+
+namespace detail {
+  template <typename Data>
+  struct DeleteOnPutFailure {
+    void operator()(maidsafe::nfs::ClientMaidNfs&,
+                    passport::Maid&,
+                    passport::Pmid&,
+                    passport::Anmaid&) {}
+  };
+  
+  template <>
+  struct DeleteOnPutFailure<passport::Pmid>
+  {
+    void operator()(maidsafe::nfs::ClientMaidNfs& client_nfs,
+                    passport::Maid& maid,
+                    passport::Pmid&,
+                    passport::Anmaid&) {
+      try {
+        maidsafe::nfs::Delete<passport::Maid>(client_nfs, maid.name(), 3,
+                                                [=](maidsafe::nfs::Reply reply) {
+                                                  if (!reply.IsSuccess()) {
+                                                    LOG(kWarning) << "Failed to delete maid.";
+                                                  }
+                                                });
+      }
+      catch(...) {}
+    }
+  };
+
+  template <>
+  struct DeleteOnPutFailure<passport::Anmaid>
+  {
+    void operator()(maidsafe::nfs::ClientMaidNfs& client_nfs,
+                    passport::Maid& maid,
+                    passport::Pmid& pmid,
+                    passport::Anmaid&) {
+      try {
+        maidsafe::nfs::Delete<passport::Maid>(client_nfs, maid.name(), 3,
+                                                [=](maidsafe::nfs::Reply reply) {
+                                                  if (!reply.IsSuccess()) {
+                                                    LOG(kWarning) << "Failed to delete maid.";
+                                                  }
+                                                });
+        maidsafe::nfs::Delete<passport::Pmid>(client_nfs, pmid.name(), 3,
+                                                [=](maidsafe::nfs::Reply reply) {
+                                                  if (!reply.IsSuccess()) {
+                                                    LOG(kWarning) << "Failed to delete pmid.";
+                                                  }
+                                                });
+      }
+      catch(...) {}
+    }
+  };
+}  // namespace detail
+
 //
 //enum InboxItemType {
 //  kChat,
@@ -117,8 +172,8 @@
 //                              const asymm::PublicKey& sender_public_key,
 //                              const asymm::PrivateKey& receiver_private_key,
 //                              std::string& final_message);
-//}  // namespace lifestuff
-//
-//}  // namespace maidsafe
+
+}  // namespace lifestuff
+}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_

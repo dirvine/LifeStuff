@@ -23,6 +23,7 @@
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff_manager/client_controller.h"
+#include "maidsafe/lifestuff/detail/routings_handler.h"
 
 namespace maidsafe {
 namespace lifestuff {
@@ -30,12 +31,12 @@ namespace lifestuff {
 class LifeStuffImpl {
  public:
   typedef maidsafe::routing::Routing Routing;
+  typedef std::unique_ptr<RoutingsHandler> RoutingsHandlerPtr;
   typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
   typedef maidsafe::lifestuff_manager::ClientController ClientController;
-  typedef maidsafe::lifestuff_manager::EndPoint EndPoint;
-  typedef boost::asio::ip::udp::endpoint UdpEndPoint;
+  typedef passport::Passport Passport;
   typedef passport::Maid Maid;
   typedef passport::Pmid Pmid;
   typedef passport::Anmaid Anmaid;
@@ -47,13 +48,12 @@ class LifeStuffImpl {
   ~LifeStuffImpl();
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
+  void CreatePublicId(const NonEmptyString& public_id);
 
   void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
   void LogOut();
   void MountDrive();
   void UnMountDrive();
-
-  void CheckPassword(const Password& password);
 
  private:
 
@@ -67,10 +67,15 @@ class LifeStuffImpl {
   bool AcceptableWordPattern(const Identity& word);
 
   std::vector<UdpEndPoint> GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
+  routing::Functors GetRoutingFunctors();
+  void JoinUnauthorised(const Maid& maid, const Pmid& pmid, const Anmaid& anmaid);
+
+  template <typename Data>
+  void HandleUnauthorisedPutFailure();
 
   Slots slots_;
-  passport::Passport passport_;
-  Routing routing_;
+  Passport passport_;
+  RoutingsHandlerPtr routings_handler_;
   ClientNfsPtr client_nfs_;
   UserCredentialsPtr user_credentials_;
   ClientController client_controller_;

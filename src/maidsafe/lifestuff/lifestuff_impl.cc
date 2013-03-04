@@ -22,11 +22,14 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/nfs/client_utils.h"
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/rcs_helper.h"
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/message_handler.h"
 #include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
 namespace maidsafe {
 namespace lifestuff {
@@ -37,7 +40,7 @@ const NonEmptyString kDriveLogo("Lifestuff Drive");
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : slots_(CheckSlots(slots)),
     passport_(),
-    routing_(nullptr),
+    routings_handler_(),
     client_nfs_(),
     user_credentials_(),
     client_controller_(slots_.update_available_slot) {}
@@ -49,20 +52,15 @@ LifeStuffImpl::~LifeStuffImpl() {
 void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
   CheckInputs(keyword, pin, password);
   passport_.CreateFobs();
-  client_nfs_.reset(new ClientNfs(routing_, passport_.Get<Maid>(false)));
+
+  Maid maid(passport_.Get<Maid>(false));
+  Pmid pmid(passport_.Get<Pmid>(false));
+  Anmaid anmaid(passport_.Get<Anmaid>(false));
+
+  JoinUnauthorised(maid, pmid, anmaid);
   user_credentials_.reset(new UserCredentials(*client_nfs_));
-  // join unauthorised
-  routing::Functors functors;  // Setup valid functors!
-  std::vector<EndPoint> bootstrap_endpoints;
-  client_controller_.GetBootstrapNodes(bootstrap_endpoints);
-  routing_.Join(functors, GetUdpEndpoints(bootstrap_endpoints));
-  // store unsigned, Maid, Pmid, Anmaid
-  routing::ResponseFunctor response_functor;
-  // client_nfs_->Put<Maid>(passport_.Get<Maid>(false), passport_.Get<Pmid>(false).name(), response_functor);
-  // client_nfs_->Put<Pmid>(passport_.Get<Pmid>(false), passport_.Get<Pmid>(false).name(), response_functor);
-  // client_nfs_->Put<Anmaid>(passport_.Get<Anmaid>(false), passport_.Get<Pmid>(false).name(), response_functor);
   // start vault
-  client_controller_.StartVault(passport_.Get<Pmid>(false), passport_.Get<Maid>(false).name(), boost::filesystem::path());  // Pass a vaild path!
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
   // start client
   // register vault
   // store keys properly
@@ -77,6 +75,43 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
   return;
 }
 
+//void LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
+//  int result(CheckStateAndFullAccess());
+//  if (result != kSuccess)
+//    return result;
+//
+//  // Check if it's the 1st one
+//  bool first_public_id(false);
+//  if (session_.PublicIdentities().empty())
+//    first_public_id = true;
+//
+//  result = logged_in_components_->public_id.CreatePublicId(public_id, true);
+//  if (result != kSuccess) {
+//    if (result == kPublicIdEmpty ||
+//        result == kPublicIdLengthInvalid ||
+//        result == kPublicIdEndSpaceInvalid ||
+//        result == kPublicIdDoubleSpaceInvalid) {
+//      return result;
+//    } else {
+//      LOG(kError) << "Failed to create public ID with result: " << result;
+//      return result;
+//    }
+//  }
+//
+//  if (first_public_id) {
+//    logged_in_components_->public_id.StartUp(interval_);
+//    logged_in_components_->message_handler.StartUp(interval_);
+//    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
+//      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
+//    }
+//  }
+//
+//  session_.set_changed(true);
+//  LOG(kSuccess) << "Success creating public ID: " << public_id.string();
+//
+//  return kSuccess;
+//}
+
 void LifeStuffImpl::LogIn(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
   
 }
@@ -90,10 +125,6 @@ void LifeStuffImpl::MountDrive() {
 }
 
 void LifeStuffImpl::UnMountDrive() {
-
-}
-
-void LifeStuffImpl::CheckPassword(const Password& /*password*/) {
 
 }
 
@@ -165,15 +196,61 @@ bool LifeStuffImpl::AcceptableWordPattern(const Identity& word) {
   return !boost::regex_search(word.string().begin(), word.string().end(), space);
 }
 
-std::vector<LifeStuffImpl::UdpEndPoint> LifeStuffImpl::GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints) {
-  std::vector<UdpEndPoint> peer_endpoints;
-  for (auto& endpoint : bootstrap_endpoints) {
-    UdpEndPoint udp_endpoint;
-    udp_endpoint.address(boost::asio::ip::address::from_string(endpoint.first));
-    udp_endpoint.port(endpoint.second);
-    peer_endpoints.push_back(udp_endpoint);
-  }
-  return peer_endpoints;
+void LifeStuffImpl::JoinUnauthorised(const Maid& maid, const Pmid& pmid, const Anmaid& anmaid) {
+  typedef passport::PublicMaid PublicMaid;
+  typedef passport::PublicPmid PublicPmid;
+  typedef passport::PublicAnmaid PublicAnmaid;
+
+  routing_.reset(new Routing(maid));
+  client_nfs_.reset(new ClientNfs(*routing_, maid));
+  routing::Functors functors;  // Setup valid functors!
+  std::vector<EndPoint> bootstrap_endpoints;
+  client_controller_.GetBootstrapNodes(bootstrap_endpoints);
+  routing_->Join(functors, GetUdpEndpoints(bootstrap_endpoints));
+
+  bool success(true);
+  maidsafe::nfs::Put<PublicMaid>(*client_nfs_, PublicMaid(maid), pmid.name(), 3,
+                                    [this, &success] (maidsafe::nfs::Reply reply) {
+                                      if (!reply.IsSuccess()) {
+                                        this->HandleUnauthorisedPutFailure<Maid>();
+                                        success = false;
+                                      }
+                                    });
+  if (success)
+    maidsafe::nfs::Put<PublicPmid>(*client_nfs_, PublicPmid(pmid), pmid.name(), 3,
+                                      [this, &success] (maidsafe::nfs::Reply reply) {
+                                        if (!reply.IsSuccess()) {
+                                          this->HandleUnauthorisedPutFailure<Pmid>();
+                                          success = false;
+                                        }
+                                      });
+  if (success)
+    maidsafe::nfs::Put<PublicAnmaid>(*client_nfs_, PublicAnmaid(anmaid), pmid.name(), 3,
+                                        [this, &success] (maidsafe::nfs::Reply reply) {
+                                          if (!reply.IsSuccess()) {
+                                            this->HandleUnauthorisedPutFailure<Anmaid>();
+                                            success = false;
+                                          }
+                                        });
+  return;
+}
+
+template <typename Data>
+void LifeStuffImpl::HandleUnauthorisedPutFailure() {
+  Maid maid(passport_.Get<Maid>(false));
+  Pmid pmid(passport_.Get<Pmid>(false));
+  Anmaid anmaid(passport_.Get<Anmaid>(false));
+
+  detail::DeleteOnPutFailure<Data>()(*client_nfs_, maid, pmid, anmaid);
+
+  passport_.CreateFobs();
+
+  maid = passport_.Get<Maid>(false);
+  pmid = passport_.Get<Pmid>(false);
+  anmaid = passport_.Get<Anmaid>(false);
+
+  JoinNetworkUnauthorised(maid, pmid, anmaid);
+  return;
 }
 
 }  // namespace lifestuff
