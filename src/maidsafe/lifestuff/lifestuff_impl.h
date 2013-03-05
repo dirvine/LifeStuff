@@ -18,7 +18,9 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/routing/routing_api.h"
+
 #include "maidsafe/nfs/nfs.h"
+#include "maidsafe/nfs/pmid_registration.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/user_credentials.h"
@@ -31,19 +33,24 @@ namespace lifestuff {
 class LifeStuffImpl {
  public:
   typedef maidsafe::routing::Routing Routing;
-  typedef std::unique_ptr<RoutingsHandler> RoutingsHandlerPtr;
+  typedef std::unique_ptr<Routing> RoutingPtr;
+  typedef std::pair<std::string, uint16_t> EndPoint;
+  typedef boost::asio::ip::udp::endpoint UdpEndPoint;
+  typedef maidsafe::nfs::PmidRegistration PmidRegistration;
   typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
   typedef maidsafe::lifestuff_manager::ClientController ClientController;
   typedef passport::Passport Passport;
+  typedef passport::Anmid Anmid;
+  typedef passport::Ansmid Ansmid;
+  typedef passport::Antmid Antmid;
+  typedef passport::Anmaid Anmaid;
   typedef passport::Maid Maid;
   typedef passport::Pmid Pmid;
-  typedef passport::Anmaid Anmaid;
   typedef passport::Mid Mid;
   typedef passport::Tmid Tmid;
-  typedef passport::Anmid Anmid;
-
+  
   LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
@@ -56,7 +63,6 @@ class LifeStuffImpl {
   void UnMountDrive();
 
  private:
-
   const Slots& CheckSlots(const Slots& slots);
 
   void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -68,14 +74,17 @@ class LifeStuffImpl {
 
   std::vector<UdpEndPoint> GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
   routing::Functors GetRoutingFunctors();
-  void JoinUnauthorised(const Maid& maid, const Pmid& pmid, const Anmaid& anmaid);
-
-  template <typename Data>
-  void HandleUnauthorisedPutFailure();
+  void Join(const Maid& maid);
+  void PutFreeFobs();
+  void HandlePutFreeFobsFailure();
+  void PutPaidFobs();
+  void HandlePutPaidFobsFailure();
+  template <typename Fob> void PutFob(const Fob& fob);
+  void HandlePutFobFailure();
 
   Slots slots_;
   Passport passport_;
-  RoutingsHandlerPtr routings_handler_;
+  RoutingPtr routing_;
   ClientNfsPtr client_nfs_;
   UserCredentialsPtr user_credentials_;
   ClientController client_controller_;
