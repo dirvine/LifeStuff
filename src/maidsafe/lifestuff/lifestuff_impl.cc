@@ -43,10 +43,14 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slots)
     routing_(),
     client_nfs_(),
     user_credentials_(),
-    client_controller_(slots_.update_available_slot) {}
+    client_controller_(slots_.update_available_slot),
+    network_health_(),
+    asio_service_(2) {
+  asio_service_.Start();
+}
 
 LifeStuffImpl::~LifeStuffImpl() {
-  
+  asio_service_.Stop();
 }
 
 void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
@@ -59,75 +63,76 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
   Join(maid);
   // store free keys...
   PutFreeFobs();
-  // start vault
+  // start vault...
   client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
-  // start client
+  // start client...
   client_nfs_.reset(new ClientNfs(*routing_, maid));
   user_credentials_.reset(new UserCredentials(*client_nfs_));
   passport_.ConfirmFobs();
-  // register vault
-  PmidRegistration pmid_registration(maid, pmid, true);
+  // register vault...
+  PmidRegistration pmid_registration(maid, pmid, false);
   PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
-  client_nfs_->RegisterPmid(serialised_pmid_registration, routing::ResponseFunctor());  // pass valid response functor.
+  client_nfs_->RegisterPmid(serialised_pmid_registration,
+                      [](std::string response) {
+                        NonEmptyString serialised_response(response);
+                        nfs::Reply::serialised_type serialised_reply(serialised_response);
+                        nfs::Reply reply(serialised_reply);
+                        if (!reply.IsSuccess())
+                          ThrowError(VaultErrors::failed_to_handle_request);
+                      });
   // store remaining keys...
   PutPaidFobs();  // 
-  // generate and store Mid and Tmid
-  uint32_t pin_value(boost::lexical_cast<uint32_t>(pin.data.string()));
-  Mid::name_type mid_name(Mid::GenerateName(NonEmptyString(keyword.data), pin_value));
+  // generate and store Mid and Tmid...
+  uint32_t user_pin(boost::lexical_cast<uint32_t>(pin.data.string()));
+  Mid::name_type mid_name(Mid::GenerateName(NonEmptyString(keyword.data), user_pin));
   Tmid::name_type tmid_name(password.data);
   UserKeyword user_keyword(keyword.data);
   passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
-                                                    user_keyword, pin_value, tmid_name));
+                                                    user_keyword, user_pin, tmid_name));
   Mid mid(mid_name, encrypted_tmid_name, passport_.Get<Anmid>(true));
   NonEmptyString serialised_session(passport_.Serialise());
-  UserPassword user_password(password.data);
+  UserPassword user_password(encrypted_tmid_name.data);
   passport::EncryptedSession encrypted_session(passport::EncryptSession(
-                                  user_keyword, pin_value, user_password, serialised_session));
+                                  user_keyword, user_pin, user_password, serialised_session));
   Tmid tmid(encrypted_session, passport_.Get<Antmid>(true));
   PutFob<Mid>(mid);
   PutFob<Tmid>(tmid);
   return;
 }
 
-//void LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
-//  int result(CheckStateAndFullAccess());
-//  if (result != kSuccess)
-//    return result;
-//
-//  // Check if it's the 1st one
-//  bool first_public_id(false);
-//  if (session_.PublicIdentities().empty())
-//    first_public_id = true;
-//
-//  result = logged_in_components_->public_id.CreatePublicId(public_id, true);
-//  if (result != kSuccess) {
-//    if (result == kPublicIdEmpty ||
-//        result == kPublicIdLengthInvalid ||
-//        result == kPublicIdEndSpaceInvalid ||
-//        result == kPublicIdDoubleSpaceInvalid) {
-//      return result;
-//    } else {
-//      LOG(kError) << "Failed to create public ID with result: " << result;
-//      return result;
-//    }
-//  }
-//
-//  if (first_public_id) {
-//    logged_in_components_->public_id.StartUp(interval_);
-//    logged_in_components_->message_handler.StartUp(interval_);
-//    if ((logged_in_state_ & kMessagesAndIntrosStarted) != kMessagesAndIntrosStarted) {
-//      logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
-//    }
-//  }
-//
-//  session_.set_changed(true);
-//  LOG(kSuccess) << "Success creating public ID: " << public_id.string();
-//
-//  return kSuccess;
-//}
-
-void LifeStuffImpl::LogIn(const Keyword& /*keyword*/, const Pin& /*pin*/, const Password& /*password*/) {
-  
+void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
+  CheckInputs(keyword, pin, password);
+  // join unauthorised...
+  Anmaid anmaid;
+  Maid raid(anmaid);
+  Join(raid);
+  client_nfs_.reset(new ClientNfs(*routing_, raid));
+  // get Mid...
+  uint32_t user_pin(boost::lexical_cast<uint32_t>(pin.data.string()));
+  Mid::name_type mid_name(Mid::GenerateName(NonEmptyString(keyword.data), user_pin));
+  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
+  Mid mid(mid_future.get());
+  // get Tmid...
+  passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
+  UserKeyword user_keyword(keyword.data);
+  Tmid::name_type tmid_name(passport::DecryptTmidName(user_keyword, user_pin, encrypted_tmid_name));
+  std::future<Tmid> tmid_future(maidsafe::nfs::Get<Tmid>(*client_nfs_, tmid_name));
+  Tmid tmid(tmid_future.get());
+  // recover session keys...
+  UserPassword user_password(password.data);
+  passport::EncryptedSession encrypted_session(tmid.encrypted_session());
+  NonEmptyString serialised_session(passport::DecryptSession(user_keyword, user_pin, user_password, encrypted_session));
+  passport_.Parse(serialised_session);
+  Maid maid(passport_.Get<Maid>(true));
+  Pmid pmid(passport_.Get<Pmid>(true));
+  // join authorised...
+  Join(maid);
+  // start vault...
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  // reset client details, etc.,...
+  client_nfs_.reset(new ClientNfs(*routing_, maid));
+  user_credentials_.reset(new UserCredentials(*client_nfs_));
+  return;
 }
 
 void LifeStuffImpl::LogOut() {
@@ -212,10 +217,10 @@ bool LifeStuffImpl::AcceptableWordPattern(const Identity& word) {
 
 void LifeStuffImpl::Join(const Maid& maid) {
   routing_.reset(new Routing(maid));
-  routing::Functors functors;  // Setup valid functors!
+  routing::Functors functors(InitialiseRoutingFunctors());
   std::vector<EndPoint> bootstrap_endpoints;
   client_controller_.GetBootstrapNodes(bootstrap_endpoints);
-  routing_->Join(functors, GetUdpEndpoints(bootstrap_endpoints));
+  routing_->Join(functors, UdpEndpoints(bootstrap_endpoints));
   return;
 }
 
@@ -250,9 +255,9 @@ void LifeStuffImpl::HandlePutPaidFobsFailure() {
   Maid maid(passport_.Get<Maid>(false));
   Pmid pmid(passport_.Get<Pmid>(false));
   // unregister vault...
-  PmidRegistration pmid_unregistration(maid, pmid, false);
+  PmidRegistration pmid_unregistration(maid, pmid, true);
   PmidRegistration::serialised_type serialised_pmid_unregistration(pmid_unregistration.Serialise());
-  client_nfs_->UnregisterPmid(serialised_pmid_unregistration, routing::ResponseFunctor());  // create valid response functor
+  client_nfs_->UnregisterPmid(serialised_pmid_unregistration, [](std::string response) {});
 //  client_controller_.StopVault();  // TODO Determine parameters to pass
   // retry...
   passport_.CreateFobs();
@@ -264,9 +269,16 @@ void LifeStuffImpl::HandlePutPaidFobsFailure() {
   user_credentials_.reset(new UserCredentials(*client_nfs_));
   passport_.ConfirmFobs();
   // register vault...
-  PmidRegistration pmid_registration(maid, pmid, true);
+  PmidRegistration pmid_registration(maid, pmid, false);
   PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
-  client_nfs_->RegisterPmid(serialised_pmid_registration, routing::ResponseFunctor());  // create valid response functor
+  client_nfs_->RegisterPmid(serialised_pmid_registration,
+                      [](std::string response) {
+                        NonEmptyString serialised_response(response);
+                        nfs::Reply::serialised_type serialised_reply(serialised_response);
+                        nfs::Reply reply(serialised_reply);
+                        if (!reply.IsSuccess())
+                          ThrowError(VaultErrors::failed_to_handle_request);
+                      });
   PutPaidFobs();
   return;
 }
@@ -289,7 +301,7 @@ void LifeStuffImpl::HandlePutFobFailure() {
 }
 
 std::vector<LifeStuffImpl::UdpEndPoint>
-      LifeStuffImpl::GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints) {
+      LifeStuffImpl::UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints) {
   std::vector<UdpEndPoint> endpoints;
   for (auto& endpoint : bootstrap_endpoints) {
     UdpEndPoint udp_endpoint;
@@ -298,6 +310,95 @@ std::vector<LifeStuffImpl::UdpEndPoint>
     endpoints.push_back(udp_endpoint);
   }
   return endpoints;
+}
+
+routing::Functors LifeStuffImpl::InitialiseRoutingFunctors() {
+  routing::Functors functors;
+  functors.message_received = [this](const std::string& message,
+                                     bool /*cache_lookup*/,
+                                     const routing::ReplyFunctor& reply_functor) {
+                                  OnMessageReceived(message, reply_functor);
+                              };
+  functors.network_status = [this](const int& network_health) {
+                                OnNetworkStatusChange(network_health);
+                            };
+  functors.close_node_replaced = [this](const std::vector<routing::NodeInfo>& new_close_nodes) {
+                                     OnCloseNodeReplaced(new_close_nodes);
+                                 };
+  functors.request_public_key = [this](const NodeId& node_id,
+                                       const routing::GivePublicKeyFunctor& give_key) {
+                                    OnPublicKeyRequested(node_id, give_key);
+                                };
+  functors.new_bootstrap_endpoint = [this](const boost::asio::ip::udp::endpoint& endpoint) {
+                                        OnNewBootstrapEndpoint(endpoint);
+                                    };
+  functors.store_cache_data = [this](const std::string& message) { OnStoreInCache(message); };
+  functors.have_cache_data = [this](std::string& message) { return OnGetFromCache(message); };
+  return functors;
+}
+
+void LifeStuffImpl::OnMessageReceived(const std::string& message,
+                                      const routing::ReplyFunctor& reply_functor) {
+  asio_service_.service().post([=] { DoOnMessageReceived(message, reply_functor); });
+}
+
+void LifeStuffImpl::DoOnMessageReceived(const std::string& /*message*/,
+                                        const routing::ReplyFunctor& /*reply_functor*/) {
+}
+
+void LifeStuffImpl::OnNetworkStatusChange(const int& network_health) {
+  asio_service_.service().post([=] { DoOnNetworkStatusChange(network_health); });
+}
+
+void LifeStuffImpl::DoOnNetworkStatusChange(const int& network_health) {
+  if (network_health >= 0) {
+    if (network_health >= network_health_)
+      LOG(kVerbose) << "Init - " << DebugId(routing_->kNodeId())
+                    << " - Network health is " << network_health
+                    << "% (was " << network_health_ << "%)";
+    else
+      LOG(kWarning) << "Init - " << DebugId(routing_->kNodeId())
+                    << " - Network health is " << network_health
+                    << "% (was " << network_health_ << "%)";
+  } else {
+    LOG(kWarning) << "Init - " << DebugId(routing_->kNodeId())
+                  << " - Network is down (" << network_health << ")";
+  }
+  network_health_ = network_health;
+}
+
+void LifeStuffImpl::OnPublicKeyRequested(const NodeId& node_id,
+                                         const routing::GivePublicKeyFunctor& give_key) {
+  asio_service_.service().post([=] { DoOnPublicKeyRequested(node_id, give_key); });
+}
+
+void LifeStuffImpl::DoOnPublicKeyRequested(const NodeId& node_id,
+                                           const routing::GivePublicKeyFunctor& give_key) {
+  typedef passport::PublicPmid PublicPmid;
+  PublicPmid::name_type pmid_name(Identity(node_id.string()));
+  std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
+  give_key(pmid_future.get().public_key());
+}
+
+void LifeStuffImpl::OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& /*new_close_nodes*/) {
+}
+
+bool LifeStuffImpl::OnGetFromCache(std::string& /*message*/) {  // Need to be on routing's thread
+  return true;
+}
+
+void LifeStuffImpl::OnStoreInCache(const std::string& message) {  // post/move data?
+  asio_service_.service().post([=] { DoOnStoreInCache(message); });
+}
+
+void LifeStuffImpl::DoOnStoreInCache(const std::string& /*message*/) {
+}
+
+void LifeStuffImpl::OnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint) {
+  asio_service_.service().post([=] { DoOnNewBootstrapEndpoint(endpoint); });
+}
+
+void LifeStuffImpl::DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& /*endpoint*/) {
 }
 
 }  // namespace lifestuff

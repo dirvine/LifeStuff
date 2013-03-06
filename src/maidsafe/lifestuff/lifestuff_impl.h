@@ -72,8 +72,6 @@ class LifeStuffImpl {
   bool AcceptableWordSize(const Identity& word);
   bool AcceptableWordPattern(const Identity& word);
 
-  std::vector<UdpEndPoint> GetUdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
-  routing::Functors GetRoutingFunctors();
   void Join(const Maid& maid);
   void PutFreeFobs();
   void HandlePutFreeFobsFailure();
@@ -82,12 +80,29 @@ class LifeStuffImpl {
   template <typename Fob> void PutFob(const Fob& fob);
   void HandlePutFobFailure();
 
+  std::vector<UdpEndPoint> UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
+  routing::Functors InitialiseRoutingFunctors();
+  void OnMessageReceived(const std::string& message,  const routing::ReplyFunctor& reply_functor);
+  void DoOnMessageReceived(const std::string& message, const routing::ReplyFunctor& reply_functor);
+  void OnNetworkStatusChange(const int& network_health);
+  void DoOnNetworkStatusChange(const int& network_health);
+  void OnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
+  void DoOnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
+  void OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& new_close_nodes);
+  bool OnGetFromCache(std::string& message);
+  void OnStoreInCache(const std::string& message);
+  void DoOnStoreInCache(const std::string& message);
+  void OnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
+  void DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
+
   Slots slots_;
   Passport passport_;
   RoutingPtr routing_;
   ClientNfsPtr client_nfs_;
   UserCredentialsPtr user_credentials_;
   ClientController client_controller_;
+  int network_health_;
+  AsioService asio_service_;
 };
 
 }  // namespace lifestuff
