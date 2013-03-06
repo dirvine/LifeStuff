@@ -83,7 +83,7 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
   // store remaining keys...
   PutPaidFobs();  // 
   // generate and store Mid and Tmid...
-  uint32_t user_pin(boost::lexical_cast<uint32_t>(pin.data.string()));
+  uint32_t user_pin(std::stoul(pin.data.string()));
   Mid::name_type mid_name(Mid::GenerateName(NonEmptyString(keyword.data), user_pin));
   Tmid::name_type tmid_name(password.data);
   UserKeyword user_keyword(keyword.data);
@@ -108,7 +108,7 @@ void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password
   Join(raid);
   client_nfs_.reset(new ClientNfs(*routing_, raid));
   // get Mid...
-  uint32_t user_pin(boost::lexical_cast<uint32_t>(pin.data.string()));
+  uint32_t user_pin(std::stoul(pin.data.string()));
   Mid::name_type mid_name(Mid::GenerateName(NonEmptyString(keyword.data), user_pin));
   std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
   Mid mid(mid_future.get());
