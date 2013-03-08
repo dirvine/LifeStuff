@@ -9,28 +9,46 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
-#define MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
+
+#include <string>
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
+
+#include "maidsafe/passport/types.h"
 
 namespace maidsafe {
 namespace lifestuff {
 
 class ClientMpid {
  public:
-  
-  ClientMpid();
+  typedef passport::Passport Passport;
+  typedef maidsafe::routing::Routing Routing;
+  typedef std::shared_ptr<Routing> RoutingPtr;
+  typedef maidsafe::nfs::ClientMpidNfs ClientNfs;
+  typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
+  typedef passport::Anmpid Anmpid;
+  typedef passport::Mpid Mpid;
+
+  ClientMpid(RoutingPtr routing,
+             const NonEmptyString& public_id,
+             const passport::Mpid& mpid);
   ~ClientMpid();
 
-  void CreatePublicId(const NonEmptyString& public_id);
+  void LogIn();
+  void LogOut();
 
  private:
-
+  RoutingPtr routing_;
+  ClientNfsPtr client_nfs_;
+  NonEmptyString public_id_;
+  Anmpid anmpid_;
+  Mpid mpid_;
+  AsioService asio_service_;
 };
-
 }  // lifestuff
 }  // maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
