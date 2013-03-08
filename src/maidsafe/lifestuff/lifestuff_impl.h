@@ -12,45 +12,15 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
-#include "boost/filesystem/path.hpp"
-
-#include "maidsafe/common/log.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/routing/routing_api.h"
-
-#include "maidsafe/nfs/nfs.h"
-#include "maidsafe/nfs/pmid_registration.h"
-
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/detail/user_credentials.h"
-#include "maidsafe/lifestuff_manager/client_controller.h"
-#include "maidsafe/lifestuff/detail/routings_handler.h"
+#include "maidsafe/lifestuff/detail/client_maid.h"
+#include "maidsafe/lifestuff/detail/client_mpid.h"
 
 namespace maidsafe {
 namespace lifestuff {
 
 class LifeStuffImpl {
  public:
-  typedef maidsafe::routing::Routing Routing;
-  typedef std::unique_ptr<Routing> RoutingPtr;
-  typedef std::pair<std::string, uint16_t> EndPoint;
-  typedef boost::asio::ip::udp::endpoint UdpEndPoint;
-  typedef maidsafe::nfs::PmidRegistration PmidRegistration;
-  typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
-  typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
-  typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
-  typedef maidsafe::lifestuff_manager::ClientController ClientController;
-  typedef passport::Passport Passport;
-  typedef passport::Anmid Anmid;
-  typedef passport::Ansmid Ansmid;
-  typedef passport::Antmid Antmid;
-  typedef passport::Anmaid Anmaid;
-  typedef passport::Maid Maid;
-  typedef passport::Pmid Pmid;
-  typedef passport::Mid Mid;
-  typedef passport::Tmid Tmid;
-  
   LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
@@ -65,44 +35,8 @@ class LifeStuffImpl {
  private:
   const Slots& CheckSlots(const Slots& slots);
 
-  void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
-  void CheckKeywordValidity(const Keyword& keyword);
-  void CheckPinValidity(const Pin& pin);
-  void CheckPasswordValidity(const Password& password);
-  bool AcceptableWordSize(const Identity& word);
-  bool AcceptableWordPattern(const Identity& word);
-
-  void Join(const Maid& maid);
-  void PutFreeFobs();
-  void HandlePutFreeFobsFailure();
-  void PutPaidFobs();
-  void HandlePutPaidFobsFailure();
-  template <typename Fob> void PutFob(const Fob& fob);
-  void HandlePutFobFailure();
-
-  std::vector<UdpEndPoint> UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
-  routing::Functors InitialiseRoutingFunctors();
-  void OnMessageReceived(const std::string& message,  const routing::ReplyFunctor& reply_functor);
-  void DoOnMessageReceived(const std::string& message, const routing::ReplyFunctor& reply_functor);
-  void OnNetworkStatusChange(const int& network_health);
-  void DoOnNetworkStatusChange(const int& network_health);
-  void OnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
-  void DoOnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
-  void OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& new_close_nodes);
-  bool OnGetFromCache(std::string& message);
-  void OnStoreInCache(const std::string& message);
-  void DoOnStoreInCache(const std::string& message);
-  void OnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-  void DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-
   Slots slots_;
-  Passport passport_;
-  RoutingPtr routing_;
-  ClientNfsPtr client_nfs_;
-  UserCredentialsPtr user_credentials_;
-  ClientController client_controller_;
-  int network_health_;
-  AsioService asio_service_;
+  ClientMaid client_maid_;
 };
 
 }  // namespace lifestuff

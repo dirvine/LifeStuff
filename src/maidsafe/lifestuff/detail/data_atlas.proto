@@ -65,10 +65,6 @@ message PublicIdentity {
   repeated ShareInformationContainer shares = 5;
 }
 
-message PassportData {
-  required bytes serialised_keyring = 1;
- }
-
 message DriveData {
   required bytes unique_user_id = 1;
   required bytes root_parent_id = 2;
@@ -78,7 +74,6 @@ message DriveData {
 
 message DataAtlas {
   optional DriveData drive_data = 1;
-  required PassportData passport_data = 2;
-  repeated PublicIdentity public_ids = 3;
-  required bytes timestamp = 4;
+  repeated PublicIdentity public_ids = 2;
+  required bytes timestamp = 3;
 }

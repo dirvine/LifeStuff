@@ -61,7 +61,7 @@ namespace {
 //}
 
 uint32_t StringToIntPin(const NonEmptyString& pin) {
-  return boost::lexical_cast<uint32_t>(pin.string());
+  return std::stoul(pin.string());
 }
 
 }  // namespace
