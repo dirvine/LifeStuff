@@ -28,7 +28,6 @@
 namespace maidsafe {
 namespace lifestuff {
 
-enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
 enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
 
 typedef TaggedValue<Identity, struct KeywordTag> Keyword;

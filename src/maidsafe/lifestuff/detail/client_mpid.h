@@ -22,7 +22,7 @@ class ClientMpid {
  public:
   
   ClientMpid();
-  ~ClientMpid();
+  ~ClientMpid() {}
 
   void CreatePublicId(const NonEmptyString& public_id);
 

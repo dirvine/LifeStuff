@@ -37,6 +37,7 @@ class LifeStuffImpl {
 
   Slots slots_;
   ClientMaid client_maid_;
+  ClientMpid client_mpid_;
 };
 
 }  // namespace lifestuff

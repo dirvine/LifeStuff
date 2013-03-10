@@ -49,14 +49,8 @@ class UserStorage {
   explicit UserStorage();
   virtual ~UserStorage() {}
 
-  virtual void MountDrive(ClientNfs& client_nfs,
-                          const Maid& maid,
-                          const Session& session,
-                          const boost::filesystem::path& data_store_path,
-                          const DiskUsage& disk_usage);
-  virtual void UnMountDrive(int64_t& max_space, int64_t& used_space);
-  virtual fs::path mount_dir();
-  virtual bool mount_status();
+  void MountDrive(ClientNfs& client_nfs, Session& session);
+  void UnMountDrive(Session& session);
 
   bool ParseAndSaveDataMap(const NonEmptyString& file_name,
                            const NonEmptyString& serialised_data_map,
@@ -79,9 +73,12 @@ class UserStorage {
                         std::vector<std::string>* results);
   int GetHiddenFileDataMap(const boost::filesystem::path& absolute_path, std::string* data_map);
 
-  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
-
   std::string ConstructFile(const NonEmptyString& serialised_data_map);
+
+  boost::filesystem::path mount_path();
+  bool mount_status();
+
+  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
 
  private:
   UserStorage &operator=(const UserStorage&);

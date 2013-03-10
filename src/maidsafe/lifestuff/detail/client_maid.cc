@@ -27,7 +27,6 @@ namespace lifestuff {
 
 ClientMaid::ClientMaid(UpdateAvailableFunction update_available_slot)
   : client_controller_(update_available_slot),
-    passport_(),
     session_(),
     user_storage_(),
     routing_(),
@@ -40,135 +39,54 @@ ClientMaid::ClientMaid(UpdateAvailableFunction update_available_slot)
 
 void ClientMaid::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
   CheckInputs(keyword, pin, password);
-  // create keys...
-  passport_.CreateFobs();
-  Maid maid(passport_.Get<Maid>(false));
-  Pmid pmid(passport_.Get<Pmid>(false));
-  // join network...
+  session_.passport().CreateFobs();
+  Maid maid(session_.passport().Get<Maid>(false));
+  Pmid pmid(session_.passport().Get<Pmid>(false));
   Join(maid);
-  // store free keys...
   PutFreeFobs();
-  // start vault...
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
-  // start client...
   client_nfs_.reset(new ClientNfs(*routing_, maid));
   user_credentials_.reset(new UserCredentials(*client_nfs_));
-  passport_.ConfirmFobs();
-  // register vault...
-  PmidRegistration pmid_registration(maid, pmid, false);
-  PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
-  client_nfs_->RegisterPmid(serialised_pmid_registration,
-                      [](std::string response) {
-                        NonEmptyString serialised_response(response);
-                        nfs::Reply::serialised_type serialised_reply(serialised_response);
-                        nfs::Reply reply(serialised_reply);
-                        if (!reply.IsSuccess())
-                          ThrowError(VaultErrors::failed_to_handle_request);
-                      });
-  // store remaining keys...
-  PutPaidFobs();  // 
-  // generate and store Mid and Tmid...
-  uint32_t user_pin(std::stoul(pin.data.string()));
-  UserKeyword user_keyword(keyword.data);
-  UserPassword user_password(password.data);
-  NonEmptyString serialised_session(passport_.Serialise());
-  passport::EncryptedSession encrypted_session(passport::EncryptSession(
-                                  user_keyword, user_pin, user_password, serialised_session));
-  Tmid tmid(encrypted_session, passport_.Get<Antmid>(true));
-  Tmid::name_type tmid_name(tmid.name());
-  passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
-                                                    user_password, user_pin, tmid_name));
-  Mid::name_type mid_name(Mid::GenerateName(user_keyword, user_pin));
-  Mid mid(mid_name, encrypted_tmid_name, passport_.Get<Anmid>(true));
-  PutFob<Tmid>(tmid);
-  PutFob<Mid>(mid);
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  RegisterPmid(maid, pmid);
+  session_.passport().ConfirmFobs();
+  PutPaidFobs();
+  session_.set_unique_user_id(Identity(RandomAlphaNumericString(64)));
+  MountDrive();
+  UnMountDrive();
+  PutSession(keyword, pin, password);
   return;
 }
 
 void ClientMaid::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
   CheckInputs(keyword, pin, password);
-  // join unauthorised...
   Anmaid anmaid;
-  Maid raid(anmaid);
-  Join(raid);
-  client_nfs_.reset(new ClientNfs(*routing_, raid));
-  // get Mid...
-  uint32_t user_pin(std::stoul(pin.data.string()));
-  UserKeyword user_keyword(keyword.data);
-  UserPassword user_password(password.data);
-  Mid::name_type mid_name(Mid::GenerateName(user_keyword, user_pin));
-  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
-  Mid mid(mid_future.get());
-  // get Tmid...
-  passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
-  Tmid::name_type tmid_name(passport::DecryptTmidName(user_password, user_pin, encrypted_tmid_name));
-  std::future<Tmid> tmid_future(maidsafe::nfs::Get<Tmid>(*client_nfs_, tmid_name));
-  Tmid tmid(tmid_future.get());
-  // recover session keys...
-  passport::EncryptedSession encrypted_session(tmid.encrypted_session());
-  NonEmptyString serialised_session(passport::DecryptSession(user_keyword, user_pin, user_password, encrypted_session));
-  passport_.Parse(serialised_session);
-  Maid maid(passport_.Get<Maid>(true));
-  Pmid pmid(passport_.Get<Pmid>(true));
-  // join authorised...
+  Maid maid(anmaid);
   Join(maid);
-  // start vault...
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
-  // reset client details, etc.,...
+  client_nfs_.reset(new ClientNfs(*routing_, maid));
+  GetSession(keyword, pin, password);
+  maid = session_.passport().Get<Maid>(true);
+  Pmid pmid(session_.passport().Get<Pmid>(true));
+  Join(maid);
   client_nfs_.reset(new ClientNfs(*routing_, maid));
   user_credentials_.reset(new UserCredentials(*client_nfs_));
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
   return;
 }
 
 void ClientMaid::LogOut() {
-  
+  UnMountDrive();
+//  client_controller_.StopVault(  );  parameters???
 }
 
 void ClientMaid::MountDrive() {
-  boost::filesystem::path data_store_path(
-      GetHomeDir() / kAppHomeDirectory / session_.session_name().string());
-  user_storage_.MountDrive(*client_nfs_,
-                           passport_.Get<Maid>(true),
-                           session_,
-                           data_store_path,
-                           DiskUsage(10995116277760));  // arbitrary 10GB
+  user_storage_.MountDrive(*client_nfs_, session_);
   return;
 }
 
 void ClientMaid::UnMountDrive() {
-  int64_t max_space(0), used_space(0);
-  user_storage_.UnMountDrive(max_space, used_space);
-  session_.set_max_space(max_space);
-  session_.set_used_space(used_space);
+  user_storage_.UnMountDrive(session_);
   return;
 }
-
-//int ClientMaid::UnMountDrive() {
-//  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
-//      (kDriveMounted & logged_in_state_) != kDriveMounted ||
-//      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
-//    LOG(kError) << "In unsuitable state to unmount drive: " <<
-//                   "make sure user_credentials are logged in, drive is mounted and "
-//                   "messages and intros have been stopped.";
-//    return kWrongLoggedInState;
-//  }
-//
-//  logged_in_components_->storage.UnMountDrive();
-//  if (logged_in_components_->storage.mount_status()) {
-//    LOG(kError) << "Failed to un-mount.";
-//    return kUnMountDriveError;
-//  }
-//
-//  // Delete mount directory
-//  boost::system::error_code error_code;
-//  fs::remove_all(mount_path(), error_code);
-//  if (error_code)
-//    LOG(kWarning) << "Failed to delete mount directory: " << mount_path();
-//
-//  if ((kDriveMounted & logged_in_state_) == kDriveMounted)
-//    logged_in_state_ = logged_in_state_ ^ kDriveMounted;
-//  return kSuccess;
-//}
 
 void ClientMaid::CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password) {
   CheckKeywordValidity(keyword);
@@ -210,6 +128,41 @@ bool ClientMaid::AcceptableWordPattern(const Identity& word) {
   return !boost::regex_search(word.string().begin(), word.string().end(), space);
 }
 
+void ClientMaid::GetSession(const Keyword& keyword, const Pin& pin, const Password& password) {
+  uint32_t user_pin(std::stoul(pin.data.string()));
+  UserKeyword user_keyword(keyword.data);
+  UserPassword user_password(password.data);
+  Mid::name_type mid_name(Mid::GenerateName(user_keyword, user_pin));
+  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
+  Mid mid(mid_future.get());
+  passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
+  Tmid::name_type tmid_name(passport::DecryptTmidName(
+                              user_keyword, user_pin, encrypted_tmid_name));
+  std::future<Tmid> tmid_future(maidsafe::nfs::Get<Tmid>(*client_nfs_, tmid_name));
+  Tmid tmid(tmid_future.get());
+  passport::EncryptedSession encrypted_session(tmid.encrypted_session());
+  NonEmptyString serialised_session(passport::DecryptSession(
+                                      user_keyword, user_pin, user_password, encrypted_session));
+  session_.Parse(serialised_session);
+}
+
+void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Password& password) {
+  uint32_t user_pin(std::stoul(pin.data.string()));
+  UserKeyword user_keyword(keyword.data);
+  UserPassword user_password(password.data);
+  NonEmptyString serialised_session(session_.Serialise());
+  passport::EncryptedSession encrypted_session(passport::EncryptSession(
+                                  user_keyword, user_pin, user_password, serialised_session));
+  Tmid tmid(encrypted_session, session_.passport().Get<Antmid>(true));
+  Tmid::name_type tmid_name(tmid.name());
+  passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
+                                                    user_keyword, user_pin, tmid_name));
+  Mid::name_type mid_name(Mid::GenerateName(user_keyword, user_pin));
+  Mid mid(mid_name, encrypted_tmid_name, session_.passport().Get<Anmid>(true));
+  PutFob<Tmid>(tmid);
+  PutFob<Mid>(mid);
+}
+
 void ClientMaid::Join(const Maid& maid) {
   routing_.reset(new Routing(maid));
   routing::Functors functors(InitialiseRoutingFunctors());
@@ -225,13 +178,13 @@ void ClientMaid::PutFreeFobs() {
                           this->HandlePutFreeFobsFailure();
                         }
                       });
-  detail::PutFobs<Free>()(*client_nfs_, passport_, reply);
+  detail::PutFobs<Free>()(*client_nfs_, session_.passport(), reply);
   return;
 }
 
 void ClientMaid::HandlePutFreeFobsFailure() {
-  passport_.CreateFobs();
-  Join(passport_.Get<Maid>(false));
+  session_.passport().CreateFobs();
+  Join(session_.passport().Get<Maid>(false));
   PutFreeFobs();
   return;
 }
@@ -242,38 +195,25 @@ void ClientMaid::PutPaidFobs() {
                           this->HandlePutPaidFobsFailure();
                         }
                       });
-  detail::PutFobs<Paid>()(*client_nfs_, passport_, reply);
+  detail::PutFobs<Paid>()(*client_nfs_, session_.passport(), reply);
   return;
 }
 
 void ClientMaid::HandlePutPaidFobsFailure() {
-  Maid maid(passport_.Get<Maid>(false));
-  Pmid pmid(passport_.Get<Pmid>(false));
-  // unregister vault...
-  PmidRegistration pmid_unregistration(maid, pmid, true);
-  PmidRegistration::serialised_type serialised_pmid_unregistration(pmid_unregistration.Serialise());
-  client_nfs_->UnregisterPmid(serialised_pmid_unregistration, [](std::string response) {});
+  Maid maid(session_.passport().Get<Maid>(false));
+  Pmid pmid(session_.passport().Get<Pmid>(false));
+  UnregisterPmid(maid, pmid);
 //  client_controller_.StopVault();  // TODO Determine parameters to pass
-  // retry...
-  passport_.CreateFobs();
-  Join(passport_.Get<Maid>(false));
+  session_.passport().CreateFobs();
+  maid = session_.passport().Get<Maid>(false);
+  pmid = session_.passport().Get<Pmid>(false);
+  Join(maid);
   PutFreeFobs();
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
-  // start client...
   client_nfs_.reset(new ClientNfs(*routing_, maid));
   user_credentials_.reset(new UserCredentials(*client_nfs_));
-  passport_.ConfirmFobs();
-  // register vault...
-  PmidRegistration pmid_registration(maid, pmid, false);
-  PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
-  client_nfs_->RegisterPmid(serialised_pmid_registration,
-                      [](std::string response) {
-                        NonEmptyString serialised_response(response);
-                        nfs::Reply::serialised_type serialised_reply(serialised_response);
-                        nfs::Reply reply(serialised_reply);
-                        if (!reply.IsSuccess())
-                          ThrowError(VaultErrors::failed_to_handle_request);
-                      });
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  RegisterPmid(maid, pmid);
+  session_.passport().ConfirmFobs();
   PutPaidFobs();
   return;
 }
@@ -285,13 +225,34 @@ void ClientMaid::PutFob(const Fob& fob) {
                           this->HandlePutFobFailure();
                         }
                       });
-  passport::Pmid::name_type pmid_name(passport_.Get<Pmid>(true).name());
+  passport::Pmid::name_type pmid_name(session_.passport().Get<Pmid>(true).name());
   maidsafe::nfs::Put<Fob>(*client_nfs_, fob, pmid_name, 3, reply);
   return;
 }
 
 void ClientMaid::HandlePutFobFailure() {
   ThrowError(LifeStuffErrors::kStoreFailure);  // ???
+  return;
+}
+
+void ClientMaid::RegisterPmid(const Maid& maid, const Pmid& pmid) {
+  PmidRegistration pmid_registration(maid, pmid, false);
+  PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
+  client_nfs_->RegisterPmid(serialised_pmid_registration,
+                      [](std::string response) {
+                        NonEmptyString serialised_response(response);
+                        nfs::Reply::serialised_type serialised_reply(serialised_response);
+                        nfs::Reply reply(serialised_reply);
+                        if (!reply.IsSuccess())
+                          ThrowError(VaultErrors::failed_to_handle_request);
+                      });
+  return;
+}
+
+void ClientMaid::UnregisterPmid(const Maid& maid, const Pmid& pmid) {
+  PmidRegistration pmid_unregistration(maid, pmid, true);
+  PmidRegistration::serialised_type serialised_pmid_unregistration(pmid_unregistration.Serialise());
+  client_nfs_->UnregisterPmid(serialised_pmid_unregistration, [](std::string) {});
   return;
 }
 
@@ -363,12 +324,12 @@ void ClientMaid::DoOnNetworkStatusChange(const int& network_health) {
 }
 
 void ClientMaid::OnPublicKeyRequested(const NodeId& node_id,
-                                         const routing::GivePublicKeyFunctor& give_key) {
+                                      const routing::GivePublicKeyFunctor& give_key) {
   asio_service_.service().post([=] { DoOnPublicKeyRequested(node_id, give_key); });
 }
 
 void ClientMaid::DoOnPublicKeyRequested(const NodeId& node_id,
-                                           const routing::GivePublicKeyFunctor& give_key) {
+                                        const routing::GivePublicKeyFunctor& give_key) {
   typedef passport::PublicPmid PublicPmid;
   PublicPmid::name_type pmid_name(Identity(node_id.string()));
   std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));

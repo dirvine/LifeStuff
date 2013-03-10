@@ -18,7 +18,8 @@ const int kRetryLimit(10);
 
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : slots_(CheckSlots(slots)),
-    client_maid_(slots_.update_available_slot) {}
+    client_maid_(slots_.update_available_slot),
+    client_mpid_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -33,7 +34,7 @@ void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password
 }
 
 void LifeStuffImpl::LogOut() {
-  
+  client_maid_.LogOut();
 }
 
 void LifeStuffImpl::MountDrive() {

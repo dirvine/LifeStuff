@@ -31,16 +31,15 @@ namespace lifestuff {
 
 class ClientMaid {
  public:
-  typedef passport::Passport Passport;
-  typedef maidsafe::routing::Routing Routing;
+  typedef routing::Routing Routing;
   typedef std::unique_ptr<Routing> RoutingPtr;
   typedef std::pair<std::string, uint16_t> EndPoint;
   typedef boost::asio::ip::udp::endpoint UdpEndPoint;
-  typedef maidsafe::nfs::PmidRegistration PmidRegistration;
-  typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
+  typedef nfs::PmidRegistration PmidRegistration;
+  typedef nfs::ClientMaidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
-  typedef maidsafe::lifestuff_manager::ClientController ClientController;
+  typedef lifestuff_manager::ClientController ClientController;
   typedef passport::Passport Passport;
   typedef passport::Anmid Anmid;
   typedef passport::Ansmid Ansmid;
@@ -52,7 +51,7 @@ class ClientMaid {
   typedef passport::Tmid Tmid;
 
   ClientMaid(UpdateAvailableFunction update_available_slot);
-  ~ClientMaid();
+  ~ClientMaid() {}
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
   
@@ -70,6 +69,9 @@ class ClientMaid {
   bool AcceptableWordSize(const Identity& word);
   bool AcceptableWordPattern(const Identity& word);
 
+  void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
+  void PutSession(const Keyword& keyword, const Pin& pin, const Password& password);
+
   void Join(const Maid& maid);
   void PutFreeFobs();
   void HandlePutFreeFobsFailure();
@@ -77,6 +79,9 @@ class ClientMaid {
   void HandlePutPaidFobsFailure();
   template <typename Fob> void PutFob(const Fob& fob);
   void HandlePutFobFailure();
+
+  void RegisterPmid(const Maid& maid, const Pmid& pmid);
+  void UnregisterPmid(const Maid& maid, const Pmid& pmid);
 
   std::vector<UdpEndPoint> UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
   routing::Functors InitialiseRoutingFunctors();
@@ -94,7 +99,6 @@ class ClientMaid {
   void DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
 
   ClientController client_controller_;
-  Passport passport_;
   Session session_;
   UserStorage user_storage_;
   RoutingPtr routing_;

@@ -32,15 +32,17 @@ const NonEmptyString kDriveLogo("Lifestuff Drive");
 const boost::filesystem::path kLifeStuffConfigPath("LifeStuff-Config");
 
 UserStorage::UserStorage()
-    : mount_path_(),
+    : mount_status_(false),
+      mount_path_(),
       drive_(),
       mount_thread_() {}
 
-void UserStorage::MountDrive(ClientNfs& client_nfs,
-                             const Maid& maid,
-                             const Session& session,
-                             const boost::filesystem::path& data_store_path,
-                             const DiskUsage& disk_usage) {
+void UserStorage::MountDrive(ClientNfs& client_nfs, Session& session) {
+  if (mount_status_)
+    return;
+  boost::filesystem::path data_store_path(
+      GetHomeDir() / kAppHomeDirectory / session.session_name().string());
+  DiskUsage disk_usage(10995116277760);  // arbitrary 10GB
 #ifdef WIN32
   std::uint32_t drive_letters, mask = 0x4, count = 2;
   drive_letters = GetLogicalDrives();
@@ -57,7 +59,7 @@ void UserStorage::MountDrive(ClientNfs& client_nfs,
   data_store_.reset(new PermanentStore(data_store_path, disk_usage));
   drive_.reset(new MaidDrive(client_nfs,
                              *data_store_,
-                             maid,
+                             session.passport().Get<Maid>(true),
                              session.unique_user_id(),
                              session.root_parent_id(),
                              mount_path_,
@@ -65,6 +67,8 @@ void UserStorage::MountDrive(ClientNfs& client_nfs,
                              session.max_space(),
                              session.used_space()));
   mount_status_ = true;
+  if (session.root_parent_id() != drive_->root_parent_id())
+    session.set_root_parent_id(drive_->root_parent_id());
 #else
   boost::system::error_code error_code;
   if (!fs::exists(mount_dir_path)) {
@@ -86,10 +90,10 @@ void UserStorage::MountDrive(ClientNfs& client_nfs,
 #endif
 }
 
-void UserStorage::UnMountDrive(int64_t& max_space, int64_t& used_space) {
+void UserStorage::UnMountDrive(Session& session) {
   if (!mount_status_)
     return;
-  max_space = 0, used_space = 0;
+  int64_t max_space(0), used_space(0);
 #ifdef WIN32
   drive_->Unmount(max_space, used_space);
 #else
@@ -100,9 +104,11 @@ void UserStorage::UnMountDrive(int64_t& max_space, int64_t& used_space) {
   fs::remove_all(mount_dir_, error_code);
 #endif
   mount_status_ = false;
+  session.set_max_space(max_space);
+  session.set_used_space(used_space);
 }
 
-fs::path UserStorage::mount_dir() {
+boost::filesystem::path UserStorage::mount_path() {
 #ifdef WIN32
   return mount_path_ / fs::path("/").make_preferred();
 #else
