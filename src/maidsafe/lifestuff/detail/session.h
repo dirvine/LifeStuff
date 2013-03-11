@@ -72,10 +72,11 @@ class Session {
         max_space(1073741824),
         used_space(0),
         session_name(EncodeToHex(crypto::SHA1Hash(RandomAlphaNumericString(20)))) {}
-    NonEmptyString session_name;
     Identity unique_user_id;
     std::string root_parent_id;
-    int64_t max_space, used_space;
+    int64_t max_space;
+    int64_t used_space;
+    NonEmptyString session_name;
   };
 
   Passport passport_;
@@ -93,54 +94,54 @@ class Session {
 
 
 
-///*
-//* ============================================================================
-//*
-//* Copyright [2009] maidsafe.net limited
-//*
-//* Description:  setting/getting session info
-//* Version:      1.0
-//* Created:      2009-01-28-16.56.20
-//* Revision:     none
-//* Compiler:     gcc
-//* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
-//* Company:      maidsafe.net limited
-//*
-//* The following source code is property of maidsafe.net limited and is not
-//* meant for external use.  The use of this code is governed by the license
-//* file LICENSE.TXT found in the root of this directory and also on
-//* www.maidsafe.net.
-//*
-//* You are not free to copy, amend or otherwise use this source code without
-//* the explicit written permission of the board of directors of maidsafe.net.
-//*
-//* ============================================================================
-//*/
+// /*
+// * ============================================================================
+// *
+// * Copyright [2009] maidsafe.net limited
+// *
+// * Description:  setting/getting session info
+// * Version:      1.0
+// * Created:      2009-01-28-16.56.20
+// * Revision:     none
+// * Compiler:     gcc
+// * Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
+// * Company:      maidsafe.net limited
+// *
+// * The following source code is property of maidsafe.net limited and is not
+// * meant for external use.  The use of this code is governed by the license
+// * file LICENSE.TXT found in the root of this directory and also on
+// * www.maidsafe.net.
+// *
+// * You are not free to copy, amend or otherwise use this source code without
+// * the explicit written permission of the board of directors of maidsafe.net.
+// *
+// * ============================================================================
+// */
 //
-//#ifndef MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
-//#define MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
+// #ifndef MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
+// #define MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
 //
-//#include <mutex>
-//#include <map>
-//#include <string>
-//#include <set>
-//#include <utility>
-//#include <vector>
+// #include <mutex>
+// #include <map>
+// #include <string>
+// #include <set>
+// #include <utility>
+// #include <vector>
 //
-//#include "maidsafe/passport/passport.h"
+// #include "maidsafe/passport/passport.h"
 //
-//#include "maidsafe/lifestuff/detail/contacts.h"
-//#include "maidsafe/lifestuff/lifestuff.h"
+// #include "maidsafe/lifestuff/detail/contacts.h"
+// #include "maidsafe/lifestuff/lifestuff.h"
 //
-//namespace maidsafe {
+// namespace maidsafe {
 //
-//namespace lifestuff {
+// namespace lifestuff {
 //
-//namespace test { class SessionTest; }
+// namespace test { class SessionTest; }
 //
-//enum SessionAccessLevel { kNoAccess, kFullAccess, kMustDie };
+// enum SessionAccessLevel { kNoAccess, kFullAccess, kMustDie };
 //
-//struct UserDetails {
+// struct UserDetails {
 //  UserDetails()
 //      : defconlevel(DefConLevels::kDefCon3),
 //        keyword(),
@@ -163,21 +164,21 @@ class Session {
 //  NonEmptyString serialised_data_atlas;
 //  bool changed, has_drive_data;
 //  SessionAccessLevel session_access_level;
-//};
+// };
 //
-//struct SocialInfo {
+// struct SocialInfo {
 //  SocialInfo(const NonEmptyString& picture_datamap,
 //             const Identity& the_card_address);
 //  NonEmptyString profile_picture_datamap;
 //  Identity card_address;
-//};
+// };
 //
-//typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
-//typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
+// typedef std::shared_ptr<ContactsHandler> ContactsHandlerPtr;
+// typedef std::shared_ptr<SocialInfo> SocialInfoPtr;
 //
-//typedef std::pair<std::shared_ptr<std::mutex>, SocialInfoPtr> SocialInfoDetail;
+// typedef std::pair<std::shared_ptr<std::mutex>, SocialInfoPtr> SocialInfoDetail;
 //
-//struct PublicIdDetails {
+// struct PublicIdDetails {
 //  PublicIdDetails();
 //  explicit PublicIdDetails(const Identity& card_address);
 //  PublicIdDetails& operator=(const PublicIdDetails& other);
@@ -186,9 +187,9 @@ class Session {
 //  SocialInfoPtr social_info;
 //  ContactsHandlerPtr contacts_handler;
 //  std::shared_ptr<std::mutex> social_info_mutex;
-//};
+// };
 //
-//class Session {
+// class Session {
 // public:
 //  Session();
 //  ~Session();
@@ -253,10 +254,10 @@ class Session {
 //
 //  void set_has_drive_data(bool has_drive_data);
 //  bool CreateTestPackets(bool with_public_ids, std::vector<NonEmptyString>& public_ids);
-//};
+// };
 //
-//}  // namespace lifestuff
+// }  // namespace lifestuff
 //
-//}  // namespace maidsafe
+// }  // namespace maidsafe
 //
-//#endif  // MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
+// #endif  // MAIDSAFE_LIFESTUFF_DETAIL_SESSION_H_
