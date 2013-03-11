@@ -35,7 +35,7 @@ class ClientMpid {
   ClientMpid(RoutingPtr routing,
              const NonEmptyString& public_id,
              const passport::Mpid& mpid);
-  ~ClientMpid();
+  ~ClientMpid() {}
 
   void LogIn();
   void LogOut();

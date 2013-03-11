@@ -164,7 +164,7 @@ if(MAIDSAFE_TESTING)
   ms_add_executable(TESTlifestuff_api_real_drive "Tests/LifeStuff" ${API_REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
 endif()
 
-target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
+target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_vault maidsafe_lifestuff_detail)
 if(MAIDSAFE_TESTING)
   target_link_libraries(TESTlifestuff_api_user_credentials maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
   add_dependencies(TESTlifestuff_api_user_credentials lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
@@ -191,6 +191,7 @@ ms_disable_warnings(${PROTO_SOURCE_FILES})
 
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-effc++")
 endif()
 
 if(MAIDSAFE_TESTING)

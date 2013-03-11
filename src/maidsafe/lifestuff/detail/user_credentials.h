@@ -12,6 +12,9 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_CREDENTIALS_H_
 
+#include <vector>
+#include <string>
+
 #include "maidsafe/passport/passport.h"
 
 #include "maidsafe/nfs/nfs.h"
@@ -34,7 +37,7 @@ class UserCredentials {
  public:
   typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
 
-  UserCredentials(ClientNfs& client_nfs_);
+  explicit UserCredentials(ClientNfs& client_nfs_);
   ~UserCredentials();
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -101,7 +104,7 @@ class UserCredentials {
   void StoreAnmaid(OperationResults& results);
   void StoreMaid(bool result, OperationResults& results);
   void StorePmid(bool result, OperationResults& results);
-  //void StoreSignaturePacket(const Fob& packet, OperationResults& results, int index);
+  // void StoreSignaturePacket(const Fob& packet, OperationResults& results, int index);
 
   int ProcessIdentityPackets(const NonEmptyString& keyword,
                              const NonEmptyString& pin,
@@ -129,9 +132,9 @@ class UserCredentials {
   void DeleteAnsmid(OperationResults& results);
   void DeleteAntmid(OperationResults& results);
   void DeletePmid(OperationResults& results);
-  //void DeleteMaid(bool result, OperationResults& results, const Fob& maid);
-  //void DeleteAnmaid(bool result, OperationResults& results, const Fob& anmaid);
-  //void DeleteSignaturePacket(const Fob& packet, OperationResults& results, int index);
+  // void DeleteMaid(bool result, OperationResults& results, const Fob& maid);
+  // void DeleteAnmaid(bool result, OperationResults& results, const Fob& anmaid);
+  // void DeleteSignaturePacket(const Fob& packet, OperationResults& results, int index);
 
   int DoChangePasswordAdditions();
   int DoChangePasswordRemovals();
@@ -140,6 +143,7 @@ class UserCredentials {
                               const std::string& pin,
                               const std::string& password,
                               NonEmptyString& new_data_atlas);
+
  private:
   passport::Passport passport_;
   ClientNfs& client_nfs_;

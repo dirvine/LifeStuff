@@ -12,6 +12,9 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
 
+#include <string>
+#include <vector>
+
 #include "boost/filesystem/path.hpp"
 
 #ifdef WIN32
@@ -49,14 +52,8 @@ class UserStorage {
   explicit UserStorage();
   virtual ~UserStorage() {}
 
-  virtual void MountDrive(ClientNfs& client_nfs,
-                          const Maid& maid,
-                          const Session& session,
-                          const boost::filesystem::path& data_store_path,
-                          const DiskUsage& disk_usage);
-  virtual void UnMountDrive(int64_t& max_space, int64_t& used_space);
-  virtual fs::path mount_dir();
-  virtual bool mount_status();
+  void MountDrive(ClientNfs& client_nfs, Session& session);
+  void UnMountDrive(Session& session);
 
   bool ParseAndSaveDataMap(const NonEmptyString& file_name,
                            const NonEmptyString& serialised_data_map,
@@ -79,9 +76,12 @@ class UserStorage {
                         std::vector<std::string>* results);
   int GetHiddenFileDataMap(const boost::filesystem::path& absolute_path, std::string* data_map);
 
-  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
-
   std::string ConstructFile(const NonEmptyString& serialised_data_map);
+
+  boost::filesystem::path mount_path();
+  bool mount_status();
+
+  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
 
  private:
   UserStorage &operator=(const UserStorage&);
@@ -134,51 +134,51 @@ class UserStorage {
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_
 
-//#include <list>
-//#include <map>
-//#include <memory>
-//#include <string>
-//#include <thread>
-//#include <vector>
+// #include <list>
+// #include <map>
+// #include <memory>
+// #include <string>
+// #include <thread>
+// #include <vector>
 //
-//#include "boost/filesystem.hpp"
-//#include "boost/asio/io_service.hpp"
+// #include "boost/filesystem.hpp"
+// #include "boost/asio/io_service.hpp"
 //
-//#ifdef WIN32
-//#  include "maidsafe/drive/win_drive.h"
-//#else
-//#  include "maidsafe/drive/unix_drive.h"
-//#endif
-//#include "maidsafe/drive/return_codes.h"
+// #ifdef WIN32
+// #  include "maidsafe/drive/win_drive.h"
+// #else
+// #  include "maidsafe/drive/unix_drive.h"
+// #endif
+// #include "maidsafe/drive/return_codes.h"
 //
-//#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
-//#include "maidsafe/private/chunk_store/file_chunk_store.h"
-//#include "maidsafe/private/chunk_store/remote_chunk_store.h"
+// #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+// #include "maidsafe/private/chunk_store/file_chunk_store.h"
+// #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 //
 //
-//#include "maidsafe/passport/passport_config.h"
+// #include "maidsafe/passport/passport_config.h"
 //
-//#include "maidsafe/lifestuff/lifestuff.h"
-//#include "maidsafe/lifestuff/return_codes.h"
-//#include "maidsafe/lifestuff/detail/utils.h"
+// #include "maidsafe/lifestuff/lifestuff.h"
+// #include "maidsafe/lifestuff/return_codes.h"
+// #include "maidsafe/lifestuff/detail/utils.h"
 //
-//#ifdef WIN32
+// #ifdef WIN32
 //  typedef maidsafe::drive::CbfsDriveInUserSpace MaidDriveInUserSpace;
-//#else
+// #else
 //  typedef maidsafe::drive::FuseDriveInUserSpace MaidDriveInUserSpace;
-//#endif
+// #endif
 //
-//namespace fs = boost::filesystem;
-//namespace pca = maidsafe::priv::chunk_actions;
-//namespace pcs = maidsafe::priv::chunk_store;
+// namespace fs = boost::filesystem;
+// namespace pca = maidsafe::priv::chunk_actions;
+// namespace pcs = maidsafe::priv::chunk_store;
 //
-//namespace maidsafe {
+// namespace maidsafe {
 //
-//namespace lifestuff {
+// namespace lifestuff {
 //
-//class Session;
+// class Session;
 //
-//class UserStorage {
+// class UserStorage {
 // public:
 //  explicit UserStorage(pcs::RemoteChunkStore& chunk_store);
 //  virtual ~UserStorage() {}
@@ -236,10 +236,10 @@ class UserStorage {
 //  bool WriteConfigFile(const fs::path& absolute_path,
 //                       const NonEmptyString& content,
 //                       bool overwrite_existing);
-//};
+// };
 //
-//}  // namespace lifestuff
+// }  // namespace lifestuff
 //
-//}  // namespace maidsafe
+// }  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_

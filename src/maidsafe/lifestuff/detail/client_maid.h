@@ -9,10 +9,12 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENT_MAID_H_
-#define MAIDSAFE_LIFESTUFF_CLIENT_MAID_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MAID_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MAID_H_
 
 #include <string>
+#include <vector>
+#include <utility>
 
 #include "maidsafe/routing/routing_api.h"
 
@@ -31,16 +33,15 @@ namespace lifestuff {
 
 class ClientMaid {
  public:
-  typedef passport::Passport Passport;
-  typedef maidsafe::routing::Routing Routing;
+  typedef routing::Routing Routing;
   typedef std::unique_ptr<Routing> RoutingPtr;
   typedef std::pair<std::string, uint16_t> EndPoint;
   typedef boost::asio::ip::udp::endpoint UdpEndPoint;
-  typedef maidsafe::nfs::PmidRegistration PmidRegistration;
-  typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
+  typedef nfs::PmidRegistration PmidRegistration;
+  typedef nfs::ClientMaidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
-  typedef maidsafe::lifestuff_manager::ClientController ClientController;
+  typedef lifestuff_manager::ClientController ClientController;
   typedef passport::Passport Passport;
   typedef passport::Anmid Anmid;
   typedef passport::Ansmid Ansmid;
@@ -51,24 +52,25 @@ class ClientMaid {
   typedef passport::Mid Mid;
   typedef passport::Tmid Tmid;
 
-  ClientMaid(UpdateAvailableFunction update_available_slot);
-  ~ClientMaid();
+  explicit ClientMaid(UpdateAvailableFunction update_available_slot);
+  ~ClientMaid() {}
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
-  
   void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
   void LogOut();
   void MountDrive();
   void UnMountDrive();
 
  private:
-
   void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
   void CheckKeywordValidity(const Keyword& keyword);
   void CheckPinValidity(const Pin& pin);
   void CheckPasswordValidity(const Password& password);
   bool AcceptableWordSize(const Identity& word);
   bool AcceptableWordPattern(const Identity& word);
+
+  void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
+  void PutSession(const Keyword& keyword, const Pin& pin, const Password& password);
 
   void Join(const Maid& maid);
   void PutFreeFobs();
@@ -77,6 +79,9 @@ class ClientMaid {
   void HandlePutPaidFobsFailure();
   template <typename Fob> void PutFob(const Fob& fob);
   void HandlePutFobFailure();
+
+  void RegisterPmid(const Maid& maid, const Pmid& pmid);
+  void UnregisterPmid(const Maid& maid, const Pmid& pmid);
 
   std::vector<UdpEndPoint> UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
   routing::Functors InitialiseRoutingFunctors();
@@ -94,7 +99,6 @@ class ClientMaid {
   void DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
 
   ClientController client_controller_;
-  Passport passport_;
   Session session_;
   UserStorage user_storage_;
   RoutingPtr routing_;
@@ -103,8 +107,7 @@ class ClientMaid {
   int network_health_;
   AsioService asio_service_;
 };
-
 }  // lifestuff
 }  // maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENT_MAID_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MAID_H_
