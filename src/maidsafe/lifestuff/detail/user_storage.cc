@@ -291,14 +291,11 @@ bool UserStorage::mount_status() {
 //  return WriteFile(absolute_path, content.string());
 // }
 //
-// }  // namespace lifestuff
-// }  // namespace maidsafe
-//
-//
-//
-//
-//
-//
+}  // namespace lifestuff
+}  // namespace maidsafe
+
+
+
 // /*
 // * ============================================================================
 // *
