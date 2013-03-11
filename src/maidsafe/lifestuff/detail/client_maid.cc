@@ -25,16 +25,12 @@
 namespace maidsafe {
 namespace lifestuff {
 
-ClientMaid::ClientMaid(UpdateAvailableFunction update_available_slot)
-  : client_controller_(update_available_slot),
+ClientMaid::ClientMaid(UpdateAvailableFunction update_available_function)
+  : client_controller_(update_available_function),
     session_(),
     user_storage_(),
-    routing_(),
-    client_nfs_(),
-    user_credentials_(),
-    network_health_(),
-    asio_service_(2) {
-  asio_service_.Start();
+    routing_handler_(),
+    client_nfs_() {
 }
 
 void ClientMaid::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
@@ -42,10 +38,9 @@ void ClientMaid::CreateUser(const Keyword& keyword, const Pin& pin, const Passwo
   session_.passport().CreateFobs();
   Maid maid(session_.passport().Get<Maid>(false));
   Pmid pmid(session_.passport().Get<Pmid>(false));
-  Join(maid);
+  JoinNetwork(maid);
   PutFreeFobs();
-  client_nfs_.reset(new ClientNfs(*routing_, maid));
-  user_credentials_.reset(new UserCredentials(*client_nfs_));
+  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
   client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
   RegisterPmid(maid, pmid);
   session_.passport().ConfirmFobs();
@@ -61,14 +56,13 @@ void ClientMaid::LogIn(const Keyword& keyword, const Pin& pin, const Password& p
   CheckInputs(keyword, pin, password);
   Anmaid anmaid;
   Maid maid(anmaid);
-  Join(maid);
-  client_nfs_.reset(new ClientNfs(*routing_, maid));
+  JoinNetwork(maid);
+  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
   GetSession(keyword, pin, password);
   maid = session_.passport().Get<Maid>(true);
   Pmid pmid(session_.passport().Get<Pmid>(true));
-  Join(maid);
-  client_nfs_.reset(new ClientNfs(*routing_, maid));
-  user_credentials_.reset(new UserCredentials(*client_nfs_));
+  JoinNetwork(maid);
+  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
   client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
   return;
 }
@@ -163,13 +157,15 @@ void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Passwo
   PutFob<Mid>(mid);
 }
 
-void ClientMaid::Join(const Maid& maid) {
-  routing_.reset(new Routing(maid));
-  routing::Functors functors(InitialiseRoutingFunctors());
-  std::vector<EndPoint> bootstrap_endpoints;
-  client_controller_.GetBootstrapNodes(bootstrap_endpoints);
-  routing_->Join(functors, UdpEndpoints(bootstrap_endpoints));
-  return;
+void ClientMaid::JoinNetwork(const Maid& maid) {
+  PublicKeyRequestFunction public_key_request(
+      [this](const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
+        PublicKeyRequest(node_id, give_key);
+      });
+  routing_handler_.reset(new RoutingHandler(maid, public_key_request));
+  EndPointVector endpoints;
+  client_controller_.GetBootstrapNodes(endpoints);
+  routing_handler_->Join(endpoints);
 }
 
 void ClientMaid::PutFreeFobs() {
@@ -184,7 +180,7 @@ void ClientMaid::PutFreeFobs() {
 
 void ClientMaid::HandlePutFreeFobsFailure() {
   session_.passport().CreateFobs();
-  Join(session_.passport().Get<Maid>(false));
+  JoinNetwork(session_.passport().Get<Maid>(false));
   PutFreeFobs();
   return;
 }
@@ -207,10 +203,9 @@ void ClientMaid::HandlePutPaidFobsFailure() {
   session_.passport().CreateFobs();
   maid = session_.passport().Get<Maid>(false);
   pmid = session_.passport().Get<Pmid>(false);
-  Join(maid);
+  JoinNetwork(maid);
   PutFreeFobs();
-  client_nfs_.reset(new ClientNfs(*routing_, maid));
-  user_credentials_.reset(new UserCredentials(*client_nfs_));
+  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
   client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
   RegisterPmid(maid, pmid);
   session_.passport().ConfirmFobs();
@@ -218,7 +213,7 @@ void ClientMaid::HandlePutPaidFobsFailure() {
   return;
 }
 
-template <typename Fob>
+template<typename Fob>
 void ClientMaid::PutFob(const Fob& fob) {
   ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
                         if (!reply.IsSuccess()) {
@@ -231,8 +226,30 @@ void ClientMaid::PutFob(const Fob& fob) {
 }
 
 void ClientMaid::HandlePutFobFailure() {
-  ThrowError(LifeStuffErrors::kStoreFailure);  // ???
+  ThrowError(LifeStuffErrors::kStoreFailure);
   return;
+}
+
+template<typename Fob>
+void ClientMaid::DeleteFob(const typename Fob::name_type& fob_name) {
+  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
+                        if (!reply.IsSuccess()) {
+                          this->HandleDeleteFobFailure();
+                        }
+                      });
+  maidsafe::nfs::Delete<Fob>(*client_nfs_, fob_name, 3, reply);
+  return;
+}
+
+void ClientMaid::HandleDeleteFobFailure() {
+  ThrowError(LifeStuffErrors::kDeleteFailure);
+  return;
+}
+
+template<typename Fob>
+Fob ClientMaid::GetFob(const typename Fob::name_type& fob_name) {
+  std::future<Fob> fob_future(maidsafe::nfs::Get<Fob>(*client_nfs_, fob_name));
+  return fob_future.get();
 }
 
 void ClientMaid::RegisterPmid(const Maid& maid, const Pmid& pmid) {
@@ -256,105 +273,15 @@ void ClientMaid::UnregisterPmid(const Maid& maid, const Pmid& pmid) {
   return;
 }
 
-std::vector<ClientMaid::UdpEndPoint>
-      ClientMaid::UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints) {
-  std::vector<UdpEndPoint> endpoints;
-  for (auto& endpoint : bootstrap_endpoints) {
-    UdpEndPoint udp_endpoint;
-    udp_endpoint.address(boost::asio::ip::address::from_string(endpoint.first));
-    udp_endpoint.port(endpoint.second);
-    endpoints.push_back(udp_endpoint);
-  }
-  return endpoints;
-}
-
-routing::Functors ClientMaid::InitialiseRoutingFunctors() {
-  routing::Functors functors;
-  functors.message_received = [this](const std::string& message,
-                                     bool /*cache_lookup*/,
-                                     const routing::ReplyFunctor& reply_functor) {
-                                  OnMessageReceived(message, reply_functor);
-                              };
-  functors.network_status = [this](const int& network_health) {
-                                OnNetworkStatusChange(network_health);
-                            };
-  functors.close_node_replaced = [this](const std::vector<routing::NodeInfo>& new_close_nodes) {
-                                     OnCloseNodeReplaced(new_close_nodes);
-                                 };
-  functors.request_public_key = [this](const NodeId& node_id,
-                                       const routing::GivePublicKeyFunctor& give_key) {
-                                    OnPublicKeyRequested(node_id, give_key);
-                                };
-  functors.new_bootstrap_endpoint = [this](const boost::asio::ip::udp::endpoint& endpoint) {
-                                        OnNewBootstrapEndpoint(endpoint);
-                                    };
-  functors.store_cache_data = [this](const std::string& message) { OnStoreInCache(message); };
-  functors.have_cache_data = [this](std::string& message) { return OnGetFromCache(message); };
-  return functors;
-}
-
-void ClientMaid::OnMessageReceived(const std::string& message,
-                                      const routing::ReplyFunctor& reply_functor) {
-  asio_service_.service().post([=] { DoOnMessageReceived(message, reply_functor); });
-}
-
-void ClientMaid::DoOnMessageReceived(const std::string& /*message*/,
-                                        const routing::ReplyFunctor& /*reply_functor*/) {
-}
-
-void ClientMaid::OnNetworkStatusChange(const int& network_health) {
-  asio_service_.service().post([=] { DoOnNetworkStatusChange(network_health); });
-}
-
-void ClientMaid::DoOnNetworkStatusChange(const int& network_health) {
-  if (network_health >= 0) {
-    if (network_health >= network_health_)
-      LOG(kVerbose) << "Init - " << DebugId(routing_->kNodeId())
-                    << " - Network health is " << network_health
-                    << "% (was " << network_health_ << "%)";
-    else
-      LOG(kWarning) << "Init - " << DebugId(routing_->kNodeId())
-                    << " - Network health is " << network_health
-                    << "% (was " << network_health_ << "%)";
+void ClientMaid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
+  if(client_nfs_) {
+    typedef passport::PublicPmid PublicPmid;
+    PublicPmid::name_type pmid_name(Identity(node_id.string()));
+    std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
+    give_key(pmid_future.get().public_key());
   } else {
-    LOG(kWarning) << "Init - " << DebugId(routing_->kNodeId())
-                  << " - Network is down (" << network_health << ")";
+    ThrowError(CommonErrors::uninitialised);
   }
-  network_health_ = network_health;
-}
-
-void ClientMaid::OnPublicKeyRequested(const NodeId& node_id,
-                                      const routing::GivePublicKeyFunctor& give_key) {
-  asio_service_.service().post([=] { DoOnPublicKeyRequested(node_id, give_key); });
-}
-
-void ClientMaid::DoOnPublicKeyRequested(const NodeId& node_id,
-                                        const routing::GivePublicKeyFunctor& give_key) {
-  typedef passport::PublicPmid PublicPmid;
-  PublicPmid::name_type pmid_name(Identity(node_id.string()));
-  std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
-  give_key(pmid_future.get().public_key());
-}
-
-void ClientMaid::OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& /*new_close_nodes*/) {
-}
-
-bool ClientMaid::OnGetFromCache(std::string& /*message*/) {  // Need to be on routing's thread
-  return true;
-}
-
-void ClientMaid::OnStoreInCache(const std::string& message) {  // post/move data?
-  asio_service_.service().post([=] { DoOnStoreInCache(message); });
-}
-
-void ClientMaid::DoOnStoreInCache(const std::string& /*message*/) {
-}
-
-void ClientMaid::OnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint) {
-  asio_service_.service().post([=] { DoOnNewBootstrapEndpoint(endpoint); });
-}
-
-void ClientMaid::DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& /*endpoint*/) {
 }
 
 }  // lifestuff
