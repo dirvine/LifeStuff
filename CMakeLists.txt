@@ -191,6 +191,7 @@ ms_disable_warnings(${PROTO_SOURCE_FILES})
 
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-effc++")
 endif()
 
 if(MAIDSAFE_TESTING)
