@@ -11,6 +11,8 @@
 
 #include "maidsafe/lifestuff/detail/client_mpid.h"
 
+#include "maidsafe/nfs/client_utils.h"
+
 namespace maidsafe {
 namespace lifestuff {
 
@@ -19,7 +21,7 @@ ClientMpid::ClientMpid(RoutingPtr routing,
                        const passport::Anmpid& anmpid,
                        const passport::Mpid& mpid)
   : routing_(routing),
-    client_nfs_(ClientNfs(*routing_, mpid)),
+    client_nfs_(new ClientNfs(*routing_, mpid)),
     public_id_(public_id),
     anmpid_(anmpid),
     mpid_(mpid),
@@ -28,22 +30,17 @@ ClientMpid::ClientMpid(RoutingPtr routing,
 }
 
 void ClientMpid::LogIn() {
-  MpidRegistration mpid_registration(anmpid_, mpid_, false);
-  MpidRegistration::serialised_type serialised_mpid_registration(mpid_registration.Serialise());
-  client_nfs_->RegisterMpid(mpid.,
-                      [](std::string response) {
-                        NonEmptyString serialised_response(response);
-                        nfs::Reply::serialised_type serialised_reply(serialised_response);
-                        nfs::Reply reply(serialised_reply);
-                        if (!reply.IsSuccess())
-                          ThrowError(VaultErrors::failed_to_handle_request);
-                      });
+  client_nfs_->GoOnline([](std::string response) {
+                          NonEmptyString serialised_response(response);
+                          nfs::Reply::serialised_type serialised_reply(serialised_response);
+                          nfs::Reply reply(serialised_reply);
+                          if (!reply.IsSuccess())
+                            ThrowError(VaultErrors::failed_to_handle_request);
+                        });
 }
 
 void ClientMpid::LogOut() {
-  MpidRegistration mpid_unregistration(anmpid_, mpid_, true);
-  MpidRegistration::serialised_type serialised_mpid_unregistration(mpid_unregistration.Serialise());
-  client_nfs_->UnregisterMpid(serialised_mpid_unregistration, [](std::string response) {});
+  client_nfs_->GoOffline([](std::string /*response*/) {});
 }
 }  // lifestuff
 }  // maidsafe

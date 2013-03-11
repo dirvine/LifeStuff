@@ -17,14 +17,17 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
+#include "maidsafe/routing/routing_api.h"
+
 #include "maidsafe/passport/types.h"
+
+#include "maidsafe/nfs/nfs.h"
 
 namespace maidsafe {
 namespace lifestuff {
 
 class ClientMpid {
  public:
-  typedef passport::Passport Passport;
   typedef maidsafe::routing::Routing Routing;
   typedef std::shared_ptr<Routing> RoutingPtr;
   typedef maidsafe::nfs::ClientMpidNfs ClientNfs;
@@ -34,7 +37,9 @@ class ClientMpid {
 
   ClientMpid(RoutingPtr routing,
              const NonEmptyString& public_id,
+             const passport::Anmpid& anmpid,
              const passport::Mpid& mpid);
+  ClientMpid();
   ~ClientMpid() {}
 
   void LogIn();
