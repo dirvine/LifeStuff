@@ -22,25 +22,22 @@
 #include "maidsafe/nfs/pmid_registration.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/detail/user_credentials.h"
 #include "maidsafe/lifestuff_manager/client_controller.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/user_storage.h"
-#include "maidsafe/lifestuff/detail/routings_handler.h"
+#include "maidsafe/lifestuff/detail/routing_handler.h"
 
 namespace maidsafe {
 namespace lifestuff {
 
 class ClientMaid {
  public:
-  typedef routing::Routing Routing;
-  typedef std::unique_ptr<Routing> RoutingPtr;
-  typedef std::pair<std::string, uint16_t> EndPoint;
-  typedef boost::asio::ip::udp::endpoint UdpEndPoint;
+  typedef RoutingHandler RoutingHandler;
+  typedef std::unique_ptr<RoutingHandler> RoutingHandlerPtr;
+  typedef RoutingHandler::EndPointVector EndPointVector;
   typedef nfs::PmidRegistration PmidRegistration;
   typedef nfs::ClientMaidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
-  typedef std::unique_ptr<UserCredentials> UserCredentialsPtr;
   typedef lifestuff_manager::ClientController ClientController;
   typedef passport::Passport Passport;
   typedef passport::Anmid Anmid;
@@ -52,7 +49,7 @@ class ClientMaid {
   typedef passport::Mid Mid;
   typedef passport::Tmid Tmid;
 
-  explicit ClientMaid(UpdateAvailableFunction update_available_slot);
+  explicit ClientMaid(UpdateAvailableFunction update_available_function);
   ~ClientMaid() {}
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -72,40 +69,29 @@ class ClientMaid {
   void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
   void PutSession(const Keyword& keyword, const Pin& pin, const Password& password);
 
-  void Join(const Maid& maid);
+  void JoinNetwork(const Maid& maid);
+
   void PutFreeFobs();
   void HandlePutFreeFobsFailure();
   void PutPaidFobs();
   void HandlePutPaidFobsFailure();
-  template <typename Fob> void PutFob(const Fob& fob);
+
+  template<typename Fob> void PutFob(const Fob& fob);
   void HandlePutFobFailure();
+  template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
+  void HandleDeleteFobFailure();
+  template<typename Fob> Fob GetFob(const typename Fob::name_type& fob);
 
   void RegisterPmid(const Maid& maid, const Pmid& pmid);
   void UnregisterPmid(const Maid& maid, const Pmid& pmid);
 
-  std::vector<UdpEndPoint> UdpEndpoints(const std::vector<EndPoint>& bootstrap_endpoints);
-  routing::Functors InitialiseRoutingFunctors();
-  void OnMessageReceived(const std::string& message,  const routing::ReplyFunctor& reply_functor);
-  void DoOnMessageReceived(const std::string& message, const routing::ReplyFunctor& reply_functor);
-  void OnNetworkStatusChange(const int& network_health);
-  void DoOnNetworkStatusChange(const int& network_health);
-  void OnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
-  void DoOnPublicKeyRequested(const NodeId &node_id, const routing::GivePublicKeyFunctor &give_key);
-  void OnCloseNodeReplaced(const std::vector<routing::NodeInfo>& new_close_nodes);
-  bool OnGetFromCache(std::string& message);
-  void OnStoreInCache(const std::string& message);
-  void DoOnStoreInCache(const std::string& message);
-  void OnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
-  void DoOnNewBootstrapEndpoint(const boost::asio::ip::udp::endpoint& endpoint);
+  void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
 
   ClientController client_controller_;
   Session session_;
   UserStorage user_storage_;
-  RoutingPtr routing_;
+  RoutingHandlerPtr routing_handler_;
   ClientNfsPtr client_nfs_;
-  UserCredentialsPtr user_credentials_;
-  int network_health_;
-  AsioService asio_service_;
 };
 }  // lifestuff
 }  // maidsafe
