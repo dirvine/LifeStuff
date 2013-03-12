@@ -25,6 +25,8 @@ namespace lifestuff {
 
 class LifeStuffImpl {
  public:
+  typedef std::vector<std::pair<std::string, uint16_t>> EndPointVector;
+
   explicit LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
@@ -41,6 +43,8 @@ class LifeStuffImpl {
 
  private:
   const Slots& CheckSlots(const Slots& slots);
+  void CreateClientMpid(const NonEmptyString& public_id,
+                        const EndPointVector& bootstrap_endpoints);
 
   Slots slots_;
   Session session_;

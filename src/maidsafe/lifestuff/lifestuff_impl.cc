@@ -32,8 +32,7 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
 void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
   client_mpid_list_.clear();
   client_maid_.LogIn(keyword, pin, password);
-  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints(
-      client_maid_.GetBootStrapNodes());
+  EndPointVector bootstrap_endpoints(client_maid_.GetBootStrapNodes());
 
   std::vector<NonEmptyString> mpid_name_list(session_.passport().GetSelectableFobNameList(true));
   for (auto& mpid_name : mpid_name_list) {
@@ -52,12 +51,34 @@ void LifeStuffImpl::LogOut() {
   client_mpid_list_.clear();
 }
 
+void LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
+  session_.passport().CreateSelectableFobPair(public_id);
+  session_.passport().ConfirmSelectableFobPair(public_id);
+
+  // TODO(Team): use client_maid to put mpid and anmpid on network ?
+  //    does registration required or just let MPAH creates an account when detected a new
+  //    routing establishment request?
+
+  EndPointVector bootstrap_endpoints(client_maid_.GetBootStrapNodes());
+  CreateClientMpid(public_id, bootstrap_endpoints);
+}
+
 void LifeStuffImpl::MountDrive() {
   client_maid_.MountDrive();
 }
 
 void LifeStuffImpl::UnMountDrive() {
   client_maid_.UnMountDrive();
+}
+
+void LifeStuffImpl::CreateClientMpid(const NonEmptyString& public_id,
+                                     const EndPointVector& bootstrap_endpoints) {
+  passport::Mpid mpid(session_.passport().GetSelectableFob<passport::Mpid>(true, public_id));
+  passport::Anmpid anmpid(session_.passport().GetSelectableFob<passport::Anmpid>(true,
+                                                                                 public_id));
+  std::unique_ptr<ClientMpid> client_mpid(new ClientMpid(public_id, anmpid, mpid,
+                                                         bootstrap_endpoints));
+  client_mpid_list_.push_back(std::move(client_mpid));
 }
 
 const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
