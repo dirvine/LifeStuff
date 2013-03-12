@@ -46,12 +46,14 @@ class Session {
   std::string root_parent_id() const;
   int64_t max_space() const;
   int64_t used_space() const;
+  bool initialised();
 
   void set_session_name();
   void set_unique_user_id(const Identity& unique_user_id);
   void set_root_parent_id(const std::string& root_parent_id);
   void set_max_space(const int64_t& max_space);
   void set_used_space(const int64_t& used_space);
+  void set_initialised();
 
   void set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints);
   std::vector<Endpoint> bootstrap_endpoints() const;
@@ -82,6 +84,9 @@ class Session {
   Passport passport_;
   std::vector<Endpoint> bootstrap_endpoints_;
   UserDetails user_details_;
+  bool initialised_;
+  // probably need a modified bool here since used_space varies and
+  // public_id etc., will need to be added.
 };
 
 }  // namespace lifestuff

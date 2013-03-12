@@ -48,10 +48,11 @@ class ClientMaid {
   typedef passport::Mid Mid;
   typedef passport::Tmid Tmid;
 
-  explicit ClientMaid(UpdateAvailableFunction update_available_function);
+  ClientMaid(Session& session, UpdateAvailableFunction update_available_function);
   ~ClientMaid() {}
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
+
   void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
   void LogOut();
   void MountDrive();
@@ -86,8 +87,8 @@ class ClientMaid {
 
   void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
 
+  Session& session_;
   ClientController client_controller_;
-  Session session_;
   UserStorage user_storage_;
   RoutingHandlerPtr routing_handler_;
   ClientNfsPtr client_nfs_;

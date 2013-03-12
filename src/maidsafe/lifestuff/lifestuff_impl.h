@@ -36,6 +36,7 @@ class LifeStuffImpl {
   const Slots& CheckSlots(const Slots& slots);
 
   Slots slots_;
+  Session session_;
   ClientMaid client_maid_;
   ClientMpid client_mpid_;
 };

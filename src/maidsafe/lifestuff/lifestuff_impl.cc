@@ -18,7 +18,8 @@ const int kRetryLimit(10);
 
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : slots_(CheckSlots(slots)),
-    client_maid_(slots_.update_available_slot),
+    session_(),
+    client_maid_(session_, slots_.update_available_slot),
     client_mpid_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
@@ -499,7 +500,7 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted ||
 //      (kDriveMounted & logged_in_state_) == kDriveMounted) {
 //    LOG(kError) << "In incorrect state to log out. " <<
-//                   "Make sure messages and intros have been stopped and drive has been unmounted."; // NOLINT
+//        "Make sure messages and intros have been stopped and drive has been unmounted.";
 //    return kWrongLoggedInState;
 //  }
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
@@ -883,7 +884,8 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    int count(0), limit(10);
 //    while (reconstructed != profile_picture_contents.string() && count++ < limit) {
 //      data_map.clear();
-//      result = logged_in_components_->storage.GetHiddenFileDataMap(profile_picture_path, &data_map); // NOLINT
+//      result = logged_in_components_->storage.GetHiddenFileDataMap(profile_picture_path,
+//                                                                   &data_map);
 //      if ((result != kSuccess || data_map.empty()) && count == limit) {
 //        LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
 //                    << profile_picture_path << " with result " << result;
@@ -1029,7 +1031,8 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  return kSuccess;
 // }
 //
-// ContactMap LifeStuffImpl::GetContacts(const NonEmptyString& my_public_id, uint16_t bitwise_status) { // NOLINT
+// ContactMap LifeStuffImpl::GetContacts(const NonEmptyString& my_public_id,
+//                                       uint16_t bitwise_status) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
 //    LOG(kError) << "Failed pre checks in GetContacts.";
@@ -1425,7 +1428,7 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //                                                  session_termination,
 //                                                  nullptr));
 //                   routings_handler_->DeleteRoutingObject(
-//                       session_.passport().SignaturePacketDetails(passport::kMaid, true).identity); // NOLINT
+//                     session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
 //
 //                   immediate_quit_required_signal_();
 //                 });

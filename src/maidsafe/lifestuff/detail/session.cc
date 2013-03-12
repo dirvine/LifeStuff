@@ -30,7 +30,8 @@ namespace lifestuff {
 Session::Session()
     : passport_(),
       bootstrap_endpoints_(),
-      user_details_() {}
+      user_details_(),
+      initialised_(false) {}
 
 Session::~Session() {}
 
@@ -62,6 +63,10 @@ int64_t Session::used_space() const {
   return user_details_.used_space;
 }
 
+bool Session::initialised() {
+  return initialised_;
+}
+
 void Session::set_session_name() {
   NonEmptyString random(RandomAlphaNumericString(64));
   user_details_.session_name = NonEmptyString(EncodeToHex(crypto::Hash<crypto::SHA1>(random)));
@@ -81,6 +86,10 @@ void Session::set_max_space(const int64_t& max_space) {
 
 void Session::set_used_space(const int64_t& used_space) {
   user_details_.used_space = used_space;
+}
+
+void Session::set_initialised() {
+  initialised_ = true;
 }
 
 void Session::Parse(const NonEmptyString& serialised_data_atlas) {
@@ -519,8 +528,8 @@ NonEmptyString Session::Serialise() {
 //      contact.mpid_public_key =
 //          asymm::DecodeKey(asymm::EncodedPublicKey(
 //              data_atlas.public_ids(id_count).contacts(contact_count).mpid_public_key()));
-//      if (data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key() !=
-//          "pending") {
+//      if (data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key()
+//                    != "pending") {
 //        contact.inbox_public_key =
 //            asymm::DecodeKey(asymm::EncodedPublicKey(
 //                data_atlas.public_ids(id_count).contacts(contact_count).inbox_public_key()));
@@ -574,9 +583,8 @@ NonEmptyString Session::Serialise() {
 //      pc->set_public_id(contacts[n].public_id.string());
 //      pc->set_mpid_name(contacts[n].mpid_name.IsInitialised() ? contacts[n].mpid_name.string() :
 //                                                                "pending");
-//      pc->set_inbox_name(
-//            contacts[n].inbox_name.IsInitialised() ? contacts[n].inbox_name.string() :
-//                                                                  "pending");
+//      pc->set_inbox_name(contacts[n].inbox_name.IsInitialised() ?
+//                                                contacts[n].inbox_name.string() : "pending");
 //      asymm::EncodedPublicKey serialised_mpid_public_key(
 //                                  asymm::EncodeKey(contacts[n].mpid_public_key)),
 //                              serialised_inbox_public_key;
