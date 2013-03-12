@@ -21,7 +21,7 @@ namespace lifestuff {
 
 class LifeStuffImpl {
  public:
-  LifeStuffImpl(const Slots& slots);
+  explicit LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -36,6 +36,7 @@ class LifeStuffImpl {
   const Slots& CheckSlots(const Slots& slots);
 
   Slots slots_;
+  Session session_;
   ClientMaid client_maid_;
   ClientMpid client_mpid_;
 };
@@ -48,42 +49,42 @@ class LifeStuffImpl {
 
 
 //
-//#ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
-//#define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
+// #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
+// #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 //
-//#include <list>
-//#include <map>
-//#include <string>
-//#include <utility>
-//#include <vector>
+// #include <list>
+// #include <map>
+// #include <string>
+// #include <utility>
+// #include <vector>
 //
-//#include "boost/filesystem/path.hpp"
-//#include "boost/signals2/signal.hpp"
+// #include "boost/filesystem/path.hpp"
+// #include "boost/signals2/signal.hpp"
 //
-//#include "maidsafe/common/asio_service.h"
-//#include "maidsafe/common/log.h"
-//#include "maidsafe/common/utils.h"
+// #include "maidsafe/common/asio_service.h"
+// #include "maidsafe/common/log.h"
+// #include "maidsafe/common/utils.h"
 //
-//#include "maidsafe/routing/routing_api.h"
+// #include "maidsafe/routing/routing_api.h"
 //
-//#include "maidsafe/lifestuff/lifestuff.h"
-//#include "maidsafe/lifestuff/detail/contacts.h"
-//#include "maidsafe/lifestuff/detail/session.h"
-//#include "maidsafe/lifestuff/detail/utils.h"
+// #include "maidsafe/lifestuff/lifestuff.h"
+// #include "maidsafe/lifestuff/detail/contacts.h"
+// #include "maidsafe/lifestuff/detail/session.h"
+// #include "maidsafe/lifestuff/detail/utils.h"
 //
-//namespace fs = boost::filesystem;
-//namespace bptime = boost::posix_time;
+// namespace fs = boost::filesystem;
+// namespace bptime = boost::posix_time;
 //
-//namespace maidsafe {
-//namespace lifestuff {
+// namespace maidsafe {
+// namespace lifestuff {
 //
-//class MessageHandler;
-//class PublicId;
-//class RoutingsHandler;
-//class UserCredentials;
-//class UserStorage;
+// class MessageHandler;
+// class PublicId;
+// class RoutingsHandler;
+// class UserCredentials;
+// class UserStorage;
 //
-//class LifeStuffImpl {
+// class LifeStuffImpl {
 // public:
 //  LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory);
 //  ~LifeStuffImpl();
@@ -190,10 +191,10 @@ class LifeStuffImpl {
 //  int CreateVaultInLocalMachine(const fs::path& chunk_store);
 //  bool HandleRoutingsHandlerMessage(const NonEmptyString& message, std::string& response);
 //  bool HandleLogoutProceedingsMessage(const NonEmptyString& message, std::string& response);
-//};
+// };
 //
-//}  // namespace lifestuff
+// }  // namespace lifestuff
 //
-//}  // namespace maidsafe
+// }  // namespace maidsafe
 //
-//#endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
+// #endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_

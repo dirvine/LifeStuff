@@ -18,7 +18,8 @@ const int kRetryLimit(10);
 
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : slots_(CheckSlots(slots)),
-    client_maid_(slots_.update_available_slot),
+    session_(),
+    client_maid_(session_, slots_.update_available_slot),
     client_mpid_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
@@ -77,58 +78,58 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 }  // namespace maidsafe
 
 
-///*
-//* ============================================================================
-//*
-//* Copyright [2012] maidsafe.net limited
-//*
-//* Description:  Definition of system-wide constants/enums/structs
-//* Version:      1.0
-//* Created:      2012-03-27
-//* Revision:     none
-//* Compiler:     gcc
-//* Company:      maidsafe.net limited
-//*
-//* The following source code is property of maidsafe.net limited and is not
-//* meant for external use.  The use of this code is governed by the license
-//* file LICENSE.TXT found in the root of this directory and also on
-//* www.maidsafe.net.
-//*
-//* You are not free to copy, amend or otherwise use this source code without
-//* the explicit written permission of the board of directors of maidsafe.net.
-//*
-//* ============================================================================
-//*/
+// /*
+// * ============================================================================
+// *
+// * Copyright [2012] maidsafe.net limited
+// *
+// * Description:  Definition of system-wide constants/enums/structs
+// * Version:      1.0
+// * Created:      2012-03-27
+// * Revision:     none
+// * Compiler:     gcc
+// * Company:      maidsafe.net limited
+// *
+// * The following source code is property of maidsafe.net limited and is not
+// * meant for external use.  The use of this code is governed by the license
+// * file LICENSE.TXT found in the root of this directory and also on
+// * www.maidsafe.net.
+// *
+// * You are not free to copy, amend or otherwise use this source code without
+// * the explicit written permission of the board of directors of maidsafe.net.
+// *
+// * ============================================================================
+// */
 //
-//#include "maidsafe/lifestuff/lifestuff_impl.h"
+// #include "maidsafe/lifestuff/lifestuff_impl.h"
 //
-//#include <algorithm>
-//#include <functional>
-//#include <future>
-//#include <utility>
-//#include <vector>
+// #include <algorithm>
+// #include <functional>
+// #include <future>
+// #include <utility>
+// #include <vector>
 //
-//#include "maidsafe/common/asio_service.h"
-//#include "maidsafe/common/log.h"
-//#include "maidsafe/common/utils.h"
+// #include "maidsafe/common/asio_service.h"
+// #include "maidsafe/common/log.h"
+// #include "maidsafe/common/utils.h"
 //
-//#include "maidsafe/lifestuff/lifestuff.h"
-//#include "maidsafe/lifestuff/rcs_helper.h"
-//#include "maidsafe/lifestuff/return_codes.h"
-//#include "maidsafe/lifestuff/detail/message_handler.h"
-//#include "maidsafe/lifestuff/detail/public_id.h"
-//#include "maidsafe/lifestuff/detail/routings_handler.h"
-//#include "maidsafe/lifestuff/detail/user_credentials.h"
-//#include "maidsafe/lifestuff/detail/user_storage.h"
+// #include "maidsafe/lifestuff/lifestuff.h"
+// #include "maidsafe/lifestuff/rcs_helper.h"
+// #include "maidsafe/lifestuff/return_codes.h"
+// #include "maidsafe/lifestuff/detail/message_handler.h"
+// #include "maidsafe/lifestuff/detail/public_id.h"
+// #include "maidsafe/lifestuff/detail/routings_handler.h"
+// #include "maidsafe/lifestuff/detail/user_credentials.h"
+// #include "maidsafe/lifestuff/detail/user_storage.h"
 //
-//namespace maidsafe {
+// namespace maidsafe {
 //
-//namespace lifestuff {
+// namespace lifestuff {
 //
-//const int kRetryLimit(10);
-//const NonEmptyString kDriveLogo("Lifestuff Drive");
+// const int kRetryLimit(10);
+// const NonEmptyString kDriveLogo("Lifestuff Drive");
 //
-//void CheckSlots(Slots& slot_functions) {
+// void CheckSlots(Slots& slot_functions) {
 //  if (!slot_functions.chat_slot)
 //    throw std::invalid_argument("missing chat_slot");
 //  if (!slot_functions.file_success_slot)
@@ -155,18 +156,18 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    throw std::invalid_argument("missing update_available_slot");
 //  if (!slot_functions.operation_progress_slot)
 //    throw std::invalid_argument("missing operation_progress_slot");
-//}
+// }
 //
-//struct LifeStuffImpl::LoggedInComponents {
+// struct LifeStuffImpl::LoggedInComponents {
 //  LoggedInComponents(priv::chunk_store::RemoteChunkStore& remote_chunk_store,
 //                     Session& session,
 //                     boost::asio::io_service& service);
 //  PublicId public_id;
 //  MessageHandler message_handler;
 //  UserStorage storage;
-//};
+// };
 //
-//LifeStuffImpl::LoggedInComponents::LoggedInComponents(
+// LifeStuffImpl::LoggedInComponents::LoggedInComponents(
 //    priv::chunk_store::RemoteChunkStore& remote_chunk_store,
 //    Session& session,
 //    boost::asio::io_service& service)
@@ -175,7 +176,7 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //      storage(remote_chunk_store) {}
 //
 //
-//LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory)
+// LifeStuffImpl::LifeStuffImpl(const Slots& slot_functions, const fs::path& base_directory)
 //    : thread_count_(kThreads),
 //      buffered_path_(),
 //      interval_(kSecondsInterval),
@@ -222,9 +223,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  session_.set_bootstrap_endpoints(bootstrap_endpoints);
 //
 //  state_ = kConnected;
-//}
+// }
 //
-//LifeStuffImpl::~LifeStuffImpl() {
+// LifeStuffImpl::~LifeStuffImpl() {
 //  // !!! DO NOT REMOVE TRY/CATCH. This function MUST NOT THROW !!!
 //  try {
 //    int result(AttemptCleanQuit());
@@ -243,9 +244,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  catch(const std::exception& e) {
 //    LOG(kWarning) << "AttemptCleanQuit has failed with exception: " << e.what();
 //  }
-//}
+// }
 //
-//int LifeStuffImpl::AttemptCleanQuit() {
+// int LifeStuffImpl::AttemptCleanQuit() {
 //  if (state_ == kLoggedIn) {
 //    int result;
 //    if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
@@ -272,9 +273,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::MakeAnonymousComponents() {
+// int LifeStuffImpl::MakeAnonymousComponents() {
 //  try {
 //    remote_chunk_store_ = BuildChunkStore(buffered_path_,
 //                                          session_.bootstrap_endpoints(),
@@ -299,9 +300,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //                                                        *routings_handler_);
 //
 //  return kSuccess;
-//}
+// }
 //
-//void LifeStuffImpl::ConnectToSignals() {
+// void LifeStuffImpl::ConnectToSignals() {
 //  logged_in_components_->message_handler.ConnectToChatSignal(slots_.chat_slot);
 //  logged_in_components_->message_handler.ConnectToFileTransferSuccessSignal(
 //      slots_.file_success_slot);
@@ -328,10 +329,10 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //           LOG(kError) << "Failed to remove contact after receiving contact deletion signal!";
 //         }
 //     });
-//}
+// }
 //
-///// Credential operations
-//int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
+// // Credential operations
+// int LifeStuffImpl::CreateUser(const NonEmptyString& keyword,
 //                              const NonEmptyString& pin,
 //                              const NonEmptyString& password,
 //                              const fs::path& chunk_store) {
@@ -394,9 +395,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  logged_in_state_ = kCredentialsLoggedIn;
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
+// int LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
 //    return result;
@@ -431,9 +432,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  LOG(kSuccess) << "Success creating public ID: " << public_id.string();
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
+// int LifeStuffImpl::LogIn(const NonEmptyString& keyword,
 //                         const NonEmptyString& pin,
 //                         const NonEmptyString& password) {
 //  if (state_ != kConnected) {
@@ -488,9 +489,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  logged_in_state_ = kCredentialsLoggedIn;
 //
 //  return login_result;
-//}
+// }
 //
-//int LifeStuffImpl::LogOut(bool clear_maid_routing) {
+// int LifeStuffImpl::LogOut(bool clear_maid_routing) {
 //  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
 //  if (state_ != kLoggedIn) {
 //    LOG(kError) << "Should be logged in to log out.";
@@ -499,7 +500,7 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted ||
 //      (kDriveMounted & logged_in_state_) == kDriveMounted) {
 //    LOG(kError) << "In incorrect state to log out. " <<
-//                   "Make sure messages and intros have been stopped and drive has been unmounted.";
+//        "Make sure messages and intros have been stopped and drive has been unmounted.";
 //    return kWrongLoggedInState;
 //  }
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn) {
@@ -532,9 +533,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  logged_in_state_ = kBaseState;
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::MountDrive() {
+// int LifeStuffImpl::MountDrive() {
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
 //      (kDriveMounted & logged_in_state_) == kDriveMounted) {
 //    LOG(kError) << "In unsuitable state to mount drive: "
@@ -571,9 +572,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //
 //  logged_in_state_ = logged_in_state_ ^ kDriveMounted;
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::UnMountDrive() {
+// int LifeStuffImpl::UnMountDrive() {
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
 //      (kDriveMounted & logged_in_state_) != kDriveMounted ||
 //      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
@@ -598,9 +599,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  if ((kDriveMounted & logged_in_state_) == kDriveMounted)
 //    logged_in_state_ = logged_in_state_ ^ kDriveMounted;
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::StartMessagesAndIntros() {
+// int LifeStuffImpl::StartMessagesAndIntros() {
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
 //      (kDriveMounted & logged_in_state_) != kDriveMounted ||
 //      (kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted) {
@@ -624,9 +625,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  if ((kMessagesAndIntrosStarted & logged_in_state_) != kMessagesAndIntrosStarted)
 //    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::StopMessagesAndIntros() {
+// int LifeStuffImpl::StopMessagesAndIntros() {
 //  if ((kCredentialsLoggedIn & logged_in_state_) != kCredentialsLoggedIn ||
 //      (kDriveMounted & logged_in_state_) != kDriveMounted) {
 //     LOG(kError) << "In unsuitable state to stop messages and intros: " <<
@@ -639,17 +640,17 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  if ((kMessagesAndIntrosStarted & logged_in_state_) == kMessagesAndIntrosStarted)
 //    logged_in_state_ = logged_in_state_ ^ kMessagesAndIntrosStarted;
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
+// int LifeStuffImpl::CheckPassword(const NonEmptyString& password) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
 //    return result;
 //
 //  return session_.password() == password ? kSuccess : kCheckPasswordFailure;
-//}
+// }
 //
-//int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
+// int LifeStuffImpl::ChangeKeyword(const NonEmptyString& new_keyword,
 //                                 const NonEmptyString& password) {
 //  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
 //  int result(CheckStateAndFullAccess());
@@ -674,9 +675,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    LOG(kError) << "Changing Keyword failed with result: " << result;
 //    return result;
 //  }
-//}
+// }
 //
-//int LifeStuffImpl::ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password) {
+// int LifeStuffImpl::ChangePin(const NonEmptyString& new_pin, const NonEmptyString& password) {
 //  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
@@ -700,9 +701,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    LOG(kError) << "Changing PIN failed with result: " << result;
 //    return result;
 //  }
-//}
+// }
 //
-//int LifeStuffImpl::ChangePassword(const NonEmptyString& new_password,
+// int LifeStuffImpl::ChangePassword(const NonEmptyString& new_password,
 //                                  const NonEmptyString& current_password) {
 //  std::lock_guard<std::mutex> lock(single_threaded_class_mutex_);
 //  int result(CheckStateAndFullAccess());
@@ -727,9 +728,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    LOG(kError) << "Changing Password failed with result: " << result;
 //    return result;
 //  }
-//}
+// }
 //
-//int LifeStuffImpl::LeaveLifeStuff() {
+// int LifeStuffImpl::LeaveLifeStuff() {
 //  state_ = kZeroth;
 //  // TODO(Alison) - set logged_in_state_ - to which value?
 //
@@ -761,10 +762,10 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  result = user_credentials_->DeleteUserCredentials();
 //
 //  return kSuccess;
-//}
+// }
 //
-///// Contact operations
-//int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
+// // Contact operations
+// int LifeStuffImpl::AddContact(const NonEmptyString& my_public_id,
 //                              const NonEmptyString& contact_public_id,
 //                              const std::string& message) {
 //  int result(PreContactChecksFullAccess(my_public_id));
@@ -779,9 +780,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::ConfirmContact(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::ConfirmContact(const NonEmptyString& my_public_id,
 //                                  const NonEmptyString& contact_public_id) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
@@ -803,9 +804,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::DeclineContact(const NonEmptyString& my_public_id,
 //                                  const NonEmptyString& contact_public_id) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
@@ -819,9 +820,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::RemoveContact(const NonEmptyString& my_public_id,
 //                                 const NonEmptyString& contact_public_id,
 //                                 const std::string& removal_message,
 //                                 const bool& instigator) {
@@ -843,9 +844,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::ChangeProfilePicture(const NonEmptyString& my_public_id,
 //                                        const NonEmptyString& profile_picture_contents) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
@@ -883,7 +884,8 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    int count(0), limit(10);
 //    while (reconstructed != profile_picture_contents.string() && count++ < limit) {
 //      data_map.clear();
-//      result = logged_in_components_->storage.GetHiddenFileDataMap(profile_picture_path, &data_map);
+//      result = logged_in_components_->storage.GetHiddenFileDataMap(profile_picture_path,
+//                                                                   &data_map);
 //      if ((result != kSuccess || data_map.empty()) && count == limit) {
 //        LOG(kError) << "Failed obtaining DM of profile picture: " << result << ", file: "
 //                    << profile_picture_path << " with result " << result;
@@ -923,9 +925,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  logged_in_components_->message_handler.SendEveryone(message);
 //
 //  return kSuccess;
-//}
+// }
 //
-//NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_public_id) {
+// NonEmptyString LifeStuffImpl::GetOwnProfilePicture(const NonEmptyString& my_public_id) {
 //  // Read contents, put them in a string, give them back. Should not be a file
 //  // over a certain size (kFileRecontructionLimit).
 //  int result(PreContactChecksFullAccess(my_public_id));
@@ -960,9 +962,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return NonEmptyString(profile_picture_contents);
-//}
+// }
 //
-//NonEmptyString LifeStuffImpl::GetContactProfilePicture(const NonEmptyString& my_public_id,
+// NonEmptyString LifeStuffImpl::GetContactProfilePicture(const NonEmptyString& my_public_id,
 //                                                       const NonEmptyString& contact_public_id) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
@@ -994,9 +996,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  // over a certain size (kFileRecontructionLimit).
 //  return NonEmptyString(logged_in_components_->storage.ConstructFile(
 //                            contact.profile_picture_data_map));
-//}
+// }
 //
-//int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::GetLifestuffCard(const NonEmptyString& my_public_id,
 //                                    const std::string& contact_public_id,
 //                                    SocialInfoMap& social_info) {
 //  int result(PreContactChecksFullAccess(my_public_id));
@@ -1013,9 +1015,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::SetLifestuffCard(const NonEmptyString& my_public_id,
+// int LifeStuffImpl::SetLifestuffCard(const NonEmptyString& my_public_id,
 //                                    const SocialInfoMap& social_info) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
@@ -1027,9 +1029,10 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//ContactMap LifeStuffImpl::GetContacts(const NonEmptyString& my_public_id, uint16_t bitwise_status) {
+// ContactMap LifeStuffImpl::GetContacts(const NonEmptyString& my_public_id,
+//                                       uint16_t bitwise_status) {
 //  int result(PreContactChecksFullAccess(my_public_id));
 //  if (result != kSuccess) {
 //    LOG(kError) << "Failed pre checks in GetContacts.";
@@ -1043,18 +1046,18 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return contacts_handler->GetContacts(bitwise_status);
-//}
+// }
 //
-//std::vector<NonEmptyString> LifeStuffImpl::PublicIdsList() const {
+// std::vector<NonEmptyString> LifeStuffImpl::PublicIdsList() const {
 //  int result = CheckStateAndFullAccess();
 //  if (result != kSuccess)
 //    return std::vector<NonEmptyString>();
 //
 //  return session_.PublicIdentities();
-//}
+// }
 //
-///// Messaging
-//int LifeStuffImpl::SendChatMessage(const NonEmptyString& sender_public_id,
+// // Messaging
+// int LifeStuffImpl::SendChatMessage(const NonEmptyString& sender_public_id,
 //                                   const NonEmptyString& receiver_public_id,
 //                                   const NonEmptyString& message) {
 //  int result(CheckStateAndFullAccess());
@@ -1077,9 +1080,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
+// int LifeStuffImpl::SendFile(const NonEmptyString& sender_public_id,
 //                            const NonEmptyString& receiver_public_id,
 //                            const fs::path& absolute_path) {
 //  int result(CheckStateAndFullAccess());
@@ -1106,9 +1109,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
+// int LifeStuffImpl::AcceptSentFile(const NonEmptyString& identifier,
 //                                  const fs::path& absolute_path,
 //                                  std::string* file_name) {
 //  int result(CheckStateAndFullAccess());
@@ -1157,9 +1160,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::RejectSentFile(const NonEmptyString& identifier) {
+// int LifeStuffImpl::RejectSentFile(const NonEmptyString& identifier) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
 //    return result;
@@ -1171,10 +1174,10 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-///// Filesystem
-//int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
+// // Filesystem
+// int LifeStuffImpl::ReadHiddenFile(const fs::path& absolute_path, std::string* content) const {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
 //    return result;
@@ -1190,9 +1193,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
+// int LifeStuffImpl::WriteHiddenFile(const fs::path& absolute_path,
 //                                   const NonEmptyString& content,
 //                                   bool overwrite_existing) {
 //  int result(CheckStateAndFullAccess());
@@ -1207,9 +1210,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
+// int LifeStuffImpl::DeleteHiddenFile(const fs::path& absolute_path) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
 //    return result;
@@ -1220,9 +1223,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
+// int LifeStuffImpl::SearchHiddenFiles(const fs::path& absolute_path,
 //                                     std::vector<std::string>* results) {
 //  int result(CheckStateAndFullAccess());
 //  if (result != kSuccess)
@@ -1234,14 +1237,13 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return result;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-/////
-//int LifeStuffImpl::state() const { return state_; }
+// int LifeStuffImpl::state() const { return state_; }
 //
-//int LifeStuffImpl::logged_in_state() const { return logged_in_state_; }
+// int LifeStuffImpl::logged_in_state() const { return logged_in_state_; }
 //
-//fs::path LifeStuffImpl::mount_path() const {
+// fs::path LifeStuffImpl::mount_path() const {
 //  if (state_ != kLoggedIn) {
 //    LOG(kError) << "Incorrect state. Should be logged in: " << state_;
 //    return fs::path();
@@ -1252,9 +1254,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return logged_in_components_->storage.mount_dir();
-//}
+// }
 //
-//void LifeStuffImpl::ConnectInternalElements() {
+// void LifeStuffImpl::ConnectInternalElements() {
 //  logged_in_components_->message_handler.ConnectToParseAndSaveDataMapSignal(
 //      [this] (const NonEmptyString& file_name,
 //              const NonEmptyString& serialised_data_map,
@@ -1271,9 +1273,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //        logged_in_components_->message_handler.InformConfirmedContactOnline(own_public_id,
 //                                                                            recipient_public_id);
 //      });
-//}
+// }
 //
-//int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
+// int LifeStuffImpl::SetValidPmidAndInitialisePublicComponents() {
 //  int result(kSuccess);
 //  result = client_node_->Stop();
 //  if (result != kSuccess) {
@@ -1315,9 +1317,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  ConnectToSignals();
 //
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::CheckStateAndFullAccess() const {
+// int LifeStuffImpl::CheckStateAndFullAccess() const {
 //  if (state_ != kLoggedIn) {
 //    LOG(kError) << "Incorrect state. Should be logged in: " << state_;
 //    return kWrongState;
@@ -1334,9 +1336,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    return kWrongAccessLevel;
 //  }
 //  return kSuccess;
-//}
+// }
 //
-//int LifeStuffImpl::PreContactChecksFullAccess(const NonEmptyString &my_public_id) {
+// int LifeStuffImpl::PreContactChecksFullAccess(const NonEmptyString &my_public_id) {
 //  int result = CheckStateAndFullAccess();
 //  if (result != kSuccess)
 //    return result;
@@ -1347,11 +1349,11 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return kSuccess;
-//}
+// }
 //
-//void LifeStuffImpl::NetworkHealthSlot(const int& index) { network_health_signal_(index); }
+// void LifeStuffImpl::NetworkHealthSlot(const int& index) { network_health_signal_(index); }
 //
-//int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
+// int LifeStuffImpl::CreateVaultInLocalMachine(const fs::path& chunk_store) {
 //  Identity account_name(session_.passport().SignaturePacketDetails(passport::kMaid,
 //                                                                   true).identity);
 //  Fob pmid_keys(session_.passport().SignaturePacketDetails(passport::kPmid, true));
@@ -1362,9 +1364,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return kSuccess;
-//}
+// }
 //
-//bool LifeStuffImpl::HandleRoutingsHandlerMessage(const NonEmptyString& message,
+// bool LifeStuffImpl::HandleRoutingsHandlerMessage(const NonEmptyString& message,
 //                                                 std::string& response) {
 //  assert(response.empty());
 //  // Check for message from another instance trying to log in
@@ -1378,9 +1380,9 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //    }
 //  }
 //  return false;
-//}
+// }
 //
-//bool LifeStuffImpl::HandleLogoutProceedingsMessage(const NonEmptyString& message,
+// bool LifeStuffImpl::HandleLogoutProceedingsMessage(const NonEmptyString& message,
 //                                                   std::string& response) {
 //  LogoutProceedings proceedings;
 //  if (proceedings.ParseFromString(message.string())) {
@@ -1425,7 +1427,7 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //                                                  session_termination,
 //                                                  nullptr));
 //                   routings_handler_->DeleteRoutingObject(
-//                       session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
+//                     session_.passport().SignaturePacketDetails(passport::kMaid, true).identity);
 //
 //                   immediate_quit_required_signal_();
 //                 });
@@ -1442,8 +1444,8 @@ const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
 //  }
 //
 //  return false;
-//}
+// }
 //
-//}  // namespace lifestuff
+// }  // namespace lifestuff
 //
-//}  // namespace maidsafe
+// }  // namespace maidsafe

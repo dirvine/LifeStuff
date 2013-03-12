@@ -25,9 +25,9 @@
 namespace maidsafe {
 namespace lifestuff {
 
-ClientMaid::ClientMaid(UpdateAvailableFunction update_available_function)
-  : client_controller_(update_available_function),
-    session_(),
+ClientMaid::ClientMaid(Session& session, UpdateAvailableFunction update_available_function)
+  : session_(session),
+    client_controller_(update_available_function),
     user_storage_(),
     routing_handler_(),
     client_nfs_() {
@@ -41,13 +41,15 @@ void ClientMaid::CreateUser(const Keyword& keyword, const Pin& pin, const Passwo
   JoinNetwork(maid);
   PutFreeFobs();
   client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  // Pass a vaild path...
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
   RegisterPmid(maid, pmid);
   session_.passport().ConfirmFobs();
   PutPaidFobs();
   session_.set_unique_user_id(Identity(RandomAlphaNumericString(64)));
   MountDrive();
   UnMountDrive();
+  session_.set_initialised();
   PutSession(keyword, pin, password);
   return;
 }
@@ -63,7 +65,8 @@ void ClientMaid::LogIn(const Keyword& keyword, const Pin& pin, const Password& p
   Pmid pmid(session_.passport().Get<Pmid>(true));
   JoinNetwork(maid);
   client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  // Pass a vaild path...
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
   return;
 }
 
@@ -138,6 +141,7 @@ void ClientMaid::GetSession(const Keyword& keyword, const Pin& pin, const Passwo
   NonEmptyString serialised_session(passport::DecryptSession(
                                       user_keyword, user_pin, user_password, encrypted_session));
   session_.Parse(serialised_session);
+  session_.set_initialised();
 }
 
 void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Password& password) {
@@ -206,7 +210,8 @@ void ClientMaid::HandlePutPaidFobsFailure() {
   JoinNetwork(maid);
   PutFreeFobs();
   client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());  // Pass a vaild path!
+  // Pass a vaild path...
+  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
   RegisterPmid(maid, pmid);
   session_.passport().ConfirmFobs();
   PutPaidFobs();
@@ -274,7 +279,7 @@ void ClientMaid::UnregisterPmid(const Maid& maid, const Pmid& pmid) {
 }
 
 void ClientMaid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
-  if(client_nfs_) {
+  if (client_nfs_) {
     typedef passport::PublicPmid PublicPmid;
     PublicPmid::name_type pmid_name(Identity(node_id.string()));
     std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
@@ -282,6 +287,7 @@ void ClientMaid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunc
   } else {
     ThrowError(CommonErrors::uninitialised);
   }
+  return;
 }
 
 }  // lifestuff

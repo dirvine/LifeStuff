@@ -9,8 +9,8 @@
  *  written permission of the board of directors of MaidSafe.net.                                  *
  **************************************************************************************************/
 
-#ifndef MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
-#define MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
 
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
@@ -33,4 +33,4 @@ class ClientMpid {
 }  // lifestuff
 }  // maidsafe
 
-#endif  // MAIDSAFE_LIFESTUFF_CLIENT_MPID_H_
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MPID_H_
