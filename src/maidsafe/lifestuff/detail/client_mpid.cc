@@ -16,17 +16,17 @@
 namespace maidsafe {
 namespace lifestuff {
 
-ClientMpid::ClientMpid(RoutingPtr routing,
-                       const NonEmptyString& public_id,
+ClientMpid::ClientMpid(const NonEmptyString& public_id,
                        const passport::Anmpid& anmpid,
-                       const passport::Mpid& mpid)
-  : routing_(routing),
-    client_nfs_(new ClientNfs(*routing_, mpid)),
+                       const passport::Mpid& mpid,
+                       const EndPointVector& bootstrap_endpoints)
+  : routing_handler_(),
+    client_nfs_(),
     public_id_(public_id),
     anmpid_(anmpid),
-    mpid_(mpid),
-    asio_service_(2) {
-  asio_service_.Start();
+    mpid_(mpid) {
+  JoinNetwork(mpid_, bootstrap_endpoints);
+  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), mpid_));
 }
 
 void ClientMpid::LogIn() {
@@ -41,6 +41,26 @@ void ClientMpid::LogIn() {
 
 void ClientMpid::LogOut() {
   client_nfs_->GoOffline([](std::string /*response*/) {});
+}
+
+void ClientMpid::JoinNetwork(const Mpid& mpid,
+                             const EndPointVector& bootstrap_endpoints) {
+  PublicKeyRequestFunction public_key_request(
+      [this](const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
+        PublicKeyRequest(node_id, give_key);
+      });
+  routing_handler_.reset(new RoutingHandler(mpid, public_key_request));
+  routing_handler_->Join(bootstrap_endpoints);
+}
+
+void ClientMpid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
+  if ((mpid_.name().data.IsInitialised()) &&
+      (mpid_.name().data.string() == node_id.string())) {
+    give_key(mpid_.public_key());
+  } else {
+    ThrowError(CommonErrors::uninitialised);
+  }
+  return;
 }
 }  // lifestuff
 }  // maidsafe

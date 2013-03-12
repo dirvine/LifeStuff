@@ -12,6 +12,10 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/client_maid.h"
 #include "maidsafe/lifestuff/detail/client_mpid.h"
@@ -25,10 +29,13 @@ class LifeStuffImpl {
   ~LifeStuffImpl();
 
   void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
-  void CreatePublicId(const NonEmptyString& public_id);
-
   void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
   void LogOut();
+
+  void CreatePublicId(const NonEmptyString& public_id);
+  void LogInPublicId(const NonEmptyString& public_id);
+  void LogOutPublicId(const NonEmptyString& public_id);
+
   void MountDrive();
   void UnMountDrive();
 
@@ -38,7 +45,7 @@ class LifeStuffImpl {
   Slots slots_;
   Session session_;
   ClientMaid client_maid_;
-  ClientMpid client_mpid_;
+  std::vector<std::unique_ptr<ClientMpid> > client_mpid_list_;
 };
 
 }  // namespace lifestuff

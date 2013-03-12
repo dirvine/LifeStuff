@@ -58,6 +58,12 @@ class ClientMaid {
   void MountDrive();
   void UnMountDrive();
 
+  EndPointVector GetBootStrapNodes() {
+    EndPointVector endpoints;
+    client_controller_.GetBootstrapNodes(endpoints);
+    return endpoints;
+  }
+
  private:
   void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
   void CheckKeywordValidity(const Keyword& keyword);

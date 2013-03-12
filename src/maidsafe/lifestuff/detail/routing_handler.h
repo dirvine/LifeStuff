@@ -38,7 +38,8 @@ class RoutingHandler {
   typedef std::vector<UdpEndPoint> UdpEndPointVector;
   typedef passport::Maid Maid;
 
-  RoutingHandler(const Maid& maid, PublicKeyRequestFunction public_key_request);
+  template<typename FobType>
+  RoutingHandler(const FobType& fob, PublicKeyRequestFunction public_key_request);
   ~RoutingHandler();
 
   void Join(const EndPointVector& endpoints);

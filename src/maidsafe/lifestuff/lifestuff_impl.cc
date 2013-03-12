@@ -20,7 +20,7 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : slots_(CheckSlots(slots)),
     session_(),
     client_maid_(session_, slots_.update_available_slot),
-    client_mpid_() {}
+    client_mpid_list_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
@@ -30,12 +30,26 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
 }
 
 void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
+  client_mpid_list_.clear();
   client_maid_.LogIn(keyword, pin, password);
+  std::vector<std::pair<std::string, uint16_t> > bootstrap_endpoints(
+      client_maid_.GetBootStrapNodes());
+
+  std::vector<NonEmptyString> mpid_name_list(session_.passport().GetSelectableFobNameList(true));
+  for (auto& mpid_name : mpid_name_list) {
+    passport::Mpid mpid(session_.passport().GetSelectableFob<passport::Mpid>(true, mpid_name));
+    passport::Anmpid anmpid(session_.passport().GetSelectableFob<passport::Anmpid>(true,
+                                                                                   mpid_name));
+    std::unique_ptr<ClientMpid> client_mpid(new ClientMpid(mpid_name, anmpid, mpid,
+                                                           bootstrap_endpoints));
+    client_mpid_list_.push_back(std::move(client_mpid));
+  }
   return;
 }
 
 void LifeStuffImpl::LogOut() {
   client_maid_.LogOut();
+  client_mpid_list_.clear();
 }
 
 void LifeStuffImpl::MountDrive() {

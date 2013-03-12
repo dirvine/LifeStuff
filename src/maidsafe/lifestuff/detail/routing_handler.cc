@@ -14,8 +14,9 @@
 namespace maidsafe {
 namespace lifestuff {
 
-RoutingHandler::RoutingHandler(const Maid& maid, PublicKeyRequestFunction public_key_request)
-  : routing_(maid),
+template<typename FobType>
+RoutingHandler::RoutingHandler(const FobType& fob, PublicKeyRequestFunction public_key_request)
+  : routing_(fob),
     public_key_request_(public_key_request),
     network_health_(),
     mutex_(),

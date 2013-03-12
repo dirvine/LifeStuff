@@ -17,41 +17,45 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/routing/routing_api.h"
-
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/nfs/nfs.h"
+
+#include "maidsafe/lifestuff/detail/routing_handler.h"
 
 namespace maidsafe {
 namespace lifestuff {
 
 class ClientMpid {
  public:
-  typedef maidsafe::routing::Routing Routing;
-  typedef std::shared_ptr<Routing> RoutingPtr;
+  typedef std::unique_ptr<RoutingHandler> RoutingHandlerPtr;
+  typedef RoutingHandler::EndPointVector EndPointVector;
   typedef maidsafe::nfs::ClientMpidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef passport::Anmpid Anmpid;
   typedef passport::Mpid Mpid;
 
-  ClientMpid(RoutingPtr routing,
-             const NonEmptyString& public_id,
+  ClientMpid(const NonEmptyString& public_id,
              const passport::Anmpid& anmpid,
-             const passport::Mpid& mpid);
+             const passport::Mpid& mpid,
+             const EndPointVector& bootstrap_endpoints);
   ClientMpid();
   ~ClientMpid() {}
 
   void LogIn();
   void LogOut();
 
+  NonEmptyString PublicId() { return public_id_; }
+
  private:
-  RoutingPtr routing_;
+  void JoinNetwork(const Mpid& Mpid, const EndPointVector& bootstrap_endpoints);
+  void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
+
+  RoutingHandlerPtr routing_handler_;
   ClientNfsPtr client_nfs_;
   NonEmptyString public_id_;
   Anmpid anmpid_;
   Mpid mpid_;
-  AsioService asio_service_;
 };
 }  // lifestuff
 }  // maidsafe
