@@ -58,11 +58,10 @@ class ClientMaid {
   void MountDrive();
   void UnMountDrive();
 
-  EndPointVector GetBootStrapNodes() {
-    EndPointVector endpoints;
+  void GetBootStrapNodes(EndPointVector& endpoints) {
     client_controller_.GetBootstrapNodes(endpoints);
-    return endpoints;
   }
+  template<typename Fob> void PutFob(const Fob& fob);
 
  private:
   void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
@@ -82,7 +81,6 @@ class ClientMaid {
   void PutPaidFobs();
   void HandlePutPaidFobsFailure();
 
-  template<typename Fob> void PutFob(const Fob& fob);
   void HandlePutFobFailure();
   template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
   void HandleDeleteFobFailure();

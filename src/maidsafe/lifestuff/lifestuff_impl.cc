@@ -32,7 +32,8 @@ void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Pas
 void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
   client_mpid_list_.clear();
   client_maid_.LogIn(keyword, pin, password);
-  EndPointVector bootstrap_endpoints(client_maid_.GetBootStrapNodes());
+  EndPointVector bootstrap_endpoints;
+  client_maid_.GetBootStrapNodes(bootstrap_endpoints);
 
   std::vector<NonEmptyString> mpid_name_list(session_.passport().GetSelectableFobNameList(true));
   for (auto& mpid_name : mpid_name_list) {
@@ -53,13 +54,17 @@ void LifeStuffImpl::LogOut() {
 
 void LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   session_.passport().CreateSelectableFobPair(public_id);
+  passport::Mpid mpid(session_.passport().GetSelectableFob<passport::Mpid>(false, public_id));
+  passport::Anmpid anmpid(session_.passport().GetSelectableFob<passport::Anmpid>(false,
+                                                                                 public_id));
+  client_maid_.PutFob<passport::Mpid>(mpid);
+  client_maid_.PutFob<passport::Anmpid>(anmpid);
   session_.passport().ConfirmSelectableFobPair(public_id);
 
-  // TODO(Team): use client_maid to put mpid and anmpid on network ?
-  //    does registration required or just let MPAH creates an account when detected a new
-  //    routing establishment request?
-
-  EndPointVector bootstrap_endpoints(client_maid_.GetBootStrapNodes());
+  // TODO(Team): does registration required or just let MPAH creates an account when detected
+  //             a new routing establishment request?
+  EndPointVector bootstrap_endpoints;
+  client_maid_.GetBootStrapNodes(bootstrap_endpoints);
   CreateClientMpid(public_id, bootstrap_endpoints);
 }
 
