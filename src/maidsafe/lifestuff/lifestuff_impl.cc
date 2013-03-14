@@ -42,7 +42,7 @@ void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password
                                                                                    mpid_name));
     std::unique_ptr<ClientMpid> client_mpid(new ClientMpid(mpid_name, anmpid, mpid,
                                                            bootstrap_endpoints));
-    client_mpid_list_.push_back(std::move(client_mpid));
+    client_mpid_list_.insert(std::make_pair(mpid_name, std::move(client_mpid)));
   }
   return;
 }
@@ -61,11 +61,13 @@ void LifeStuffImpl::CreatePublicId(const NonEmptyString& public_id) {
   client_maid_.PutFob<passport::Anmpid>(anmpid);
   session_.passport().ConfirmSelectableFobPair(public_id);
 
-  // TODO(Team): does registration required or just let MPAH creates an account when detected
-  //             a new routing establishment request?
   EndPointVector bootstrap_endpoints;
   client_maid_.GetBootStrapNodes(bootstrap_endpoints);
   CreateClientMpid(public_id, bootstrap_endpoints);
+
+  auto client_mpid(client_mpid_list_.find(public_id));
+  if (client_mpid != client_mpid_list_.end())
+    client_mpid->second->RegisterMpid(anmpid, mpid);
 }
 
 void LifeStuffImpl::MountDrive() {
@@ -83,7 +85,7 @@ void LifeStuffImpl::CreateClientMpid(const NonEmptyString& public_id,
                                                                                  public_id));
   std::unique_ptr<ClientMpid> client_mpid(new ClientMpid(public_id, anmpid, mpid,
                                                          bootstrap_endpoints));
-  client_mpid_list_.push_back(std::move(client_mpid));
+  client_mpid_list_.insert(std::make_pair(public_id, std::move(client_mpid)));
 }
 
 const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {

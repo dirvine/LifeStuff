@@ -15,6 +15,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <map>
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/client_maid.h"
@@ -49,7 +50,7 @@ class LifeStuffImpl {
   Slots slots_;
   Session session_;
   ClientMaid client_maid_;
-  std::vector<std::unique_ptr<ClientMpid> > client_mpid_list_;
+  std::map<NonEmptyString, std::unique_ptr<ClientMpid> > client_mpid_list_;
 };
 
 }  // namespace lifestuff

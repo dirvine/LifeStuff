@@ -46,15 +46,14 @@ class ClientMpid {
 
   void LogIn();
   void LogOut();
+  void RegisterMpid(const Anmpid& anmpid, const Mpid& mpid);
+  void UnregisterMpid(const Anmpid& anmpid, const Mpid& mpid);
 
   NonEmptyString PublicId() { return public_id_; }
 
  private:
   void JoinNetwork(const Mpid& Mpid, const EndPointVector& bootstrap_endpoints);
   void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
-
-  void RegisterMpid(const Anmpid& anmpid, const Mpid& mpid);
-  void UnregisterMpid(const Anmpid& anmpid, const Mpid& mpid);
 
   RoutingHandlerPtr routing_handler_;
   ClientNfsPtr client_nfs_;
