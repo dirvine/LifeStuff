@@ -19,7 +19,7 @@
 #include "maidsafe/routing/routing_api.h"
 
 #include "maidsafe/nfs/nfs.h"
-#include "maidsafe/nfs/pmid_registration.h"
+#include "maidsafe/nfs/fob_pair_registration.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff_manager/client_controller.h"
