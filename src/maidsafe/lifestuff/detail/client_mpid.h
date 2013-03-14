@@ -20,6 +20,7 @@
 #include "maidsafe/passport/types.h"
 
 #include "maidsafe/nfs/nfs.h"
+#include "maidsafe/nfs/fob_pair_registration.h"
 
 #include "maidsafe/lifestuff/detail/routing_handler.h"
 
@@ -30,6 +31,7 @@ class ClientMpid {
  public:
   typedef std::unique_ptr<RoutingHandler> RoutingHandlerPtr;
   typedef RoutingHandler::EndPointVector EndPointVector;
+  typedef nfs::MpidRegistration MpidRegistration;
   typedef maidsafe::nfs::ClientMpidNfs ClientNfs;
   typedef std::unique_ptr<ClientNfs> ClientNfsPtr;
   typedef passport::Anmpid Anmpid;
@@ -50,6 +52,9 @@ class ClientMpid {
  private:
   void JoinNetwork(const Mpid& Mpid, const EndPointVector& bootstrap_endpoints);
   void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
+
+  void RegisterMpid(const Anmpid& anmpid, const Mpid& mpid);
+  void UnregisterMpid(const Anmpid& anmpid, const Mpid& mpid);
 
   RoutingHandlerPtr routing_handler_;
   ClientNfsPtr client_nfs_;

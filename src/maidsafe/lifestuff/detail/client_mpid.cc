@@ -62,5 +62,26 @@ void ClientMpid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunc
   }
   return;
 }
+
+void ClientMpid::RegisterMpid(const Anmpid& anmpid, const Mpid& mpid) {
+  MpidRegistration mpid_registration(anmpid, mpid, false);
+  MpidRegistration::serialised_type serialised_mpid_registration(mpid_registration.Serialise());
+  client_nfs_->RegisterMpid(serialised_mpid_registration,
+                      [](std::string response) {
+                        NonEmptyString serialised_response(response);
+                        nfs::Reply::serialised_type serialised_reply(serialised_response);
+                        nfs::Reply reply(serialised_reply);
+                        if (!reply.IsSuccess())
+                          ThrowError(VaultErrors::failed_to_handle_request);
+                      });
+  return;
+}
+
+void ClientMpid::UnregisterMpid(const Anmpid& anmpid, const Mpid& mpid) {
+  MpidRegistration mpid_unregistration(anmpid, mpid, true);
+  MpidRegistration::serialised_type serialised_mpid_unregistration(mpid_unregistration.Serialise());
+  client_nfs_->UnregisterMpid(serialised_mpid_unregistration, [](std::string) {});
+  return;
+}
 }  // lifestuff
 }  // maidsafe
