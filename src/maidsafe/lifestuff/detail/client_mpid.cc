@@ -30,13 +30,7 @@ ClientMpid::ClientMpid(const NonEmptyString& public_id,
 }
 
 void ClientMpid::LogIn() {
-  client_nfs_->GoOnline([](std::string response) {
-                          NonEmptyString serialised_response(response);
-                          nfs::Reply::serialised_type serialised_reply(serialised_response);
-                          nfs::Reply reply(serialised_reply);
-                          if (!reply.IsSuccess())
-                            ThrowError(VaultErrors::failed_to_handle_request);
-                        });
+  client_nfs_->GoOnline([this](std::string response) { CheckResponse(response); });
 }
 
 void ClientMpid::LogOut() {
@@ -67,13 +61,7 @@ void ClientMpid::RegisterMpid(const Anmpid& anmpid, const Mpid& mpid) {
   MpidRegistration mpid_registration(anmpid, mpid, false);
   MpidRegistration::serialised_type serialised_mpid_registration(mpid_registration.Serialise());
   client_nfs_->RegisterMpid(serialised_mpid_registration,
-                      [](std::string response) {
-                        NonEmptyString serialised_response(response);
-                        nfs::Reply::serialised_type serialised_reply(serialised_response);
-                        nfs::Reply reply(serialised_reply);
-                        if (!reply.IsSuccess())
-                          ThrowError(VaultErrors::failed_to_handle_request);
-                      });
+                            [this](std::string response) { CheckResponse(response); });
   return;
 }
 
@@ -82,6 +70,81 @@ void ClientMpid::UnregisterMpid(const Anmpid& anmpid, const Mpid& mpid) {
   MpidRegistration::serialised_type serialised_mpid_unregistration(mpid_unregistration.Serialise());
   client_nfs_->UnregisterMpid(serialised_mpid_unregistration, [](std::string) {});
   return;
+}
+
+void ClientMpid::AddContact(const NonEmptyString& contact) {
+  client_nfs_->AddContact(contact, [this](std::string response) { CheckResponse(response); });
+}
+
+void ClientMpid::BlockContact(const NonEmptyString& contact) {
+  client_nfs_->BlockContact(contact, [this](std::string response) { CheckResponse(response); });
+}
+
+void ClientMpid::MarkSpamContact(const NonEmptyString& contact) {
+  client_nfs_->MarkSpamContact(contact,
+                               [this](std::string response) { CheckResponse(response); });
+}
+
+void ClientMpid::UnMarkSpamContact(const NonEmptyString& contact) {
+  client_nfs_->UnMarkSpamContact(contact,
+                                 [this](std::string response) { CheckResponse(response); });
+}
+
+void ClientMpid::RemoveContact(const NonEmptyString& contact) {
+  client_nfs_->RemoveContact(contact, [this](std::string response) { CheckResponse(response); });
+}
+
+void ClientMpid::SendMsgTo(const NonEmptyString& contact, const NonEmptyString& content) {
+  // Hash of the contact name becomes the mpid name, which MPAH will be around
+  routing_handler_->routing().SendGroup(NodeId(crypto::Hash<crypto::SHA512>(contact.string())),
+      content.string(), false, [this](std::string response) { CheckResponse(response); });
+}
+
+std::future<ClientMpid::MessageList> ClientMpid::GetOfflineMsg() {
+  // TODO(Team) : message signature field now used as source contact's mpid name
+  auto promise(std::make_shared<std::promise<MessageList>>());
+  auto future(promise->get_future());
+  auto callback = [promise](const std::string& response) {
+                      NonEmptyString serialised_response(response);
+                      nfs::Reply::serialised_type serialised_reply(serialised_response);
+                      nfs::Reply reply(serialised_reply);
+                      if (!reply.IsSuccess())
+                        ThrowError(VaultErrors::failed_to_handle_request);
+                      MessageList msg_list(MessageList::serialised_type(reply.data()));
+                      promise->set_value(msg_list);
+                    };
+  client_nfs_->GetOfflineMsg(callback);
+  return std::move(future);
+}
+
+std::future<std::vector<NonEmptyString>> ClientMpid::GetContactList() {
+  // TODO(Team) : currently contacts passed back as DataMessage
+  auto promise(std::make_shared<std::promise<std::vector<NonEmptyString>>>());
+  auto future(promise->get_future());
+  auto callback = [promise](const std::string& response) {
+                      NonEmptyString serialised_response(response);
+                      nfs::Reply::serialised_type serialised_reply(serialised_response);
+                      nfs::Reply reply(serialised_reply);
+                      if (!reply.IsSuccess())
+                        ThrowError(VaultErrors::failed_to_handle_request);
+                      MessageList msg_list(MessageList::serialised_type(reply.data()));
+                      std::vector<NonEmptyString> contact_list;
+                      for (auto& entry : msg_list.message_list()) {
+                        contact_list.push_back(NonEmptyString(
+                            entry.serialised_inner_message<nfs::DataMessage>()->string()));
+                      }
+                      promise->set_value(contact_list);
+                    };
+  client_nfs_->GetContactList(callback);
+  return std::move(future);
+}
+
+void ClientMpid::CheckResponse(const std::string& response) {
+  NonEmptyString serialised_response(response);
+  nfs::Reply::serialised_type serialised_reply(serialised_response);
+  nfs::Reply reply(serialised_reply);
+  if (!reply.IsSuccess())
+    ThrowError(VaultErrors::failed_to_handle_request);
 }
 }  // lifestuff
 }  // maidsafe
