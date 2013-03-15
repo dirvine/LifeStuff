@@ -16,21 +16,83 @@ namespace lifestuff {
 
 const int kRetryLimit(10);
 
-LifeStuffImpl::LifeStuffImpl(const Slots& slots)
-  : slots_(CheckSlots(slots)),
+LifeStuffImpl::LifeStuffImpl(/*const Slots& slots*/)
+  : slots_(Slots()/*CheckSlots(slots)*/),
+    keyword_(),
+    pin_(),
+    password_(),
     session_(),
     client_maid_(session_, slots_.update_available_slot),
     client_mpid_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-void LifeStuffImpl::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
-  client_maid_.CreateUser(keyword, pin, password);
+void LifeStuffImpl::InsertUserInput(uint32_t position, char character, InputField input_field) {
+  switch (input_field) {
+    case kKeyword: {
+      keyword_.Insert(position, character);
+      break;
+    }
+    case kPin: {
+      pin_.Insert(position, character);
+      break;
+    }
+    case kPassword: {
+      password_.Insert(position, character);
+      break;
+    }
+    default:
+      ThrowError(CommonErrors::invalid_parameter);
+  }
+}
+
+void LifeStuffImpl::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
+  switch (input_field) {
+    case kKeyword: {
+      keyword_.Remove(position, length);
+      break;
+    }
+    case kPin: {
+      pin_.Remove(position, length);
+      break;
+    }
+    case kPassword: {
+      password_.Remove(position, length);
+      break;
+    }
+    default:
+      ThrowError(CommonErrors::invalid_parameter);
+  }
+}
+
+void LifeStuffImpl::ClearUserInput(InputField input_field) {
+  switch (input_field) {
+    case kKeyword: {
+      keyword_.Clear();
+      break;
+    }
+    case kPin: {
+      pin_.Clear();
+      break;
+    }
+    case kPassword: {
+      password_.Clear();
+      break;
+    }
+    default:
+      ThrowError(CommonErrors::invalid_parameter);
+  }
+}
+
+void LifeStuffImpl::CreateUser() {
+  keyword_.Finalise(), pin_.Finalise(), password_.Finalise();
+  client_maid_.CreateUser(keyword_, pin_, password_);
   return;
 }
 
-void LifeStuffImpl::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
-  client_maid_.LogIn(keyword, pin, password);
+void LifeStuffImpl::LogIn() {
+  keyword_.Finalise(), pin_.Finalise(), password_.Finalise();
+  client_maid_.LogIn(keyword_, pin_, password_);
   return;
 }
 

@@ -21,13 +21,17 @@ namespace lifestuff {
 
 class LifeStuffImpl {
  public:
-  explicit LifeStuffImpl(const Slots& slots);
+  explicit LifeStuffImpl(/*const Slots& slots*/);
   ~LifeStuffImpl();
 
-  void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
+  void InsertUserInput(uint32_t position, char character, InputField input_field);
+  void RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
+  void ClearUserInput(InputField input_field);
+
+  void CreateUser();
   void CreatePublicId(const NonEmptyString& public_id);
 
-  void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
+  void LogIn();
   void LogOut();
   void MountDrive();
   void UnMountDrive();
@@ -36,6 +40,10 @@ class LifeStuffImpl {
   const Slots& CheckSlots(const Slots& slots);
 
   Slots slots_;
+  Keyword keyword_;
+  std::unique_ptr<Keyword> confirmation_keyword_;
+  Pin pin_;
+  Password password_;
   Session session_;
   ClientMaid client_maid_;
   ClientMpid client_mpid_;

@@ -20,26 +20,40 @@
 namespace maidsafe {
 namespace lifestuff {
 
-LifeStuff::LifeStuff(const Slots& slots)
-  : lifestuff_impl_(new LifeStuffImpl(slots)) {}
+LifeStuff::LifeStuff()
+  : lifestuff_impl_(new LifeStuffImpl()) {}
 
 LifeStuff::~LifeStuff() {}
 
-
-void LifeStuff::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
-  lifestuff_impl_->LogIn(keyword, pin, password);
+void LifeStuff::InsertUserInput(uint32_t position, char character, InputField input_field) {
+  lifestuff_impl_->InsertUserInput(position, character, input_field);
 }
 
-void LifeStuff::LogOut() {
+void LifeStuff::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
+  lifestuff_impl_->RemoveUserInput(position, length, input_field);
+}
+
+void LifeStuff::ClearUserInput(InputField input_field) {
+  lifestuff_impl_->ClearUserInput(input_field);
+}
+
+ApiReturnCode LifeStuff::LogIn() {
+  lifestuff_impl_->LogIn();
+  return kInputSuccess;
+}
+
+void LifeStuff::LogOut(bool /*force*/) {
   lifestuff_impl_->LogOut();
 }
 
-void LifeStuff::MountDrive() {
+ApiReturnCode LifeStuff::MountDrive() {
   lifestuff_impl_->MountDrive();
+  return kInputSuccess;
 }
 
-void LifeStuff::UnMountDrive() {
+ApiReturnCode LifeStuff::UnMountDrive() {
   lifestuff_impl_->UnMountDrive();
+  return kInputSuccess;
 }
 
 }  // namespace lifestuff

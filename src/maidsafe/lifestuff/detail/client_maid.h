@@ -58,28 +58,22 @@ class ClientMaid {
   void UnMountDrive();
 
  private:
-  void CheckInputs(const Keyword& keyword, const Pin& pin, const Password& password);
-  void CheckKeywordValidity(const Keyword& keyword);
-  void CheckPinValidity(const Pin& pin);
-  void CheckPasswordValidity(const Password& password);
-  bool AcceptableWordSize(const Identity& word);
-  bool AcceptableWordPattern(const Identity& word);
-
   void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
   void PutSession(const Keyword& keyword, const Pin& pin, const Password& password);
 
   void JoinNetwork(const Maid& maid);
 
   void PutFreeFobs();
-  void HandlePutFreeFobsFailure();
   void PutPaidFobs();
-  void HandlePutPaidFobsFailure();
 
   template<typename Fob> void PutFob(const Fob& fob);
-  void HandlePutFobFailure();
   template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
-  void HandleDeleteFobFailure();
   template<typename Fob> Fob GetFob(const typename Fob::name_type& fob);
+
+  void HandlePutFreeFobsFailure();
+  void HandlePutPaidFobsFailure();
+  void HandlePutFobFailure();
+  void HandleDeleteFobFailure();
 
   void RegisterPmid(const Maid& maid, const Pmid& pmid);
   void UnregisterPmid(const Maid& maid, const Pmid& pmid);

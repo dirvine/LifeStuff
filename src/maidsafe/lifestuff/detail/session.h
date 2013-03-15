@@ -85,8 +85,7 @@ class Session {
   std::vector<Endpoint> bootstrap_endpoints_;
   UserDetails user_details_;
   bool initialised_;
-  // probably need a modified bool here since used_space varies and
-  // public_id etc., will need to be added.
+  // probably need a modified bool here since used_space varies.
 };
 
 }  // namespace lifestuff

@@ -23,6 +23,8 @@
 
 #include "maidsafe/common/types.h"
 
+#include "maidsafe/passport/detail/secure_string.h"
+
 #include "maidsafe/lifestuff/return_codes.h"
 
 namespace maidsafe {
@@ -30,9 +32,13 @@ namespace lifestuff {
 
 enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
 
-typedef TaggedValue<Identity, struct KeywordTag> Keyword;
-typedef TaggedValue<Identity, struct PinTag> Pin;
-typedef TaggedValue<Identity, struct PasswordTag> Password;
+enum InputField { kKeyword = 0, kPin, kPassword, kComfirmKeyword, kComfirmPin, kComfirmPassword };
+enum ApiReturnCode { kInputSuccess = 0, kKeywordFailure, kPinFailure, kPasswordFailure };
+enum ApiProgessCode {  };
+
+typedef passport::detail::Keyword Keyword;
+typedef passport::detail::Pin Pin;
+typedef passport::detail::Password Password;
 
 struct LifeStuffReturn {
   // constructed based on exception.error_code() then get translated into LifeStuff ReturnCode
