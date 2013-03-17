@@ -16,124 +16,439 @@ namespace lifestuff {
 
 const int kRetryLimit(10);
 
-LifeStuffImpl::LifeStuffImpl(/*const Slots& slots*/)
-  : slots_(Slots()/*CheckSlots(slots)*/),
-    keyword_(),
+LifeStuffImpl::LifeStuffImpl(const Slots& slots)
+  : keyword_(),
     pin_(),
     password_(),
+    confirmation_keyword_(),
+    confirmation_pin_(),
+    confirmation_password_(),
+    new_keyword_(),
+    new_pin_(),
+    new_password_(),
     session_(),
-    client_maid_(session_, slots_.update_available_slot),
+    client_maid_(session_, slots),
     client_mpid_() {}
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-void LifeStuffImpl::InsertUserInput(uint32_t position, char character, InputField input_field) {
-  switch (input_field) {
-    case kKeyword: {
-      keyword_.Insert(position, character);
-      break;
+ReturnCode LifeStuffImpl::InsertUserInput(uint32_t position, char character, InputField input_field) {
+  try {
+    switch (input_field) {
+      case kKeyword: {
+        if (!keyword_)
+          keyword_.reset(new Keyword());
+        keyword_->Insert(position, character);
+        return kSuccess;
+      }
+      case kPin: {
+        if (!pin_)
+          pin_.reset(new Pin());
+        pin_->Insert(position, character);
+        return kSuccess;
+      }
+      case kPassword: {
+        if (!password_)
+          password_.reset(new Password());
+        password_->Insert(position, character);
+        return kSuccess;
+      }
+      case kConfirmationKeyword: {
+        if (!confirmation_keyword_)
+          confirmation_keyword_.reset(new Keyword());
+        confirmation_keyword_->Insert(position, character);
+        return kSuccess;
+      }
+      case kConfirmationPin: {
+        if (!confirmation_pin_)
+          confirmation_pin_.reset(new Pin());
+        confirmation_pin_->Insert(position, character);
+        return kSuccess;
+      }
+      case kConfirmationPassword: {
+        if (!confirmation_password_)
+          confirmation_password_.reset(new Password());
+        confirmation_password_->Insert(position, character);
+        return kSuccess;
+      }
+      case kNewKeyword: {
+        if (!new_keyword_)
+          new_keyword_.reset(new Keyword());
+        new_keyword_->Insert(position, character);
+        return kSuccess;
+      }
+      case kNewPin: {
+        if (!new_pin_)
+          new_pin_.reset(new Pin());
+        new_pin_->Insert(position, character);
+        return kSuccess;
+      }
+      case kNewPassword: {
+        if (!new_password_)
+          new_password_.reset(new Password());
+        new_password_->Insert(position, character);
+        return kSuccess;
+      }
+      default:
+        return kUnknownError;
     }
-    case kPin: {
-      pin_.Insert(position, character);
-      break;
-    }
-    case kPassword: {
-      password_.Insert(position, character);
-      break;
-    }
-    default:
-      ThrowError(CommonErrors::invalid_parameter);
+  }
+  catch(...) {
+    return kFail;
   }
 }
 
-void LifeStuffImpl::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
-  switch (input_field) {
-    case kKeyword: {
-      keyword_.Remove(position, length);
-      break;
+ReturnCode LifeStuffImpl::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
+  try {
+    switch (input_field) {
+      case kKeyword: {
+        if (!keyword_)
+          return kFail;
+        keyword_->Remove(position, length);
+        return kSuccess;
+      }
+      case kPin: {
+        if (!pin_)
+          return kFail;
+        pin_->Remove(position, length);
+        return kSuccess;
+      }
+      case kPassword: {
+        if (!password_)
+          return kFail;
+        password_->Remove(position, length);
+        return kSuccess;
+      }
+      case kConfirmationKeyword: {
+        if (!confirmation_keyword_)
+          return kFail;
+        confirmation_keyword_->Remove(position, length);
+        return kSuccess;
+      }
+      case kConfirmationPin: {
+        if (!confirmation_pin_)
+          return kFail;
+        confirmation_pin_->Remove(position, length);
+        return kSuccess;
+      }
+      case kConfirmationPassword: {
+        if (!confirmation_password_)
+          return kFail;
+        confirmation_password_->Remove(position, length);
+        return kSuccess;
+      }
+      case kNewKeyword: {
+        if (!new_keyword_)
+          return kFail;
+        new_keyword_->Remove(position, length);
+        return kSuccess;
+      }
+      case kNewPin: {
+        if (!new_pin_)
+          return kFail;
+        new_pin_->Remove(position, length);
+        return kSuccess;
+      }
+      case kNewPassword: {
+        if (!new_password_)
+          return kFail;
+        new_password_->Remove(position, length);
+        return kSuccess;
+      }
+      default:
+        return kUnknownError;
     }
-    case kPin: {
-      pin_.Remove(position, length);
-      break;
-    }
-    case kPassword: {
-      password_.Remove(position, length);
-      break;
-    }
-    default:
-      ThrowError(CommonErrors::invalid_parameter);
+  }
+  catch(...) {
+    return kFail;
   }
 }
 
-void LifeStuffImpl::ClearUserInput(InputField input_field) {
-  switch (input_field) {
-    case kKeyword: {
-      keyword_.Clear();
-      break;
+ReturnCode LifeStuffImpl::ClearUserInput(InputField input_field) {
+  try {
+    switch (input_field) {
+      case kKeyword: {
+        if (keyword_)
+          keyword_->Clear();
+        return kSuccess;
+      }
+      case kPin: {
+        if (pin_)
+          pin_->Clear();
+        return kSuccess;
+      }
+      case kPassword: {
+        if (password_)
+          password_->Clear();
+        return kSuccess;
+      }
+      case kConfirmationKeyword: {
+        if (confirmation_keyword_)
+          confirmation_keyword_->Clear();
+        return kSuccess;
+      }
+      case kConfirmationPin: {
+        if (confirmation_pin_)
+          confirmation_pin_->Clear();
+        return kSuccess;
+      }
+      case kConfirmationPassword: {
+        if (confirmation_password_)
+          confirmation_password_->Clear();
+        return kSuccess;
+      }
+      case kNewKeyword: {
+        if (new_keyword_)
+          new_keyword_->Clear();
+        return kSuccess;
+      }
+      case kNewPin: {
+        if (new_pin_)
+          new_pin_->Clear();
+        return kSuccess;
+      }
+      case kNewPassword: {
+        if (new_password_)
+          new_password_->Clear();
+        return kSuccess;
+      }
+      default:
+        return kUnknownError;
     }
-    case kPin: {
-      pin_.Clear();
-      break;
-    }
-    case kPassword: {
-      password_.Clear();
-      break;
-    }
-    default:
-      ThrowError(CommonErrors::invalid_parameter);
+  }
+  catch(...) {
+    return kFail;
   }
 }
 
-void LifeStuffImpl::CreateUser() {
-  keyword_.Finalise(), pin_.Finalise(), password_.Finalise();
-  client_maid_.CreateUser(keyword_, pin_, password_);
-  return;
+ReturnCode LifeStuffImpl::ConfirmUserInput(InputField input_field) {
+  // Input field here should be one of kKeyword, kNewKeyword, and not kConfirmationKeyword, etc.
+  // Requires both keyword_/new_keyword_ and confirmation_keyword_, etc., to be set...
+  switch (input_field) {
+    case kKeyword: {
+      if (!keyword_ || !confirmation_keyword_)
+        return kUninitialisedInput;
+      if (!keyword_->IsFinalised())
+        keyword_->Finalise();
+      if (!confirmation_keyword_->IsFinalised())
+        confirmation_keyword_->Finalise();
+      if (keyword_->string() != confirmation_keyword_->string()) {
+        confirmation_keyword_->Clear();
+        return kKeywordConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    case kPin: {
+      if (!pin_ || !confirmation_pin_)
+        return kUninitialisedInput;
+      if (!pin_->IsFinalised())
+        pin_->Finalise();
+      if (!confirmation_pin_->IsFinalised())
+        confirmation_pin_->Finalise();
+      if (pin_->string() != confirmation_pin_->string()) {
+        confirmation_pin_->Clear();
+        return kPinConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    case kPassword: {
+      if (!password_ || !confirmation_password_)
+        return kUninitialisedInput;
+      if (!password_->IsFinalised())
+        password_->Finalise();
+      if (!confirmation_password_->IsFinalised())
+        confirmation_password_->Finalise();
+      if (password_->string() != confirmation_password_->string()) {
+        confirmation_password_->Clear();
+        return kPasswordConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    case kNewKeyword: {
+      if (!new_keyword_ || !confirmation_keyword_)
+        return kUninitialisedInput;
+      if (!new_keyword_->IsFinalised())
+        new_keyword_->Finalise();
+      if (!confirmation_keyword_->IsFinalised())
+        confirmation_keyword_->Finalise();
+      if (new_keyword_->string() != confirmation_keyword_->string()) {
+        confirmation_keyword_->Clear();
+        return kKeywordConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    case kNewPin: {
+      if (!new_pin_ || !confirmation_pin_)
+        return kUninitialisedInput;
+      if (!new_pin_->IsFinalised())
+        new_pin_->Finalise();
+      if (!confirmation_pin_->IsFinalised())
+        confirmation_pin_->Finalise();
+      if (new_pin_->string() != confirmation_pin_->string()) {
+        confirmation_pin_->Clear();
+        return kPinConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    case kNewPassword: {
+      if (!new_password_ || !confirmation_password_)
+        return kUninitialisedInput;
+      if (!new_password_->IsFinalised())
+        new_password_->Finalise();
+      if (!confirmation_password_->IsFinalised())
+        confirmation_password_->Finalise();
+      if (new_password_->string() != confirmation_password_->string()) {
+        confirmation_password_->Clear();
+        return kPasswordConfirmationFailed;
+      }
+      return kValidInput;
+    }
+    default:
+      return kUnknownError;
+  }
 }
 
-void LifeStuffImpl::LogIn() {
-  keyword_.Finalise(), pin_.Finalise(), password_.Finalise();
-  client_maid_.LogIn(keyword_, pin_, password_);
-  return;
+ReturnCode LifeStuffImpl::CreateUser(const boost::filesystem::path& vault_path,
+                                     ReportProgressFunction& report_progress) {
+  ReturnCode result(FinaliseUserInput());
+  if (result != kValidInput)
+    return result;
+  ResetConfirmationInput();
+  return client_maid_.CreateUser(*keyword_, *pin_, *password_, vault_path, report_progress);
 }
 
-void LifeStuffImpl::LogOut() {
-  client_maid_.LogOut();
+ReturnCode LifeStuffImpl::LogIn(ReportProgressFunction& report_progress) {
+  ReturnCode result(FinaliseUserInput());
+  if (result != kValidInput)
+    return result;
+  return client_maid_.LogIn(*keyword_, *pin_, *password_, report_progress);
 }
 
-void LifeStuffImpl::MountDrive() {
-  client_maid_.MountDrive();
+ReturnCode LifeStuffImpl::LogOut() {
+  return client_maid_.LogOut();
 }
 
-void LifeStuffImpl::UnMountDrive() {
-  client_maid_.UnMountDrive();
+ReturnCode LifeStuffImpl::MountDrive() {
+  return client_maid_.MountDrive();
 }
 
-const Slots& LifeStuffImpl::CheckSlots(const Slots& slots) {
-  if (!slots.operation_result_slot)
-    throw std::invalid_argument("missing operation_result_slot");
-  if (!slots.msg_slot)
-    throw std::invalid_argument("missing msg_slot");
-  if (!slots.element_share_slot)
-    throw std::invalid_argument("missing element_share_slot");
-  if (!slots.file_transfer_slot)
-    throw std::invalid_argument("missing file_transfer_slot");
-  if (!slots.vault_share_slot)
-    throw std::invalid_argument("missing vault_share_slot");
-  if (!slots.contact_request_slot)
-    throw std::invalid_argument("missing contact_request_slot");
-  if (!slots.contact_presence_slot)
-    throw std::invalid_argument("missing contact_presence_slot");
-  if (!slots.contact_deletion_slot)
-    throw std::invalid_argument("missing contact_deletion_slot");
-  if (!slots.update_available_slot)
-    throw std::invalid_argument("missing update_available_slot");
-  if (!slots.network_health_slot)
-    throw std::invalid_argument("missing network_health_slot");
-  if (!slots.immediate_quit_required_slot)
-    throw std::invalid_argument("missing immediate_quit_required_slot");
-  if (!slots.operation_progress_slot)
-    throw std::invalid_argument("missing operation_progress_slot");
-  return slots;
+ReturnCode LifeStuffImpl::UnMountDrive() {
+  return client_maid_.UnMountDrive();
+}
+
+ReturnCode LifeStuffImpl::ChangeKeyword() {
+  ReturnCode result(FinaliseUserInput());
+  if (result != kValidInput)
+    return result;
+  try {
+    client_maid_.ChangeKeyword(*keyword_, *new_keyword_, *pin_, *password_);
+    keyword_.reset(new Keyword());
+    passport::detail::SecureString::String string(new_keyword_->string());
+    for (uint32_t i = 0; i != string.size(); ++i)
+      keyword_->Insert(i, string[i]);
+    keyword_->Finalise();
+    new_keyword_.reset();
+    confirmation_keyword_.reset();
+  }
+  catch(...) {
+    return kFail;
+  }
+  return kSuccess;
+}
+
+ReturnCode LifeStuffImpl::ChangePin() {
+  ReturnCode result(FinaliseUserInput());
+  if (result != kValidInput)
+    return result;
+  try {
+    client_maid_.ChangePin(*keyword_, *pin_, *new_pin_, *password_);
+    pin_.reset(new Pin());
+    passport::detail::SecureString::String string(new_pin_->string());
+    for (uint32_t i = 0; i != string.size(); ++i)
+      pin_->Insert(i, string[i]);
+    pin_->Finalise();
+    new_pin_.reset();
+    confirmation_pin_.reset();
+  }
+  catch(...) {
+    return kFail;
+  }
+  return kSuccess;
+}
+
+ReturnCode LifeStuffImpl::ChangePassword() {
+  ReturnCode result(FinaliseUserInput());
+  if (result != kValidInput)
+    return result;
+  try {
+    client_maid_.ChangePassword(*keyword_, *pin_, *new_password_);
+    password_.reset(new Password());
+    passport::detail::SecureString::String string(new_password_->string());
+    for (uint32_t i = 0; i != string.size(); ++i)
+      password_->Insert(i, string[i]);
+    password_->Finalise();
+    new_password_.reset();
+    confirmation_password_.reset();
+  }
+  catch(...) {
+    return kFail;
+  }
+  return kSuccess;
+}
+
+boost::filesystem::path LifeStuffImpl::mount_path() {
+  return client_maid_.mount_path();
+}
+
+ReturnCode LifeStuffImpl::FinaliseUserInput() {
+  if (new_keyword_) {
+    try {
+      new_keyword_->Finalise();
+    }
+    catch(...) {
+      return kInvalidKeyword;
+    }
+  } else if (new_pin_) {
+    try {
+      new_pin_->Finalise();
+    }
+    catch(...) {
+      return kInvalidPin;
+    }
+  } else if (new_password_) {
+    try {
+      new_password_->Finalise();
+    }
+    catch(...) {
+      return kInvalidPassword;
+    }
+  } else {
+    try {
+      keyword_->Finalise();
+    }
+    catch(...) {
+      return kInvalidKeyword;
+    }
+    try {
+      pin_->Finalise();
+    }
+    catch(...) {
+      return kInvalidPin;
+    }
+    try {
+      password_->Finalise();
+    }
+    catch(...) {
+      return kInvalidPassword;
+    }
+  }
+  return kValidInput;
+}
+
+void LifeStuffImpl::ResetConfirmationInput() {
+  confirmation_keyword_.reset();
+  confirmation_pin_.reset();
+  confirmation_password_.reset();
 }
 
 }  // namespace lifestuff

@@ -28,20 +28,24 @@ class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  LifeStuff(/*3 arg funcs*/);
+  LifeStuff(const Slots& slots);
   ~LifeStuff();
 
-  void InsertUserInput(uint32_t position, char character, InputField input_field);
-  void RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
-  void ClearUserInput(InputField input_field);
-  ApiReturnCode IsValidInput(InputField input_field);
+  ReturnCode InsertUserInput(uint32_t position, char character, InputField input_field);
+  ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
+  ReturnCode ClearUserInput(InputField input_field);
+  ReturnCode ConfirmUserInput(InputField input_field);
 
-  //ApiReturnCode CreateUser(/*progess function, vault_path*/);
-  ApiReturnCode LogIn(/*progess function*/);
-  void LogOut(bool force = false);
+  ReturnCode CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress);
+  ReturnCode LogIn(ReportProgressFunction& report_progress);
+  ReturnCode LogOut(bool force = false);
 
-  ApiReturnCode MountDrive();
-  ApiReturnCode UnMountDrive();
+  ReturnCode MountDrive();
+  ReturnCode UnMountDrive();
+
+  ReturnCode ChangeKeyword();
+  ReturnCode ChangePin();
+  ReturnCode ChangePassword();
 
   std::string mount_path();
 

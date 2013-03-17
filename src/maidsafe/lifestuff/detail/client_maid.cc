@@ -25,62 +25,190 @@
 namespace maidsafe {
 namespace lifestuff {
 
-ClientMaid::ClientMaid(Session& session, UpdateAvailableFunction update_available_function)
-  : session_(session),
-    client_controller_(update_available_function),
+ClientMaid::ClientMaid(Session& session, const Slots& slots)
+  : slots_(CheckSlots(slots)),
+    session_(session),
+    client_controller_(slots_.update_available),
     user_storage_(),
     routing_handler_(),
     client_nfs_() {
 }
 
-void ClientMaid::CreateUser(const Keyword& keyword, const Pin& pin, const Password& password) {
-  session_.passport().CreateFobs();
-  Maid maid(session_.passport().Get<Maid>(false));
-  Pmid pmid(session_.passport().Get<Pmid>(false));
-  JoinNetwork(maid);
-  PutFreeFobs();
-  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  // Pass a vaild path...
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
-  RegisterPmid(maid, pmid);
-  session_.passport().ConfirmFobs();
-  PutPaidFobs();
-  session_.set_unique_user_id(Identity(RandomAlphaNumericString(64)));
-  MountDrive();
-  UnMountDrive();
-  session_.set_initialised();
-  PutSession(keyword, pin, password);
+ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
+                                  const Pin& pin,
+                                  const Password& password,
+                                  const boost::filesystem::path& vault_path,
+                                  ReportProgressFunction& report_progress) {
+  bool fobs_confirmed(false), drive_mounted(false);
+  try {
+    ReturnCode result(kSuccess);
+    report_progress(kCreatingUserCredentials);
+    session_.passport().CreateFobs();
+    Maid maid(session_.passport().Get<Maid>(false));
+    Pmid pmid(session_.passport().Get<Pmid>(false));
+    try {
+      report_progress(kJoiningNetwork);
+      JoinNetwork(maid);
+    }
+    catch(...) {
+      return kJoinNetworkFailure;
+    }
+    result = PutFreeFobs();
+    if (result != kSuccess)
+      return result;
+    report_progress(kInitialisingClientComponents);
+    client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
+    report_progress(kCreatingVault);
+    session_.set_vault_path(vault_path);
+    client_controller_.StartVault(pmid, maid.name(), vault_path);
+    RegisterPmid(maid, pmid);
+    report_progress(kCreatingUserCredentials);
+    session_.passport().ConfirmFobs();
+    fobs_confirmed = true;
+    result = PutPaidFobs();
+    if (result != kSuccess)
+      return result;
+    session_.set_unique_user_id(Identity(RandomAlphaNumericString(64)));
+    MountDrive();
+    drive_mounted = true;
+    UnMountDrive();
+    drive_mounted = false;
+    session_.set_initialised();
+    report_progress(kStoringUserCredentials);
+    PutSession(keyword, pin, password);
+  }
+  catch(...) {
+    UnCreateUser(fobs_confirmed, drive_mounted);
+    return kStartupFailure;
+  }
+  return kSuccess;
+}
+
+ReturnCode ClientMaid::LogIn(const Keyword& keyword,
+                             const Pin& pin,
+                             const Password& password,
+                             ReportProgressFunction& report_progress) {
+  try {
+    Anmaid anmaid;
+    Maid maid(anmaid);
+    try {
+      report_progress(kJoiningNetwork);
+      JoinNetwork(maid);
+    }
+    catch(...) {
+      return kJoinNetworkFailure;
+    }
+    report_progress(kInitialisingClientComponents);
+    client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
+    report_progress(kRetrievingUserCredentials);
+    GetSession(keyword, pin, password);
+    maid = session_.passport().Get<Maid>(true);
+    Pmid pmid(session_.passport().Get<Pmid>(true));
+    try {
+      report_progress(kJoiningNetwork);
+      JoinNetwork(maid);
+    }
+    catch(...) {
+      return kJoinNetworkFailure;
+    }
+    report_progress(kInitialisingClientComponents);
+    client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
+    report_progress(kStartingVault);
+    client_controller_.StartVault(pmid, maid.name(), session_.vault_path());
+  }
+  catch(...) {
+    // client_controller_.StopVault(); get params!!!!!!!!!
+    client_nfs_.reset();
+    return kStartupFailure;
+  }
+  return kSuccess;
+}
+
+ReturnCode ClientMaid::LogOut() {
+  //  client_controller_.StopVault(  );  parameters???
+  return UnMountDrive();
+}
+
+ReturnCode ClientMaid::MountDrive() {
+  try {
+    user_storage_.MountDrive(*client_nfs_, session_);
+  }
+  catch(...) {
+    return kMountFailure;
+  }
+  return kSuccess;
+}
+
+ReturnCode ClientMaid::UnMountDrive() {
+  try {
+    user_storage_.UnMountDrive(session_);
+  }
+  catch(...) {
+    return kUnmountFailure;
+  }
+  return kSuccess;
+}
+
+void ClientMaid::ChangeKeyword(const Keyword& old_keyword,
+                               const Keyword& new_keyword,
+                               const Pin& pin,
+                               const Password& password) {
+  PutSession(new_keyword, pin, password);
+  DeleteSession(old_keyword, pin);
   return;
 }
 
-void ClientMaid::LogIn(const Keyword& keyword, const Pin& pin, const Password& password) {
-  Anmaid anmaid;
-  Maid maid(anmaid);
-  JoinNetwork(maid);
-  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  GetSession(keyword, pin, password);
-  maid = session_.passport().Get<Maid>(true);
-  Pmid pmid(session_.passport().Get<Pmid>(true));
-  JoinNetwork(maid);
-  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  // Pass a vaild path...
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
+void ClientMaid::ChangePin(const Keyword& keyword,
+                           const Pin& old_pin,
+                           const Pin& new_pin,
+                           const Password& password) {
+  PutSession(keyword, new_pin, password);
+  DeleteSession(keyword, old_pin);
   return;
 }
 
-void ClientMaid::LogOut() {
-  UnMountDrive();
-//  client_controller_.StopVault(  );  parameters???
-}
-
-void ClientMaid::MountDrive() {
-  user_storage_.MountDrive(*client_nfs_, session_);
+void ClientMaid::ChangePassword(const Keyword& keyword,
+                                const Pin& pin,
+                                const Password& new_password) {
+  PutSession(keyword, pin, new_password);
   return;
 }
 
-void ClientMaid::UnMountDrive() {
-  user_storage_.UnMountDrive(session_);
-  return;
+boost::filesystem::path ClientMaid::mount_path() {
+  return user_storage_.mount_path();
+}
+
+const Slots& ClientMaid::CheckSlots(const Slots& slots) {
+  if (!slots.update_available)
+    throw std::invalid_argument("missing update_available function");
+  if (!slots.network_health)
+    throw std::invalid_argument("missing network_health function");
+  if (!slots.operations_pending)
+    throw std::invalid_argument("missing operations_pending function");
+  return slots;
+}
+
+void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Password& password) {
+  NonEmptyString serialised_session(session_.Serialise());
+  passport::EncryptedSession encrypted_session(passport::EncryptSession(
+                                                  keyword, pin, password, serialised_session));
+  Tmid tmid(encrypted_session, session_.passport().Get<Antmid>(true));
+  passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
+                                                    keyword, pin, tmid.name()));
+  Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
+  Mid mid(mid_name, encrypted_tmid_name, session_.passport().Get<Anmid>(true));
+  PutFob<Tmid>(tmid);
+  PutFob<Mid>(mid);
+}
+
+void ClientMaid::DeleteSession(const Keyword& keyword, const Pin& pin) {
+  Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
+  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
+  Mid mid(mid_future.get());
+  passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
+  Tmid::name_type tmid_name(passport::DecryptTmidName(keyword, pin, encrypted_tmid_name));
+  DeleteFob<Tmid>(tmid_name);
+  DeleteFob<Mid>(mid_name);
 }
 
 void ClientMaid::GetSession(const Keyword& keyword, const Pin& pin, const Password& password) {
@@ -98,20 +226,6 @@ void ClientMaid::GetSession(const Keyword& keyword, const Pin& pin, const Passwo
   session_.set_initialised();
 }
 
-void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Password& password) {
-  NonEmptyString serialised_session(session_.Serialise());
-  passport::EncryptedSession encrypted_session(passport::EncryptSession(
-                                                  keyword, pin, password, serialised_session));
-  Tmid tmid(encrypted_session, session_.passport().Get<Antmid>(true));
-  Tmid::name_type tmid_name(tmid.name());
-  passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
-                                                    keyword, pin, tmid_name));
-  Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
-  Mid mid(mid_name, encrypted_tmid_name, session_.passport().Get<Anmid>(true));
-  PutFob<Tmid>(tmid);
-  PutFob<Mid>(mid);
-}
-
 void ClientMaid::JoinNetwork(const Maid& maid) {
   PublicKeyRequestFunction public_key_request(
       [this](const NodeId& node_id, const GivePublicKeyFunctor& give_key) {
@@ -123,101 +237,17 @@ void ClientMaid::JoinNetwork(const Maid& maid) {
   routing_handler_->Join(endpoints);
 }
 
-void ClientMaid::PutFreeFobs() {
-  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
-                        if (!reply.IsSuccess()) {
-                          this->HandlePutFreeFobsFailure();
-                        }
-                      });
-  detail::PutFobs<Free>()(*client_nfs_, session_.passport(), reply);
-  return;
-}
-
-void ClientMaid::HandlePutFreeFobsFailure() {
-  session_.passport().CreateFobs();
-  JoinNetwork(session_.passport().Get<Maid>(false));
-  PutFreeFobs();
-  return;
-}
-
-void ClientMaid::PutPaidFobs() {
-  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
-                        if (!reply.IsSuccess()) {
-                          this->HandlePutPaidFobsFailure();
-                        }
-                      });
-  detail::PutFobs<Paid>()(*client_nfs_, session_.passport(), reply);
-  return;
-}
-
-void ClientMaid::HandlePutPaidFobsFailure() {
-  Maid maid(session_.passport().Get<Maid>(false));
-  Pmid pmid(session_.passport().Get<Pmid>(false));
-  UnregisterPmid(maid, pmid);
-//  client_controller_.StopVault();  // TODO Determine parameters to pass
-  session_.passport().CreateFobs();
-  maid = session_.passport().Get<Maid>(false);
-  pmid = session_.passport().Get<Pmid>(false);
-  JoinNetwork(maid);
-  PutFreeFobs();
-  client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-  // Pass a vaild path...
-  client_controller_.StartVault(pmid, maid.name(), boost::filesystem::path());
-  RegisterPmid(maid, pmid);
-  session_.passport().ConfirmFobs();
-  PutPaidFobs();
-  return;
-}
-
-template<typename Fob>
-void ClientMaid::PutFob(const Fob& fob) {
-  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
-                        if (!reply.IsSuccess()) {
-                          this->HandlePutFobFailure();
-                        }
-                      });
-  passport::Pmid::name_type pmid_name(session_.passport().Get<Pmid>(true).name());
-  maidsafe::nfs::Put<Fob>(*client_nfs_, fob, pmid_name, 3, reply);
-  return;
-}
-
-void ClientMaid::HandlePutFobFailure() {
-  ThrowError(LifeStuffErrors::kStoreFailure);
-  return;
-}
-
-template<typename Fob>
-void ClientMaid::DeleteFob(const typename Fob::name_type& fob_name) {
-  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
-                        if (!reply.IsSuccess()) {
-                          this->HandleDeleteFobFailure();
-                        }
-                      });
-  maidsafe::nfs::Delete<Fob>(*client_nfs_, fob_name, 3, reply);
-  return;
-}
-
-void ClientMaid::HandleDeleteFobFailure() {
-  ThrowError(LifeStuffErrors::kDeleteFailure);
-  return;
-}
-
-template<typename Fob>
-Fob ClientMaid::GetFob(const typename Fob::name_type& fob_name) {
-  std::future<Fob> fob_future(maidsafe::nfs::Get<Fob>(*client_nfs_, fob_name));
-  return fob_future.get();
-}
-
 void ClientMaid::RegisterPmid(const Maid& maid, const Pmid& pmid) {
   PmidRegistration pmid_registration(maid, pmid, false);
   PmidRegistration::serialised_type serialised_pmid_registration(pmid_registration.Serialise());
   client_nfs_->RegisterPmid(serialised_pmid_registration,
-                      [](std::string response) {
+                      [this](std::string response) {
                         NonEmptyString serialised_response(response);
                         nfs::Reply::serialised_type serialised_reply(serialised_response);
                         nfs::Reply reply(serialised_reply);
                         if (!reply.IsSuccess())
                           ThrowError(VaultErrors::failed_to_handle_request);
+                        this->slots_.network_health(std::stoi(reply.data().string()));
                       });
   return;
 }
@@ -227,6 +257,68 @@ void ClientMaid::UnregisterPmid(const Maid& maid, const Pmid& pmid) {
   PmidRegistration::serialised_type serialised_pmid_unregistration(pmid_unregistration.Serialise());
   client_nfs_->UnregisterPmid(serialised_pmid_unregistration, [](std::string) {});
   return;
+}
+
+void ClientMaid::UnCreateUser(bool fobs_confirmed, bool drive_mounted) {
+  Maid maid(session_.passport().Get<Maid>(fobs_confirmed));
+  Pmid pmid(session_.passport().Get<Pmid>(fobs_confirmed));
+  UnregisterPmid(maid, pmid);
+  // client_controller_.StopVault(); get params!!!!!!!!!
+  client_nfs_.reset();
+  if (drive_mounted)
+    try { UnMountDrive(); } catch(...) { /* consume exception */ }
+  return;
+}
+
+template<typename Fob>
+void ClientMaid::PutFob(const Fob& fob) {
+  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
+                        if (!reply.IsSuccess()) {
+                          ThrowError(LifeStuffErrors::kStoreFailure);
+                        }
+                      });
+  passport::Pmid::name_type pmid_name(session_.passport().Get<Pmid>(true).name());
+  maidsafe::nfs::Put<Fob>(*client_nfs_, fob, pmid_name, 3, reply);
+  return;
+}
+
+template<typename Fob>
+void ClientMaid::DeleteFob(const typename Fob::name_type& fob_name) {
+  ReplyFunction reply([this] (maidsafe::nfs::Reply reply) {
+                        if (!reply.IsSuccess()) {
+                          ThrowError(LifeStuffErrors::kDeleteFailure);
+                        }
+                      });
+  maidsafe::nfs::Delete<Fob>(*client_nfs_, fob_name, 3, reply);
+  return;
+}
+
+template<typename Fob>
+Fob ClientMaid::GetFob(const typename Fob::name_type& fob_name) {
+  std::future<Fob> fob_future(maidsafe::nfs::Get<Fob>(*client_nfs_, fob_name));
+  return fob_future.get();
+}
+
+ReturnCode ClientMaid::PutFreeFobs() {
+  ReturnCode result(kSuccess);
+  ReplyFunction reply([this, &result] (maidsafe::nfs::Reply reply) {
+                        if (!reply.IsSuccess()) {
+                          result = kStartupFailure;
+                        }
+                      });
+  detail::PutFobs<Free>()(*client_nfs_, session_.passport(), reply);
+  return result;
+}
+
+ReturnCode ClientMaid::PutPaidFobs() {
+  ReturnCode result(kSuccess);
+  ReplyFunction reply([this, &result] (maidsafe::nfs::Reply reply) {
+                        if (!reply.IsSuccess()) {
+                          result = kStartupFailure;
+                        }
+                      });
+  detail::PutFobs<Paid>()(*client_nfs_, session_.passport(), reply);
+  return result;
 }
 
 void ClientMaid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key) {

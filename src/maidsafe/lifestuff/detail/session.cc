@@ -55,6 +55,10 @@ std::string Session::root_parent_id() const {
   return user_details_.root_parent_id;
 }
 
+boost::filesystem::path Session::vault_path() const {
+  return user_details_.vault_path;
+}
+
 int64_t Session::max_space() const {
   return user_details_.max_space;
 }
@@ -80,6 +84,10 @@ void Session::set_root_parent_id(const std::string& root_parent_id) {
   user_details_.root_parent_id = root_parent_id;
 }
 
+void Session::set_vault_path(const boost::filesystem::path& vault_path) {
+  user_details_.vault_path = vault_path;
+}
+
 void Session::set_max_space(const int64_t& max_space) {
   user_details_.max_space = max_space;
 }
@@ -96,15 +104,16 @@ void Session::Parse(const NonEmptyString& serialised_data_atlas) {
   DataAtlas data_atlas;
   data_atlas.ParseFromString(serialised_data_atlas.string());
 
-  if (data_atlas.drive_data().unique_user_id().empty()) {
+  if (data_atlas.user_data().unique_user_id().empty()) {
     LOG(kError) << "Unique user ID is empty.";
     return;
   }
 
-  set_unique_user_id(Identity(data_atlas.drive_data().unique_user_id()));
-  set_root_parent_id(data_atlas.drive_data().root_parent_id());
-  set_max_space(data_atlas.drive_data().max_space());
-  set_used_space(data_atlas.drive_data().used_space());
+  set_unique_user_id(Identity(data_atlas.user_data().unique_user_id()));
+  set_root_parent_id(data_atlas.user_data().root_parent_id());
+  set_vault_path(data_atlas.user_data().vault_path());
+  set_max_space(data_atlas.user_data().max_space());
+  set_used_space(data_atlas.user_data().used_space());
 
   passport_.Parse(NonEmptyString(data_atlas.passport_data().serialised_keyring()));
 
@@ -114,11 +123,12 @@ void Session::Parse(const NonEmptyString& serialised_data_atlas) {
 NonEmptyString Session::Serialise() {
   DataAtlas data_atlas;
 
-  DriveData* drive_data(data_atlas.mutable_drive_data());
-  drive_data->set_unique_user_id(unique_user_id().string());
-  drive_data->set_root_parent_id(root_parent_id());
-  drive_data->set_max_space(max_space());
-  drive_data->set_used_space(used_space());
+  UserData* user_data(data_atlas.mutable_user_data());
+  user_data->set_unique_user_id(unique_user_id().string());
+  user_data->set_root_parent_id(root_parent_id());
+  user_data->set_vault_path(vault_path().string());
+  user_data->set_max_space(max_space());
+  user_data->set_used_space(used_space());
 
   data_atlas.set_timestamp(boost::lexical_cast<std::string>(
       GetDurationSinceEpoch().total_microseconds()));

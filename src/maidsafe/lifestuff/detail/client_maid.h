@@ -47,39 +47,55 @@ class ClientMaid {
   typedef passport::Mid Mid;
   typedef passport::Tmid Tmid;
 
-  ClientMaid(Session& session, UpdateAvailableFunction update_available_function);
+  ClientMaid(Session& session, const Slots& slots);
   ~ClientMaid() {}
 
-  void CreateUser(const Keyword& keyword, const Pin& pin, const Password& password);
+  ReturnCode CreateUser(const Keyword& keyword,
+                        const Pin& pin,
+                        const Password& password,
+                        const boost::filesystem::path& vault_path,
+                        ReportProgressFunction& report_progress);
 
-  void LogIn(const Keyword& keyword, const Pin& pin, const Password& password);
-  void LogOut();
-  void MountDrive();
-  void UnMountDrive();
+  ReturnCode LogIn(const Keyword& keyword,
+                   const Pin& pin,
+                   const Password& password,
+                   ReportProgressFunction& report_progress);
+  ReturnCode LogOut();
+  ReturnCode MountDrive();
+  ReturnCode UnMountDrive();
+
+  void ChangeKeyword(const Keyword& old_keyword,
+                     const Keyword& new_keyword,
+                     const Pin& pin,
+                     const Password& password);
+  void ChangePin(const Keyword& keyword,
+                 const Pin& old_pin,
+                 const Pin& new_pin,
+                 const Password& password);
+  void ChangePassword(const Keyword& keyword,
+                      const Pin& pin,
+                      const Password& new_password);
+
+  boost::filesystem::path mount_path();
 
  private:
-  void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
+  const Slots& CheckSlots(const Slots& slots);
   void PutSession(const Keyword& keyword, const Pin& pin, const Password& password);
-
+  void DeleteSession(const Keyword& keyword, const Pin& pin);
+  void GetSession(const Keyword& keyword, const Pin& pin, const Password& password);
   void JoinNetwork(const Maid& maid);
-
-  void PutFreeFobs();
-  void PutPaidFobs();
-
+  void RegisterPmid(const Maid& maid, const Pmid& pmid);
+  void UnregisterPmid(const Maid& maid, const Pmid& pmid);
+  void UnCreateUser(bool fobs_confirmed, bool drive_mounted);
   template<typename Fob> void PutFob(const Fob& fob);
   template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
   template<typename Fob> Fob GetFob(const typename Fob::name_type& fob);
-
-  void HandlePutFreeFobsFailure();
-  void HandlePutPaidFobsFailure();
-  void HandlePutFobFailure();
-  void HandleDeleteFobFailure();
-
-  void RegisterPmid(const Maid& maid, const Pmid& pmid);
-  void UnregisterPmid(const Maid& maid, const Pmid& pmid);
+  ReturnCode PutFreeFobs();
+  ReturnCode PutPaidFobs();
 
   void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
 
+  Slots slots_;
   Session& session_;
   ClientController client_controller_;
   UserStorage user_storage_;

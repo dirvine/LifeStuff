@@ -21,29 +21,36 @@ namespace lifestuff {
 
 class LifeStuffImpl {
  public:
-  explicit LifeStuffImpl(/*const Slots& slots*/);
+  explicit LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
-  void InsertUserInput(uint32_t position, char character, InputField input_field);
-  void RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
-  void ClearUserInput(InputField input_field);
+  ReturnCode InsertUserInput(uint32_t position, char character, InputField input_field);
+  ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
+  ReturnCode ClearUserInput(InputField input_field);
+  ReturnCode ConfirmUserInput(InputField input_field);
 
-  void CreateUser();
+  ReturnCode CreateUser(const boost::filesystem::path& vault_path,
+                        ReportProgressFunction& report_progress);
+  ReturnCode LogIn(ReportProgressFunction& report_progress);
+  ReturnCode LogOut();
+  ReturnCode MountDrive();
+  ReturnCode UnMountDrive();
+
+  ReturnCode ChangeKeyword();
+  ReturnCode ChangePin();
+  ReturnCode ChangePassword();
+
+  boost::filesystem::path mount_path();
+
   void CreatePublicId(const NonEmptyString& public_id);
 
-  void LogIn();
-  void LogOut();
-  void MountDrive();
-  void UnMountDrive();
-
  private:
-  const Slots& CheckSlots(const Slots& slots);
+  ReturnCode FinaliseUserInput();
+  void ResetConfirmationInput();
 
-  Slots slots_;
-  Keyword keyword_;
-  std::unique_ptr<Keyword> confirmation_keyword_;
-  Pin pin_;
-  Password password_;
+  std::unique_ptr<Keyword> keyword_, confirmation_keyword_, new_keyword_;
+  std::unique_ptr<Pin> pin_, confirmation_pin_, new_pin_;
+  std::unique_ptr<Password> password_, confirmation_password_, new_password_;
   Session session_;
   ClientMaid client_maid_;
   ClientMpid client_mpid_;

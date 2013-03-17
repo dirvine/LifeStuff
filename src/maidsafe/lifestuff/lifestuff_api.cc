@@ -20,40 +20,62 @@
 namespace maidsafe {
 namespace lifestuff {
 
-LifeStuff::LifeStuff()
-  : lifestuff_impl_(new LifeStuffImpl()) {}
+LifeStuff::LifeStuff(const Slots& slots)
+  : lifestuff_impl_(new LifeStuffImpl(slots)) {}
 
 LifeStuff::~LifeStuff() {}
 
-void LifeStuff::InsertUserInput(uint32_t position, char character, InputField input_field) {
-  lifestuff_impl_->InsertUserInput(position, character, input_field);
+ReturnCode LifeStuff::InsertUserInput(uint32_t position, char character, InputField input_field) {
+  return lifestuff_impl_->InsertUserInput(position, character, input_field);
 }
 
-void LifeStuff::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
-  lifestuff_impl_->RemoveUserInput(position, length, input_field);
+ReturnCode LifeStuff::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
+  return lifestuff_impl_->RemoveUserInput(position, length, input_field);
 }
 
-void LifeStuff::ClearUserInput(InputField input_field) {
-  lifestuff_impl_->ClearUserInput(input_field);
+ReturnCode LifeStuff::ClearUserInput(InputField input_field) {
+  return lifestuff_impl_->ClearUserInput(input_field);
 }
 
-ApiReturnCode LifeStuff::LogIn() {
-  lifestuff_impl_->LogIn();
-  return kInputSuccess;
+ReturnCode LifeStuff::ConfirmUserInput(InputField input_field) {
+  return lifestuff_impl_->ConfirmUserInput(input_field);
 }
 
-void LifeStuff::LogOut(bool /*force*/) {
-  lifestuff_impl_->LogOut();
+ReturnCode LifeStuff::CreateUser(const std::string& vault_path,
+                                 ReportProgressFunction& report_progress) {
+  return lifestuff_impl_->CreateUser(vault_path, report_progress);
 }
 
-ApiReturnCode LifeStuff::MountDrive() {
-  lifestuff_impl_->MountDrive();
-  return kInputSuccess;
+ReturnCode LifeStuff::LogIn(ReportProgressFunction& report_progress) {
+  return lifestuff_impl_->LogIn(report_progress);
 }
 
-ApiReturnCode LifeStuff::UnMountDrive() {
-  lifestuff_impl_->UnMountDrive();
-  return kInputSuccess;
+ReturnCode LifeStuff::LogOut(bool /*force*/) {
+  return lifestuff_impl_->LogOut();
+}
+
+ReturnCode LifeStuff::MountDrive() {
+  return lifestuff_impl_->MountDrive();
+}
+
+ReturnCode LifeStuff::UnMountDrive() {
+  return lifestuff_impl_->UnMountDrive();
+}
+
+ReturnCode LifeStuff::ChangeKeyword() {
+  return lifestuff_impl_->ChangeKeyword();
+}
+
+ReturnCode LifeStuff::ChangePin() {
+  return lifestuff_impl_->ChangePin();
+}
+
+ReturnCode LifeStuff::ChangePassword() {
+  return lifestuff_impl_->ChangePassword();
+}
+
+std::string LifeStuff::mount_path() {
+  return lifestuff_impl_->mount_path().string();
 }
 
 }  // namespace lifestuff
