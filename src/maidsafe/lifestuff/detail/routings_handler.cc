@@ -24,7 +24,7 @@
 #include "maidsafe/common/node_id.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk.pb.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/routing/api_config.h"

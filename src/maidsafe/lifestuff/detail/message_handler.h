@@ -30,13 +30,13 @@
 #include "boost/asio/io_service.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 
-#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/appendable_by_all.pb.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
 #include "maidsafe/passport/passport_config.h"
 
 #include "maidsafe/lifestuff/lifestuff.h"
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 #include "maidsafe/lifestuff/detail/message_handler_signal_types.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 

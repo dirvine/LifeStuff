@@ -39,7 +39,7 @@
 #endif
 #include "maidsafe/drive/return_codes.h"
 
-#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/appendable_by_all.pb.h"
 #include "maidsafe/private/chunk_store/file_chunk_store.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 

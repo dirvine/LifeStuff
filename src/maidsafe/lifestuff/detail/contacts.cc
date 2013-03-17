@@ -25,7 +25,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 
 namespace fs = boost::filesystem;
 

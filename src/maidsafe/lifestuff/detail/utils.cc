@@ -32,9 +32,9 @@
 #include "maidsafe/common/log.h"
 #include "maidsafe/common/utils.h"
 
-#include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
+#include "maidsafe/private/chunk_actions/appendable_by_all.pb.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk.pb.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/encrypt/data_map.h"

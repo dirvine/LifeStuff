@@ -39,7 +39,7 @@
 
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 
 namespace bs2 = boost::signals2;
 

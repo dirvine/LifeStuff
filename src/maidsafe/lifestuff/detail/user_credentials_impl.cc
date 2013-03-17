@@ -35,14 +35,14 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk.pb.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/utils/utilities.h"
 
 #include "maidsafe/passport/passport.h"
 
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 #include "maidsafe/lifestuff/detail/routings_handler.h"
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
@@ -128,7 +128,6 @@ int UserCredentialsImpl::LogIn(const NonEmptyString& keyword,
 int UserCredentialsImpl::AttemptLogInProcess(const NonEmptyString& keyword,
                                              const NonEmptyString& pin,
                                              const NonEmptyString& password) {
-
   int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
     LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
@@ -513,7 +512,6 @@ int UserCredentialsImpl::HandleSerialisedDataMaps(const NonEmptyString& keyword,
 int UserCredentialsImpl::CreateUser(const NonEmptyString& keyword,
                                     const NonEmptyString& pin,
                                     const NonEmptyString& password) {
-
   int result(CheckInputs(keyword, pin, password));
   if (result != kSuccess) {
     LOG(kInfo) << "Invalid inputs.    (Return code: " << result << ")";
@@ -822,7 +820,6 @@ void UserCredentialsImpl::StoreIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::SaveSession(bool log_out) {
-
   if (log_out) {
     session_saver_timer_active_ = false;
     session_saver_timer_.cancel();
@@ -926,7 +923,6 @@ int UserCredentialsImpl::ChangePin(const NonEmptyString& new_pin) {
 }
 
 int UserCredentialsImpl::ChangeKeyword(const NonEmptyString& new_keyword) {
-
   int result(CheckKeywordValidity(new_keyword));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
@@ -1043,7 +1039,6 @@ void UserCredentialsImpl::DeleteIdentity(OperationResults& results,
 }
 
 int UserCredentialsImpl::ChangePassword(const NonEmptyString& new_password) {
-
   int result(CheckPasswordValidity(new_password));
   if (result != kSuccess) {
     LOG(kError) << "Incorrect input.";
