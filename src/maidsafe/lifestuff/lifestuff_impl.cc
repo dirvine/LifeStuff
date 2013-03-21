@@ -245,6 +245,10 @@ bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
       if (!current_password_->IsFinalised())
         current_password_->Finalise();
       if (password_) {
+        password_->Finalise();
+        if (!confirmation_password_)
+          return false;
+        confirmation_password_->Finalise();
         if (password_->string() != confirmation_password_->string()
             || session_.password().string() != current_password_->string())
           return false;
@@ -302,12 +306,10 @@ ReturnCode LifeStuffImpl::UnMountDrive() {
 }
 
 ReturnCode LifeStuffImpl::ChangeKeyword() {
-  ReturnCode result(FinaliseUserInput());
-  if (result != kSuccess)
-    return result;
   try {
     if (!ConfirmUserInput(kConfirmationKeyword) || !ConfirmUserInput(kCurrentPassword))
       return kFail;
+    client_maid_.ChangeKeyword(session_.keyword(), *keyword_, session_.pin(), session_.password());
     session_.set_keyword(*keyword_);
     keyword_.reset();
     confirmation_keyword_.reset();
@@ -320,9 +322,6 @@ ReturnCode LifeStuffImpl::ChangeKeyword() {
 }
 
 ReturnCode LifeStuffImpl::ChangePin() {
-  ReturnCode result(FinaliseUserInput());
-  if (result != kSuccess)
-    return result;
   try {
     if (!ConfirmUserInput(kConfirmationPin) || !ConfirmUserInput(kCurrentPassword))
       return kFail;
@@ -339,9 +338,6 @@ ReturnCode LifeStuffImpl::ChangePin() {
 }
 
 ReturnCode LifeStuffImpl::ChangePassword() {
-  ReturnCode result(FinaliseUserInput());
-  if (result != kSuccess)
-    return result;
   try {
     if (!ConfirmUserInput(kCurrentPassword))
       return kFail;
