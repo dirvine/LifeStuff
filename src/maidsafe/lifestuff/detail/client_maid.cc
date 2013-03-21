@@ -51,7 +51,7 @@ ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
       JoinNetwork(maid);
     }
     catch(...) {
-      return kJoinNetworkFailure;
+      return kJoinNetworkFailed;
     }
     result = PutFreeFobs();
     if (result != kSuccess)
@@ -79,7 +79,7 @@ ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
   }
   catch(...) {
     UnCreateUser(fobs_confirmed, drive_mounted);
-    return kStartupFailure;
+    return kStartupFailed;
   }
   return kSuccess;
 }
@@ -96,7 +96,7 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
       JoinNetwork(maid);
     }
     catch(...) {
-      return kJoinNetworkFailure;
+      return kJoinNetworkFailed;
     }
     report_progress(kInitialisingClientComponents);
     client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
@@ -109,7 +109,7 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
       JoinNetwork(maid);
     }
     catch(...) {
-      return kJoinNetworkFailure;
+      return kJoinNetworkFailed;
     }
     report_progress(kInitialisingClientComponents);
     client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
@@ -119,7 +119,7 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
   catch(...) {
     // client_controller_.StopVault(); get params!!!!!!!!!
     client_nfs_.reset();
-    return kStartupFailure;
+    return kStartupFailed;
   }
   return kSuccess;
 }
@@ -134,7 +134,7 @@ ReturnCode ClientMaid::MountDrive() {
     user_storage_.MountDrive(*client_nfs_, session_);
   }
   catch(...) {
-    return kMountFailure;
+    return kMountFailed;
   }
   return kSuccess;
 }
@@ -144,7 +144,7 @@ ReturnCode ClientMaid::UnMountDrive() {
     user_storage_.UnMountDrive(session_);
   }
   catch(...) {
-    return kUnmountFailure;
+    return kUnmountFailed;
   }
   return kSuccess;
 }
@@ -303,7 +303,7 @@ ReturnCode ClientMaid::PutFreeFobs() {
   ReturnCode result(kSuccess);
   ReplyFunction reply([this, &result] (maidsafe::nfs::Reply reply) {
                         if (!reply.IsSuccess()) {
-                          result = kStartupFailure;
+                          result = kStartupFailed;
                         }
                       });
   detail::PutFobs<Free>()(*client_nfs_, session_.passport(), reply);
@@ -314,7 +314,7 @@ ReturnCode ClientMaid::PutPaidFobs() {
   ReturnCode result(kSuccess);
   ReplyFunction reply([this, &result] (maidsafe::nfs::Reply reply) {
                         if (!reply.IsSuccess()) {
-                          result = kStartupFailure;
+                          result = kStartupFailed;
                         }
                       });
   detail::PutFobs<Paid>()(*client_nfs_, session_.passport(), reply);

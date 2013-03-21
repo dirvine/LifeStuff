@@ -23,9 +23,7 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slots)
     confirmation_keyword_(),
     confirmation_pin_(),
     confirmation_password_(),
-    new_keyword_(),
-    new_pin_(),
-    new_password_(),
+    current_password_(),
     session_(),
     client_maid_(session_, slots),
     client_mpid_() {}
@@ -71,22 +69,10 @@ ReturnCode LifeStuffImpl::InsertUserInput(uint32_t position, char character, Inp
         confirmation_password_->Insert(position, character);
         return kSuccess;
       }
-      case kNewKeyword: {
-        if (!new_keyword_)
-          new_keyword_.reset(new Keyword());
-        new_keyword_->Insert(position, character);
-        return kSuccess;
-      }
-      case kNewPin: {
-        if (!new_pin_)
-          new_pin_.reset(new Pin());
-        new_pin_->Insert(position, character);
-        return kSuccess;
-      }
-      case kNewPassword: {
-        if (!new_password_)
-          new_password_.reset(new Password());
-        new_password_->Insert(position, character);
+      case kCurrentPassword: {
+        if (!current_password_)
+          current_password_.reset(new Password());
+        current_password_->Insert(position, character);
         return kSuccess;
       }
       default:
@@ -137,22 +123,10 @@ ReturnCode LifeStuffImpl::RemoveUserInput(uint32_t position, uint32_t length, In
         confirmation_password_->Remove(position, length);
         return kSuccess;
       }
-      case kNewKeyword: {
-        if (!new_keyword_)
+      case kCurrentPassword: {
+        if (!current_password_)
           return kFail;
-        new_keyword_->Remove(position, length);
-        return kSuccess;
-      }
-      case kNewPin: {
-        if (!new_pin_)
-          return kFail;
-        new_pin_->Remove(position, length);
-        return kSuccess;
-      }
-      case kNewPassword: {
-        if (!new_password_)
-          return kFail;
-        new_password_->Remove(position, length);
+        current_password_->Remove(position, length);
         return kSuccess;
       }
       default:
@@ -197,19 +171,9 @@ ReturnCode LifeStuffImpl::ClearUserInput(InputField input_field) {
           confirmation_password_->Clear();
         return kSuccess;
       }
-      case kNewKeyword: {
-        if (new_keyword_)
-          new_keyword_->Clear();
-        return kSuccess;
-      }
-      case kNewPin: {
-        if (new_pin_)
-          new_pin_->Clear();
-        return kSuccess;
-      }
-      case kNewPassword: {
-        if (new_password_)
-          new_password_->Clear();
+      case kCurrentPassword: {
+        if (current_password_)
+          current_password_->Clear();
         return kSuccess;
       }
       default:
@@ -221,90 +185,64 @@ ReturnCode LifeStuffImpl::ClearUserInput(InputField input_field) {
   }
 }
 
-ReturnCode LifeStuffImpl::ConfirmUserInput(InputField input_field) {
-  // Input field here should be one of kKeyword, kNewKeyword, and not kConfirmationKeyword, etc.
-  // Requires both keyword_/new_keyword_ and confirmation_keyword_, etc., to be set...
+bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
   switch (input_field) {
-    case kKeyword: {
+    case kConfirmationKeyword: {
       if (!keyword_ || !confirmation_keyword_)
-        return kUninitialisedInput;
+        return kUninitialised;
       if (!keyword_->IsFinalised())
         keyword_->Finalise();
       if (!confirmation_keyword_->IsFinalised())
         confirmation_keyword_->Finalise();
       if (keyword_->string() != confirmation_keyword_->string()) {
         confirmation_keyword_->Clear();
-        return kKeywordConfirmationFailed;
+        return false;
       }
-      return kValidInput;
+      return true;
     }
-    case kPin: {
+    case kConfirmationPin: {
       if (!pin_ || !confirmation_pin_)
-        return kUninitialisedInput;
+        return kUninitialised;
       if (!pin_->IsFinalised())
         pin_->Finalise();
       if (!confirmation_pin_->IsFinalised())
         confirmation_pin_->Finalise();
       if (pin_->string() != confirmation_pin_->string()) {
         confirmation_pin_->Clear();
-        return kPinConfirmationFailed;
+        return false;
       }
-      return kValidInput;
+      return true;
     }
-    case kPassword: {
+    case kConfirmationPassword: {
       if (!password_ || !confirmation_password_)
-        return kUninitialisedInput;
+        return kUninitialised;
       if (!password_->IsFinalised())
         password_->Finalise();
       if (!confirmation_password_->IsFinalised())
         confirmation_password_->Finalise();
       if (password_->string() != confirmation_password_->string()) {
         confirmation_password_->Clear();
-        return kPasswordConfirmationFailed;
+        return false;
       }
-      return kValidInput;
+      return true;
     }
-    case kNewKeyword: {
-      if (!new_keyword_ || !confirmation_keyword_)
-        return kUninitialisedInput;
-      if (!new_keyword_->IsFinalised())
-        new_keyword_->Finalise();
-      if (!confirmation_keyword_->IsFinalised())
-        confirmation_keyword_->Finalise();
-      if (new_keyword_->string() != confirmation_keyword_->string()) {
-        confirmation_keyword_->Clear();
-        return kKeywordConfirmationFailed;
-      }
-      return kValidInput;
+    case kKeyword: {
+      if (!keyword_)
+        return false;
+      return keyword_->IsValid(boost::regex("\\"));
     }
-    case kNewPin: {
-      if (!new_pin_ || !confirmation_pin_)
-        return kUninitialisedInput;
-      if (!new_pin_->IsFinalised())
-        new_pin_->Finalise();
-      if (!confirmation_pin_->IsFinalised())
-        confirmation_pin_->Finalise();
-      if (new_pin_->string() != confirmation_pin_->string()) {
-        confirmation_pin_->Clear();
-        return kPinConfirmationFailed;
-      }
-      return kValidInput;
+    case kPin: {
+      if (!pin_)
+        return false;
+      return pin_->IsValid(boost::regex("\\d"));
     }
-    case kNewPassword: {
-      if (!new_password_ || !confirmation_password_)
-        return kUninitialisedInput;
-      if (!new_password_->IsFinalised())
-        new_password_->Finalise();
-      if (!confirmation_password_->IsFinalised())
-        confirmation_password_->Finalise();
-      if (new_password_->string() != confirmation_password_->string()) {
-        confirmation_password_->Clear();
-        return kPasswordConfirmationFailed;
-      }
-      return kValidInput;
+    case kPassword: {
+      if (!password_)
+        return false;
+      return password_->IsValid(boost::regex("\\"));
     }
     default:
-      return kUnknownError;
+      return false;
   }
 }
 

@@ -12,12 +12,7 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_API_H_
 
-#include <string>
-#include <vector>
-
-#include "boost/filesystem/path.hpp"
-
-#include "maidsafe/common/log.h"
+#include <memory>
 
 #include "maidsafe/lifestuff/lifestuff.h"
 
@@ -34,11 +29,11 @@ class LifeStuff {
   ReturnCode InsertUserInput(uint32_t position, char character, InputField input_field);
   ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
   ReturnCode ClearUserInput(InputField input_field);
-  ReturnCode ConfirmUserInput(InputField input_field);
+  bool ConfirmUserInput(InputField input_field);
 
   ReturnCode CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress);
   ReturnCode LogIn(ReportProgressFunction& report_progress);
-  ReturnCode LogOut(bool force = false);
+  ReturnCode LogOut();
 
   ReturnCode MountDrive();
   ReturnCode UnMountDrive();

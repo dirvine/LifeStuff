@@ -22,6 +22,7 @@
 #include "maidsafe/common/utils.h"
 
 #include "maidsafe/passport/passport.h"
+#include "maidsafe/passport/detail/secure_string.h"
 
 #include "maidsafe/lifestuff/detail/contacts.h"
 #include "maidsafe/lifestuff/lifestuff.h"
@@ -30,6 +31,10 @@ namespace maidsafe {
 namespace lifestuff {
 
 namespace test { class SessionTest; }
+
+typedef passport::detail::Keyword Keyword;
+typedef passport::detail::Pin Pin;
+typedef passport::detail::Password Password;
 
 class Session {
  public:
@@ -48,6 +53,9 @@ class Session {
   int64_t max_space() const;
   int64_t used_space() const;
   bool initialised();
+  const Keyword& keyword() const;
+  const Pin& pin() const;
+  const Password& password() const;
 
   void set_session_name();
   void set_unique_user_id(const Identity& unique_user_id);
@@ -56,6 +64,9 @@ class Session {
   void set_max_space(const int64_t& max_space);
   void set_used_space(const int64_t& used_space);
   void set_initialised();
+  bool set_keyword(const Keyword& keyword);
+  bool set_pin(const Pin& pin);
+  bool set_password(const Password& password);
 
   void set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints);
   std::vector<Endpoint> bootstrap_endpoints() const;
@@ -89,6 +100,10 @@ class Session {
   std::vector<Endpoint> bootstrap_endpoints_;
   UserDetails user_details_;
   bool initialised_;
+  std::unique_ptr<Keyword> keyword_;
+  std::unique_ptr<Pin> pin_;
+  std::unique_ptr<Password> password_;
+
   // probably need a modified bool here since used_space varies.
 };
 

@@ -12,8 +12,6 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MAID_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_CLIENT_MAID_H_
 
-#include <string>
-
 #include "maidsafe/routing/routing_api.h"
 
 #include "maidsafe/nfs/nfs.h"
@@ -87,9 +85,11 @@ class ClientMaid {
   void RegisterPmid(const Maid& maid, const Pmid& pmid);
   void UnregisterPmid(const Maid& maid, const Pmid& pmid);
   void UnCreateUser(bool fobs_confirmed, bool drive_mounted);
+
   template<typename Fob> void PutFob(const Fob& fob);
   template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
   template<typename Fob> Fob GetFob(const typename Fob::name_type& fob);
+
   ReturnCode PutFreeFobs();
   ReturnCode PutPaidFobs();
 

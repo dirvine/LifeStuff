@@ -12,6 +12,8 @@
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_IMPL_H_
 
+#include "boost/filesystem/path.hpp"
+
 #include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/detail/client_maid.h"
 #include "maidsafe/lifestuff/detail/client_mpid.h"
@@ -27,7 +29,7 @@ class LifeStuffImpl {
   ReturnCode InsertUserInput(uint32_t position, char character, InputField input_field);
   ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
   ReturnCode ClearUserInput(InputField input_field);
-  ReturnCode ConfirmUserInput(InputField input_field);
+  bool ConfirmUserInput(InputField input_field);
 
   ReturnCode CreateUser(const boost::filesystem::path& vault_path,
                         ReportProgressFunction& report_progress);
@@ -48,9 +50,9 @@ class LifeStuffImpl {
   ReturnCode FinaliseUserInput();
   void ResetConfirmationInput();
 
-  std::unique_ptr<Keyword> keyword_, confirmation_keyword_, new_keyword_;
-  std::unique_ptr<Pin> pin_, confirmation_pin_, new_pin_;
-  std::unique_ptr<Password> password_, confirmation_password_, new_password_;
+  std::unique_ptr<Keyword> keyword_, confirmation_keyword_;
+  std::unique_ptr<Pin> pin_, confirmation_pin_;
+  std::unique_ptr<Password> password_, confirmation_password_, current_password_;
   Session session_;
   ClientMaid client_maid_;
   ClientMpid client_mpid_;

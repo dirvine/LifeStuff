@@ -10,11 +10,6 @@
  **************************************************************************************************/
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
-
-#include <algorithm>
-#include <functional>
-#include <vector>
-
 #include "maidsafe/lifestuff/lifestuff_impl.h"
 
 namespace maidsafe {
@@ -37,7 +32,7 @@ ReturnCode LifeStuff::ClearUserInput(InputField input_field) {
   return lifestuff_impl_->ClearUserInput(input_field);
 }
 
-ReturnCode LifeStuff::ConfirmUserInput(InputField input_field) {
+bool LifeStuff::ConfirmUserInput(InputField input_field) {
   return lifestuff_impl_->ConfirmUserInput(input_field);
 }
 
@@ -50,7 +45,7 @@ ReturnCode LifeStuff::LogIn(ReportProgressFunction& report_progress) {
   return lifestuff_impl_->LogIn(report_progress);
 }
 
-ReturnCode LifeStuff::LogOut(bool /*force*/) {
+ReturnCode LifeStuff::LogOut() {
   return lifestuff_impl_->LogOut();
 }
 
