@@ -125,6 +125,10 @@ boost::filesystem::path UserStorage::mount_path() {
 #endif
 }
 
+boost::filesystem::path UserStorage::owner_path() {
+  return mount_path() / kOwner;
+}
+
 bool UserStorage::mount_status() {
   return mount_status_;
 }

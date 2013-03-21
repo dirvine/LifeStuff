@@ -75,6 +75,7 @@ class ClientMaid {
                       const Password& new_password);
 
   boost::filesystem::path mount_path();
+  boost::filesystem::path owner_path();
 
  private:
   const Slots& CheckSlots(const Slots& slots);

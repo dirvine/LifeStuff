@@ -42,7 +42,10 @@ class LifeStuff {
   ReturnCode ChangePin();
   ReturnCode ChangePassword();
 
+  bool logged_in() const;
+
   std::string mount_path();
+  std::string owner_path();
 
  private:
   std::unique_ptr<LifeStuffImpl> lifestuff_impl_;

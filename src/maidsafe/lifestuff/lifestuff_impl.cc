@@ -17,7 +17,8 @@ namespace lifestuff {
 const int kRetryLimit(10);
 
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
-  : keyword_(),
+  : logged_in_(false),
+    keyword_(),
     pin_(),
     password_(),
     confirmation_keyword_(),
@@ -189,39 +190,36 @@ bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
   switch (input_field) {
     case kConfirmationKeyword: {
       if (!keyword_ || !confirmation_keyword_)
-        return kUninitialised;
+        return false;
       if (!keyword_->IsFinalised())
         keyword_->Finalise();
       if (!confirmation_keyword_->IsFinalised())
         confirmation_keyword_->Finalise();
       if (keyword_->string() != confirmation_keyword_->string()) {
-        confirmation_keyword_->Clear();
         return false;
       }
       return true;
     }
     case kConfirmationPin: {
       if (!pin_ || !confirmation_pin_)
-        return kUninitialised;
+        return false;
       if (!pin_->IsFinalised())
         pin_->Finalise();
       if (!confirmation_pin_->IsFinalised())
         confirmation_pin_->Finalise();
       if (pin_->string() != confirmation_pin_->string()) {
-        confirmation_pin_->Clear();
         return false;
       }
       return true;
     }
     case kConfirmationPassword: {
       if (!password_ || !confirmation_password_)
-        return kUninitialised;
+        return false;
       if (!password_->IsFinalised())
         password_->Finalise();
       if (!confirmation_password_->IsFinalised())
         confirmation_password_->Finalise();
       if (password_->string() != confirmation_password_->string()) {
-        confirmation_password_->Clear();
         return false;
       }
       return true;
@@ -229,7 +227,7 @@ bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
     case kKeyword: {
       if (!keyword_)
         return false;
-      return keyword_->IsValid(boost::regex("\\"));
+      return keyword_->IsValid(boost::regex(".*"));
     }
     case kPin: {
       if (!pin_)
@@ -239,7 +237,22 @@ bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
     case kPassword: {
       if (!password_)
         return false;
-      return password_->IsValid(boost::regex("\\"));
+      return password_->IsValid(boost::regex(".*"));
+    }
+    case kCurrentPassword: {
+      if (!current_password_)
+        return false;
+      if (!current_password_->IsFinalised())
+        current_password_->Finalise();
+      if (password_) {
+        if (password_->string() != confirmation_password_->string()
+            || session_.password().string() != current_password_->string())
+          return false;
+      } else {
+        if (session_.password().string() != current_password_->string())
+          return false;
+      }
+      return true;
     }
     default:
       return false;
@@ -249,17 +262,31 @@ bool LifeStuffImpl::ConfirmUserInput(InputField input_field) {
 ReturnCode LifeStuffImpl::CreateUser(const boost::filesystem::path& vault_path,
                                      ReportProgressFunction& report_progress) {
   ReturnCode result(FinaliseUserInput());
-  if (result != kValidInput)
+  if (result != kSuccess)
     return result;
   ResetConfirmationInput();
-  return client_maid_.CreateUser(*keyword_, *pin_, *password_, vault_path, report_progress);
+  result = client_maid_.CreateUser(*keyword_, *pin_, *password_, vault_path, report_progress);
+  if (result != kSuccess)
+    return result;
+  if (!session_.set_keyword_pin_password(*keyword_, *pin_, *password_))
+    return kFail;
+  ResetInput();
+  logged_in_ = true;
+  return kSuccess;
 }
 
 ReturnCode LifeStuffImpl::LogIn(ReportProgressFunction& report_progress) {
   ReturnCode result(FinaliseUserInput());
-  if (result != kValidInput)
+  if (result != kSuccess)
     return result;
-  return client_maid_.LogIn(*keyword_, *pin_, *password_, report_progress);
+  result = client_maid_.LogIn(*keyword_, *pin_, *password_, report_progress);
+  if (result != kSuccess)
+    return result;
+  if (!session_.set_keyword_pin_password(*keyword_, *pin_, *password_))
+    return kFail;
+  ResetInput();
+  logged_in_ = true;
+  return kSuccess;
 }
 
 ReturnCode LifeStuffImpl::LogOut() {
@@ -276,17 +303,15 @@ ReturnCode LifeStuffImpl::UnMountDrive() {
 
 ReturnCode LifeStuffImpl::ChangeKeyword() {
   ReturnCode result(FinaliseUserInput());
-  if (result != kValidInput)
+  if (result != kSuccess)
     return result;
   try {
-    client_maid_.ChangeKeyword(*keyword_, *new_keyword_, *pin_, *password_);
-    keyword_.reset(new Keyword());
-    passport::detail::SecureString::String string(new_keyword_->string());
-    for (uint32_t i = 0; i != string.size(); ++i)
-      keyword_->Insert(i, string[i]);
-    keyword_->Finalise();
-    new_keyword_.reset();
+    if (!ConfirmUserInput(kConfirmationKeyword) || !ConfirmUserInput(kCurrentPassword))
+      return kFail;
+    session_.set_keyword(*keyword_);
+    keyword_.reset();
     confirmation_keyword_.reset();
+    current_password_.reset();
   }
   catch(...) {
     return kFail;
@@ -296,17 +321,16 @@ ReturnCode LifeStuffImpl::ChangeKeyword() {
 
 ReturnCode LifeStuffImpl::ChangePin() {
   ReturnCode result(FinaliseUserInput());
-  if (result != kValidInput)
+  if (result != kSuccess)
     return result;
   try {
-    client_maid_.ChangePin(*keyword_, *pin_, *new_pin_, *password_);
-    pin_.reset(new Pin());
-    passport::detail::SecureString::String string(new_pin_->string());
-    for (uint32_t i = 0; i != string.size(); ++i)
-      pin_->Insert(i, string[i]);
-    pin_->Finalise();
-    new_pin_.reset();
+    if (!ConfirmUserInput(kConfirmationPin) || !ConfirmUserInput(kCurrentPassword))
+      return kFail;
+    client_maid_.ChangePin(session_.keyword(), session_.pin(), *pin_, session_.password());
+    session_.set_pin(*pin_);
+    pin_.reset();
     confirmation_pin_.reset();
+    current_password_.reset();
   }
   catch(...) {
     return kFail;
@@ -316,17 +340,16 @@ ReturnCode LifeStuffImpl::ChangePin() {
 
 ReturnCode LifeStuffImpl::ChangePassword() {
   ReturnCode result(FinaliseUserInput());
-  if (result != kValidInput)
+  if (result != kSuccess)
     return result;
   try {
-    client_maid_.ChangePassword(*keyword_, *pin_, *new_password_);
-    password_.reset(new Password());
-    passport::detail::SecureString::String string(new_password_->string());
-    for (uint32_t i = 0; i != string.size(); ++i)
-      password_->Insert(i, string[i]);
-    password_->Finalise();
-    new_password_.reset();
+    if (!ConfirmUserInput(kCurrentPassword))
+      return kFail;
+    client_maid_.ChangePassword(session_.keyword(), session_.pin(), *password_);
+    session_.set_password(*password_);
+    password_.reset();
     confirmation_password_.reset();
+    current_password_.reset();
   }
   catch(...) {
     return kFail;
@@ -334,53 +357,29 @@ ReturnCode LifeStuffImpl::ChangePassword() {
   return kSuccess;
 }
 
+bool LifeStuffImpl::logged_in() const {
+  return logged_in_;
+}
+
 boost::filesystem::path LifeStuffImpl::mount_path() {
   return client_maid_.mount_path();
 }
 
+boost::filesystem::path LifeStuffImpl::owner_path() {
+  return client_maid_.owner_path();
+}
+
 ReturnCode LifeStuffImpl::FinaliseUserInput() {
-  if (new_keyword_) {
-    try {
-      new_keyword_->Finalise();
-    }
-    catch(...) {
-      return kInvalidKeyword;
-    }
-  } else if (new_pin_) {
-    try {
-      new_pin_->Finalise();
-    }
-    catch(...) {
-      return kInvalidPin;
-    }
-  } else if (new_password_) {
-    try {
-      new_password_->Finalise();
-    }
-    catch(...) {
-      return kInvalidPassword;
-    }
-  } else {
-    try {
-      keyword_->Finalise();
-    }
-    catch(...) {
-      return kInvalidKeyword;
-    }
-    try {
-      pin_->Finalise();
-    }
-    catch(...) {
-      return kInvalidPin;
-    }
-    try {
-      password_->Finalise();
-    }
-    catch(...) {
-      return kInvalidPassword;
-    }
-  }
-  return kValidInput;
+  try { keyword_->Finalise(); } catch(...) { return kFail; }
+  try { pin_->Finalise(); } catch(...) { return kFail; }
+  try { password_->Finalise(); } catch(...) { return kFail; }
+  return kSuccess;
+}
+
+void LifeStuffImpl::ResetInput() {
+  keyword_.reset();
+  pin_.reset();
+  password_.reset();
 }
 
 void LifeStuffImpl::ResetConfirmationInput() {

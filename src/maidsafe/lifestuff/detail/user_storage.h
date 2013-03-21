@@ -76,6 +76,7 @@ class UserStorage {
   std::string ConstructFile(const NonEmptyString& serialised_data_map);
 
   boost::filesystem::path mount_path();
+  boost::filesystem::path owner_path();
   bool mount_status();
 
   bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;

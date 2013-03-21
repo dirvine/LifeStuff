@@ -42,14 +42,19 @@ class LifeStuffImpl {
   ReturnCode ChangePin();
   ReturnCode ChangePassword();
 
+  bool logged_in() const;
+
   boost::filesystem::path mount_path();
+  boost::filesystem::path owner_path();
 
   void CreatePublicId(const NonEmptyString& public_id);
 
  private:
   ReturnCode FinaliseUserInput();
+  void ResetInput();
   void ResetConfirmationInput();
 
+  bool logged_in_;
   std::unique_ptr<Keyword> keyword_, confirmation_keyword_;
   std::unique_ptr<Pin> pin_, confirmation_pin_;
   std::unique_ptr<Password> password_, confirmation_password_, current_password_;

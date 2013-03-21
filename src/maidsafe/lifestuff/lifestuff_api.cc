@@ -69,8 +69,16 @@ ReturnCode LifeStuff::ChangePassword() {
   return lifestuff_impl_->ChangePassword();
 }
 
+bool LifeStuff::logged_in() const {
+  return lifestuff_impl_->logged_in();
+}
+
 std::string LifeStuff::mount_path() {
   return lifestuff_impl_->mount_path().string();
+}
+
+std::string LifeStuff::owner_path() {
+  return lifestuff_impl_->owner_path().string();
 }
 
 }  // namespace lifestuff

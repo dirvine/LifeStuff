@@ -75,15 +75,15 @@ bool Session::initialised() {
 }
 
 const Keyword& Session::keyword() const {
-  return keyword_;
+  return *keyword_;
 }
 
 const Pin& Session::pin() const {
-  return pin_;
+  return *pin_;
 }
 
 const Password& Session::password() const {
-  return password_;
+  return *password_;
 }
 
 void Session::set_session_name() {
@@ -157,6 +157,14 @@ bool Session::set_password(const Password& password) {
   catch(...) {
     return false;
   }
+  return true;
+}
+
+bool Session::set_keyword_pin_password(const Keyword& keyword,
+                                       const Pin& pin,
+                                       const Password& password) {
+  if (!set_keyword(keyword) || !set_pin(pin) || !set_password(password))
+    return false;
   return true;
 }
 

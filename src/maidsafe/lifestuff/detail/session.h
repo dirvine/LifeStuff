@@ -67,6 +67,7 @@ class Session {
   bool set_keyword(const Keyword& keyword);
   bool set_pin(const Pin& pin);
   bool set_password(const Password& password);
+  bool set_keyword_pin_password(const Keyword& keyword, const Pin& pin, const Password& password);
 
   void set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints);
   std::vector<Endpoint> bootstrap_endpoints() const;
