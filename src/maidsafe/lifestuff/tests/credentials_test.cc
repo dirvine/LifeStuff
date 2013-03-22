@@ -33,7 +33,7 @@
 
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_pb.h"
+#include "maidsafe/private/chunk_actions/chunk.pb.h"
 #include "maidsafe/private/chunk_actions/chunk_id.h"
 
 #include "maidsafe/lifestuff/detail/routings_handler.h"
