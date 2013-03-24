@@ -272,8 +272,12 @@ ReturnCode LifeStuffImpl::CreateUser(const boost::filesystem::path& vault_path,
   result = client_maid_.CreateUser(*keyword_, *pin_, *password_, vault_path, report_progress);
   if (result != kSuccess)
     return result;
-  if (!session_.set_keyword_pin_password(*keyword_, *pin_, *password_))
+  try {
+    session_.set_keyword_pin_password(*keyword_, *pin_, *password_);
+  }
+  catch(...) {
     return kFail;
+  }
   ResetInput();
   logged_in_ = true;
   return kSuccess;
@@ -286,8 +290,12 @@ ReturnCode LifeStuffImpl::LogIn(ReportProgressFunction& report_progress) {
   result = client_maid_.LogIn(*keyword_, *pin_, *password_, report_progress);
   if (result != kSuccess)
     return result;
-  if (!session_.set_keyword_pin_password(*keyword_, *pin_, *password_))
+  try {
+    session_.set_keyword_pin_password(*keyword_, *pin_, *password_);
+  }
+  catch(...) {
     return kFail;
+  }
   ResetInput();
   logged_in_ = true;
   return kSuccess;
@@ -307,7 +315,7 @@ ReturnCode LifeStuffImpl::UnMountDrive() {
 
 ReturnCode LifeStuffImpl::ChangeKeyword() {
   try {
-    if (!ConfirmUserInput(kConfirmationKeyword) || !ConfirmUserInput(kCurrentPassword))
+    if (!ConfirmUserInput(kCurrentPassword))
       return kFail;
     client_maid_.ChangeKeyword(session_.keyword(), *keyword_, session_.pin(), session_.password());
     session_.set_keyword(*keyword_);
@@ -323,7 +331,7 @@ ReturnCode LifeStuffImpl::ChangeKeyword() {
 
 ReturnCode LifeStuffImpl::ChangePin() {
   try {
-    if (!ConfirmUserInput(kConfirmationPin) || !ConfirmUserInput(kCurrentPassword))
+    if (!ConfirmUserInput(kCurrentPassword))
       return kFail;
     client_maid_.ChangePin(session_.keyword(), session_.pin(), *pin_, session_.password());
     session_.set_pin(*pin_);

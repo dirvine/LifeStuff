@@ -64,10 +64,10 @@ class Session {
   void set_max_space(const int64_t& max_space);
   void set_used_space(const int64_t& used_space);
   void set_initialised();
-  bool set_keyword(const Keyword& keyword);
-  bool set_pin(const Pin& pin);
-  bool set_password(const Password& password);
-  bool set_keyword_pin_password(const Keyword& keyword, const Pin& pin, const Password& password);
+  void set_keyword(const Keyword& keyword);
+  void set_pin(const Pin& pin);
+  void set_password(const Password& password);
+  void set_keyword_pin_password(const Keyword& keyword, const Pin& pin, const Password& password);
 
   void set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints);
   std::vector<Endpoint> bootstrap_endpoints() const;

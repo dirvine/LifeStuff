@@ -17,7 +17,6 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_MESSAGE_HANDLER_H_
 //
-//
 //#include <functional>
 //#include <map>
 //#include <memory>

@@ -21,7 +21,7 @@
 
 #include "maidsafe/lifestuff/return_codes.h"
 #include "maidsafe/lifestuff/detail/contacts.h"
-#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
 namespace maidsafe {
@@ -115,57 +115,28 @@ void Session::set_initialised() {
   initialised_ = true;
 }
 
-bool Session::set_keyword(const Keyword& keyword) {  
-  try {
-    keyword_.reset(new Keyword());
-    passport::detail::SecureString::String keyword_string(keyword.string());
-    uint32_t keyword_string_size(keyword_string.size());
-    for (uint32_t i = 0; i != keyword_string_size; ++i)
-      keyword_->Insert(i, keyword_string[i]);
-    keyword_->Finalise();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
+void Session::set_keyword(const Keyword& keyword) {  
+  keyword_.reset(new Keyword(keyword.string()));
+  return;
 }
 
-bool Session::set_pin(const Pin& pin) {
-  try {
-    pin_.reset(new Pin());
-    passport::detail::SecureString::String pin_string(pin.string());
-    uint32_t pin_string_size(pin_string.size());
-    for (uint32_t i = 0; i != pin_string_size; ++i)
-      pin_->Insert(i, pin_string[i]);
-    pin_->Finalise();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
+void Session::set_pin(const Pin& pin) {
+  pin_.reset(new Pin(pin.string()));
+  return;
 }
 
-bool Session::set_password(const Password& password) {
-  try {
-    password_.reset(new Password());
-    passport::detail::SecureString::String password_string(password.string());
-    uint32_t password_string_size(password_string.size());
-    for (uint32_t i = 0; i != password_string_size; ++i)
-      password_->Insert(i, password_string[i]);
-    password_->Finalise();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
+void Session::set_password(const Password& password) {
+  password_.reset(new Password(password.string()));
+  return;
 }
 
-bool Session::set_keyword_pin_password(const Keyword& keyword,
+void Session::set_keyword_pin_password(const Keyword& keyword,
                                        const Pin& pin,
                                        const Password& password) {
-  if (!set_keyword(keyword) || !set_pin(pin) || !set_password(password))
-    return false;
-  return true;
+  set_keyword(keyword);
+  set_pin(pin);
+  set_password(password);
+  return;
 }
 
 void Session::Parse(const NonEmptyString& serialised_data_atlas) {
