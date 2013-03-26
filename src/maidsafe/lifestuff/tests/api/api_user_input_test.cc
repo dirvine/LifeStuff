@@ -139,7 +139,7 @@ TEST_F(UserInputTest, BEH_ValidConfirmationPassword) {
   EXPECT_TRUE(lifestuff_->ConfirmUserInput(kConfirmationPassword));
 }
 
-TEST_F(UserInputTest, BEH_ClearThenRedoPassword) {
+TEST_F(UserInputTest, BEH_PasswordClearRedo) {
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(0, 'p', kPassword));
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(1, 'a', kPassword));
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(2, 's', kPassword));
@@ -163,7 +163,7 @@ TEST_F(UserInputTest, BEH_ClearThenRedoPassword) {
   EXPECT_TRUE(lifestuff_->ConfirmUserInput(kPassword));
 }
 
-TEST_F(UserInputTest, BEH_InsertRemoveFromPassword) {
+TEST_F(UserInputTest, BEH_PasswordInsertRemove) {
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(0, 'p', kPassword));
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(1, 'a', kPassword));
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(2, 's', kPassword));
