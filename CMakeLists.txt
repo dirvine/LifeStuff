@@ -59,6 +59,7 @@ set(API_PUBLIC_ID_TEST_CC ${LifestuffSourcesDir}/tests/api/api_public_id_test.cc
 set(API_VIRTUAL_DRIVE_TEST_CC ${LifestuffSourcesDir}/tests/api/api_virtual_drive_test.cc
                           ${LifestuffSourcesDir}/tests/api/api_test_resources.cc)
 set(API_REAL_DRIVE_TEST_CC ${LifestuffSourcesDir}/tests/api/api_real_drive_test.cc)
+set(API_USER_INPUT_TEST_CC ${LifestuffSourcesDir}/tests/api/api_user_input_test.cc)
 set(LIFESTUFF_TESTS_CC ${LifestuffSourcesDir}/tests/contacts_test.cc
                        ${LifestuffSourcesDir}/tests/session_test.cc
                        ${LifestuffSourcesDir}/tests/utils_test.cc)
@@ -75,6 +76,7 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
                                         ${API_PUBLIC_ID_TEST_CC}
                                         ${API_VIRTUAL_DRIVE_TEST_CC}
                                         ${API_REAL_DRIVE_TEST_CC}
+                                        ${API_USER_INPUT_TEST_CC}
                                         ${LIFESTUFF_TESTS_CC}
                                         ${NETWORK_HELPER_CC}
                                         ${TEST_UTILS_CC})
@@ -89,19 +91,25 @@ if(MaidsafeTesting)
   ms_add_executable(TESTlifestuff_routings_handler "Tests/LifeStuff" ${ROUTINGS_HANDLER_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
   ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TEST_UTILS_FILES} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_api_user_input "Tests/LifeStuff" ${API_USER_INPUT_TEST_CC} ${TESTS_MAIN_CC})
 endif()
 
-target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport maidsafe_routing ${BoostRegexLibs})
+target_link_libraries(maidsafe_lifestuff_detail maidsafe_lifestuff_manager maidsafe_drive maidsafe_passport maidsafe_routing ${BoostRegexLibs})
 if(MaidsafeTesting)
   target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail ${BoostRegexLibs})
   target_link_libraries(TESTlifestuff_routings_handler maidsafe_lifestuff_detail ${BoostRegexLibs})
   target_link_libraries(TESTlifestuff_credentials maidsafe_lifestuff_detail ${BoostRegexLibs})
   target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff_detail ${BoostRegexLibs})
   target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_api_user_input maidsafe_lifestuff ${BoostRegexLibs})
 endif()
 
 ms_add_static_library(lifestuff ${LifestuffAllFiles})
+
+if(MaidsafeTesting)
+  target_link_libraries(TESTlifestuff_api_user_input maidsafe_lifestuff ${BoostRegexLibs})
+endif()
 
 add_library(lifestuff_python_api SHARED ${LifestuffSourcesDir}/python_bindings/lifestuff_python_api.cc)
 if(NO_JUST_THREADS AND CMAKE_COMPILER_IS_GNUCXX)

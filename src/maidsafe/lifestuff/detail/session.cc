@@ -38,12 +38,8 @@ Session::Session()
 
 Session::~Session() {}
 
-void Session::set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints) {
-  bootstrap_endpoints_ = bootstrap_endpoints;
-}
-
-std::vector<std::pair<std::string, uint16_t> > Session::bootstrap_endpoints() const {
-  return bootstrap_endpoints_;
+Session::Passport& Session::passport() {
+  return passport_;
 }
 
 NonEmptyString Session::session_name() const {
@@ -137,6 +133,14 @@ void Session::set_keyword_pin_password(const Keyword& keyword,
   set_pin(pin);
   set_password(password);
   return;
+}
+
+void Session::set_bootstrap_endpoints(const std::vector<Endpoint>& bootstrap_endpoints) {
+  bootstrap_endpoints_ = bootstrap_endpoints;
+}
+
+std::vector<std::pair<std::string, uint16_t> > Session::bootstrap_endpoints() const {
+  return bootstrap_endpoints_;
 }
 
 void Session::Parse(const NonEmptyString& serialised_data_atlas) {

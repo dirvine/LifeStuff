@@ -23,9 +23,7 @@
 #include "maidsafe/lifestuff/tests/api/api_test_resources.h"
 
 namespace maidsafe {
-
 namespace lifestuff {
-
 namespace test {
 
 void ChatSlot(const NonEmptyString&,
@@ -555,7 +553,5 @@ void TwoUsersApiTest::SetUp() {
 }
 
 }  // namespace test
-
 }  // namespace lifestuff
-
 }  // namespace maidsafe
