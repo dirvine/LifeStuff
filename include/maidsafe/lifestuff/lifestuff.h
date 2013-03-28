@@ -20,13 +20,21 @@ namespace maidsafe {
 namespace lifestuff {
 
 enum InputField {
-  kKeyword = 0,
-  kPin,
+  kPin = 0,
+  kKeyword,
   kPassword,
-  kConfirmationKeyword,
   kConfirmationPin,
+  kConfirmationKeyword,
   kConfirmationPassword,
   kCurrentPassword
+};
+
+enum Action {
+  kCreateUser = 0,
+  kLogin,
+  kChangeKeyword,
+  kChangePin,
+  kChangePassword
 };
 
 enum ReturnCode {
@@ -43,7 +51,8 @@ enum ReturnCode {
 };
 
 enum ProgessCode {
-  kCreatingUserCredentials = 0,
+  kInitialiseProcess = 0,
+  kCreatingUserCredentials,
   kJoiningNetwork,
   kInitialisingClientComponents,
   kCreatingVault,
@@ -61,7 +70,7 @@ typedef std::function<void(int32_t)> NetworkHealthFunction;
 // Safe to quit...
 typedef std::function<void(bool)> OperationsPendingFunction;
 // Report progress...
-typedef std::function<void(ProgessCode)> ReportProgressFunction;
+typedef std::function<void(Action, ProgessCode)> ReportProgressFunction;
 
 struct Slots {
   UpdateAvailableFunction update_available;

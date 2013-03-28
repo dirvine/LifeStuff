@@ -294,8 +294,11 @@ ReturnCode LifeStuffImpl::LogIn(ReportProgressFunction& report_progress) {
   if (result != kSuccess)
     return result;
   result = client_maid_.LogIn(*keyword_, *pin_, *password_, report_progress);
-  if (result != kSuccess)
+
+  if (result != kSuccess) {
+    ResetInput();
     return result;
+  }
   try {
     session_.set_keyword_pin_password(*keyword_, *pin_, *password_);
   }

@@ -42,12 +42,12 @@ ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
   bool fobs_confirmed(false), drive_mounted(false);
   try {
     ReturnCode result(kSuccess);
-    report_progress(kCreatingUserCredentials);
+    report_progress(kCreateUser, kCreatingUserCredentials);
     session_.passport().CreateFobs();
     Maid maid(session_.passport().Get<Maid>(false));
     Pmid pmid(session_.passport().Get<Pmid>(false));
     try {
-      report_progress(kJoiningNetwork);
+      report_progress(kCreateUser, kJoiningNetwork);
       JoinNetwork(maid);
     }
     catch(...) {
@@ -56,13 +56,13 @@ ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
     result = PutFreeFobs();
     if (result != kSuccess)
       return result;
-    report_progress(kInitialisingClientComponents);
+    report_progress(kCreateUser, kInitialisingClientComponents);
     client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-    report_progress(kCreatingVault);
+    report_progress(kCreateUser, kCreatingVault);
     session_.set_vault_path(vault_path);
     client_controller_.StartVault(pmid, maid.name(), vault_path);
     RegisterPmid(maid, pmid);
-    report_progress(kCreatingUserCredentials);
+    report_progress(kCreateUser, kCreatingUserCredentials);
     session_.passport().ConfirmFobs();
     fobs_confirmed = true;
     result = PutPaidFobs();
@@ -74,7 +74,7 @@ ReturnCode ClientMaid::CreateUser(const Keyword& keyword,
     UnMountDrive();
     drive_mounted = false;
     session_.set_initialised();
-    report_progress(kStoringUserCredentials);
+    report_progress(kCreateUser, kStoringUserCredentials);
     PutSession(keyword, pin, password);
   }
   catch(...) {
@@ -88,7 +88,21 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
                              const Pin& pin,
                              const Password& password,
                              ReportProgressFunction& report_progress) {
-  try {
+   slots_.network_health(10);
+   slots_.operations_pending(true);
+   report_progress(kLogin, kJoiningNetwork);
+   maidsafe::Sleep(boost::posix_time::seconds(2));
+   report_progress(kLogin, kInitialisingClientComponents);
+   maidsafe::Sleep(boost::posix_time::seconds(2));
+   report_progress(kLogin, kRetrievingUserCredentials);
+   maidsafe::Sleep(boost::posix_time::seconds(2));
+   slots_.update_available("C:\\Program Files (x86)\\CamStudio 2.7\\Videos\\Blah.exe");
+   using namespace maidsafe::passport::detail;
+   if(SafeString(keyword.string()) == "abcde" && SafeString(pin.string()) == "1111" && SafeString(password.string()) == "12345")
+    return kSuccess;
+   return kNetworkFailure;
+
+  /*try {
     Anmaid anmaid;
     Maid maid(anmaid);
     try {
@@ -120,8 +134,7 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
     // client_controller_.StopVault(); get params!!!!!!!!!
     client_nfs_.reset();
     return kStartupFailure;
-  }
-  return kSuccess;
+  }*/
 }
 
 ReturnCode ClientMaid::LogOut() {
