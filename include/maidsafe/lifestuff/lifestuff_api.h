@@ -47,6 +47,11 @@ class LifeStuff {
   std::string mount_path();
   std::string owner_path();
 
+  wchar_t ReadChar(const std::string& path);
+  bool WriteChar(const std::string& path, const wchar_t& character);
+  std::wstring ReadString(const std::string& path);
+  bool WriteString(const std::string& path, const std::wstring& character);
+
  private:
   std::unique_ptr<LifeStuffImpl> lifestuff_impl_;
 };
