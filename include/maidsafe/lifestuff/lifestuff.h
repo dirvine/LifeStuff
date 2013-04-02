@@ -63,6 +63,8 @@ enum ProgessCode {
   kRetrievingUserCredentials
 };
 
+typedef std::string UTF8Char;
+
 // New version update...
 typedef std::function<void(const std::string&)> UpdateAvailableFunction;
 // Network health...

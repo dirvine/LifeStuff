@@ -24,7 +24,7 @@ LifeStuff::LifeStuff(const Slots& slots)
 
 LifeStuff::~LifeStuff() {}
 
-ReturnCode LifeStuff::InsertUserInput(uint32_t position, char character, InputField input_field) {
+ReturnCode LifeStuff::InsertUserInput(uint32_t position, const UTF8Char& character, InputField input_field) {
   return lifestuff_impl_->InsertUserInput(position, character, input_field);
 }
 
@@ -83,80 +83,6 @@ std::string LifeStuff::mount_path() {
 
 std::string LifeStuff::owner_path() {
   return lifestuff_impl_->owner_path().string();
-}
-
-wchar_t LifeStuff::ReadChar(const std::string& path) {
-  std::wstring content;
-  try {
-    boost::filesystem::wifstream file_in(path, std::ios::in | std::ios::binary);
-    if (!file_in.good())
-      return wchar_t();
-    uintmax_t size(boost::filesystem::file_size(path));
-    if (size < 1)
-      return wchar_t();
-    content.resize(static_cast<unsigned int>(size));
-    file_in.read(const_cast<wchar_t*>(content.data()), 1);
-    file_in.close();
-  }
-  catch(...) {
-    return wchar_t();
-  }
-  return content[0];
-}
-
-bool LifeStuff::WriteChar(const std::string& path, const wchar_t& character) {
-  try {
-    if (!boost::filesystem::path(path).has_filename()) {
-      return false;
-    }
-    boost::filesystem::wofstream file_out(path, std::ios::out | std::ios::trunc | std::ios::binary);
-    if (!file_out.good()) {
-      return false;
-    }
-    file_out.write(&character, 1);
-    file_out.close();
-  }
-  catch(const std::exception &e) {
-    return false;
-  }
-  return true;
-}
-
-std::wstring LifeStuff::ReadString(const std::string& path) {
-  std::wstring content;
-  try {
-    boost::filesystem::wifstream file_in(path, std::ios::in | std::ios::binary);
-    if (!file_in.good())
-      return std::wstring();
-    uintmax_t size(boost::filesystem::file_size(path));
-    if (size < 1)
-      return std::wstring();
-    content.resize(static_cast<unsigned int>(size));
-    file_in.read(const_cast<wchar_t*>(content.data()), 1);
-    file_in.close();
-  }
-  catch(...) {
-    return std::wstring();
-  }
-  return content;
-}
-
-bool LifeStuff::WriteString(const std::string& path, const std::wstring& character) {
-  try {
-    if (!boost::filesystem::path(path).has_filename()) {
-      return false;
-    }
-    boost::filesystem::wofstream file_out(path, std::ios::out | std::ios::trunc | std::ios::binary);
-    if (!file_out.good()) {
-      return false;
-    }
-    file_out.write(character.data(), character.size());
-    file_out.close();
-  }
-  catch(...) {
-    return false;
-  }
-  return true;
 }
 
 }  // namespace lifestuff

@@ -88,53 +88,40 @@ ReturnCode ClientMaid::LogIn(const Keyword& keyword,
                              const Pin& pin,
                              const Password& password,
                              ReportProgressFunction& report_progress) {
-   slots_.network_health(10);
-   slots_.operations_pending(true);
-   report_progress(kLogin, kJoiningNetwork);
-   maidsafe::Sleep(boost::posix_time::seconds(2));
-   report_progress(kLogin, kInitialisingClientComponents);
-   maidsafe::Sleep(boost::posix_time::seconds(2));
-   report_progress(kLogin, kRetrievingUserCredentials);
-   maidsafe::Sleep(boost::posix_time::seconds(2));
-   slots_.update_available("C:\\Program Files (x86)\\CamStudio 2.7\\Videos\\Blah.exe");
-   using namespace maidsafe::passport::detail;
-   if(SafeString(keyword.string()) == "abcde" && SafeString(pin.string()) == "1111" && SafeString(password.string()) == "12345")
-    return kSuccess;
-   return kNetworkFailure;
-
-  /*try {
+  try {
     Anmaid anmaid;
     Maid maid(anmaid);
     try {
-      report_progress(kJoiningNetwork);
+      report_progress(kLogin, kJoiningNetwork);
       JoinNetwork(maid);
     }
     catch(...) {
       return kNetworkFailure;
     }
-    report_progress(kInitialisingClientComponents);
+    report_progress(kLogin, kInitialisingClientComponents);
     client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-    report_progress(kRetrievingUserCredentials);
+    report_progress(kLogin, kRetrievingUserCredentials);
     GetSession(keyword, pin, password);
     maid = session_.passport().Get<Maid>(true);
     Pmid pmid(session_.passport().Get<Pmid>(true));
     try {
-      report_progress(kJoiningNetwork);
+      report_progress(kLogin, kJoiningNetwork);
       JoinNetwork(maid);
     }
     catch(...) {
       return kNetworkFailure;
     }
-    report_progress(kInitialisingClientComponents);
+    report_progress(kLogin, kInitialisingClientComponents);
     client_nfs_.reset(new ClientNfs(routing_handler_->routing(), maid));
-    report_progress(kStartingVault);
+    report_progress(kLogin, kStartingVault);
     client_controller_.StartVault(pmid, maid.name(), session_.vault_path());
   }
   catch(...) {
     // client_controller_.StopVault(); get params!!!!!!!!!
     client_nfs_.reset();
     return kStartupFailure;
-  }*/
+  }
+  return kSuccess;
 }
 
 ReturnCode ClientMaid::LogOut() {

@@ -26,7 +26,7 @@ class LifeStuffImpl {
   explicit LifeStuffImpl(const Slots& slots);
   ~LifeStuffImpl();
 
-  ReturnCode InsertUserInput(uint32_t position, char character, InputField input_field);
+  ReturnCode InsertUserInput(uint32_t position, const UTF8Char& character, InputField input_field);
   ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
   ReturnCode ClearUserInput(InputField input_field);
   bool ConfirmUserInput(InputField input_field);

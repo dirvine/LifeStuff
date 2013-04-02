@@ -37,7 +37,9 @@ LifeStuffImpl::LifeStuffImpl(const Slots& slots)
 
 LifeStuffImpl::~LifeStuffImpl() {}
 
-ReturnCode LifeStuffImpl::InsertUserInput(uint32_t position, char character, InputField input_field) {
+ReturnCode LifeStuffImpl::InsertUserInput(uint32_t position,
+                                          const UTF8Char& character,
+                                          InputField input_field) {
   try {
     switch (input_field) {
       case kKeyword: {
