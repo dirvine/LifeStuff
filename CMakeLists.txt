@@ -173,6 +173,29 @@ if(MaidsafeTesting)
                         PROPERTIES COMPILE_DEFINITIONS TOOLS_PATH=${CMAKE_SOURCE_DIR}/tools)
 endif()
 
+#==================================================================================================#
+# Set Windows Registry Keys for WPF UI                                                             #
+#==================================================================================================#
+
+### Do NOT Switch \\ for / in the following lines
+if(WIN32)
+  set(REGISTRY_PATH "HKEY_CURRENT_USER\\Software\\MaidSafe\\LibPaths")
+  if(CMAKE_CL_64)
+    set(REGISTRY_PATH "${REGISTRY_PATH}\\x64")
+  else()
+    set(REGISTRY_PATH "${REGISTRY_PATH}\\x86")
+  endif()
+  # Debug Paths
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;CbfsLib" "${Cbfs_LIBRARY_DEBUG}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;JustThreadLib" "${JustThread_LIBRARY_DEBUG}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;NativeIncludeDir" "${lifestuff_SOURCE_DIR}/include")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;NativeLibDir" "${maidsafe_BINARY_DIR}/Debug")
+  # Release Paths
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;CbfsLib" "${Cbfs_LIBRARY}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;JustThreadLib" "${JustThread_LIBRARY}")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeIncludeDir" "${lifestuff_SOURCE_DIR}/include")
+  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeLibDir" "${maidsafe_BINARY_DIR}/Release")
+endif()
 
 #==================================================================================================#
 # Tests                                                                                            #
