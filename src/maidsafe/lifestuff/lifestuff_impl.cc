@@ -25,10 +25,10 @@ const char kDigitRegex[] = "\\d";
 LifeStuffImpl::LifeStuffImpl(const Slots& slots)
   : logged_in_(false),
     keyword_(),
-    pin_(),
-    password_(),
     confirmation_keyword_(),
+    pin_(),
     confirmation_pin_(),
+    password_(),
     confirmation_password_(),
     current_password_(),
     session_(),

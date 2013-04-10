@@ -236,8 +236,13 @@ void ClientMaid::JoinNetwork(const Maid& maid) {
         PublicKeyRequest(node_id, give_key);
       });
   routing_handler_.reset(new RoutingHandler(maid, public_key_request));
+
+  std::vector<boost::asio::ip::udp::endpoint> bootstrap_endpoints;
+  client_controller_.GetBootstrapNodes(bootstrap_endpoints);
   EndPointVector endpoints;
-  client_controller_.GetBootstrapNodes(endpoints);
+  for (auto& endpoint : bootstrap_endpoints)
+    endpoints.push_back(std::make_pair(endpoint.address().to_string(), endpoint.port()));
+
   routing_handler_->Join(endpoints);
 }
 

@@ -28,7 +28,6 @@ namespace lifestuff {
 
 class ClientMaid {
  public:
-  typedef RoutingHandler RoutingHandler;
   typedef std::unique_ptr<RoutingHandler> RoutingHandlerPtr;
   typedef RoutingHandler::EndPointVector EndPointVector;
   typedef nfs::PmidRegistration PmidRegistration;
