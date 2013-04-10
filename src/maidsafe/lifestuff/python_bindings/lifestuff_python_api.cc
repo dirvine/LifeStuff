@@ -32,6 +32,7 @@
 #endif
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/types.h"
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
@@ -61,39 +62,13 @@ namespace {
 
 void SetEmptySlots(maidsafe::lifestuff::Slots* pslots) {
   assert(pslots);
-  auto three_strings_func = [](const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto three_plus_one_strings_func = [](const maidsafe::NonEmptyString&,
-                                        const maidsafe::NonEmptyString&,
-                                        const std::string&,
-                                        const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto four_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto five_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->chat_slot = four_strings_func;
-  pslots->file_success_slot = five_strings_func;
-  pslots->file_failure_slot = three_strings_func;
-  pslots->new_contact_slot = three_plus_one_strings_func;
-  pslots->confirmed_contact_slot = three_strings_func;
-  pslots->profile_picture_slot = three_strings_func;
-  pslots->contact_presence_slot = [](const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     maidsafe::lifestuff::ContactPresence) {};  // NOLINT
-  pslots->contact_deletion_slot = three_plus_one_strings_func;
-  pslots->lifestuff_card_update_slot = three_strings_func;
-  pslots->network_health_slot = [](const int&) {};  // NOLINT
-  pslots->immediate_quit_required_slot = [] {};  // NOLINT
-  pslots->update_available_slot = [](const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->operation_progress_slot = [](maidsafe::lifestuff::Operation,
-                                       maidsafe::lifestuff::SubTask) {};  // NOLINT
+  auto string_callback = [](const std::string&) {};  // NOLINT
+  auto int32_callback = [](int32_t) {};  // NOLINT
+  auto bool_callback = [](bool) {};  // NOLINT
+
+  pslots->update_available = string_callback;
+  pslots->network_health = int32_callback;
+  pslots->operations_pending = bool_callback;
 }
 
 struct PathConverter {
@@ -154,9 +129,7 @@ struct SlotsExtractor {
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Weffc++"
 #endif
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(create_user_overloads, CreateUser, 3, 4)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_contacts_overloads, GetContacts, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(accept_sent_file_overloads, AcceptSentFile, 1, 3)
+BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(create_user_overloads, CreateUser, 2, 2)
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
@@ -181,52 +154,29 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
                                       &SlotsExtractor::construct,
                                       bpy::type_id<maidsafe::lifestuff::Slots>());
 
-  bpy::class_<ls::LifeStuff>(
-      "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
+  bpy::class_<ls::LifeStuff, boost::noncopyable>(
+      "LifeStuff", bpy::init<ls::Slots>())
 
-      // Credential operations
-      .def("CreateUser", &ls::LifeStuff::CreateUser, create_user_overloads())
-      .def("CreatePublicId", &ls::LifeStuff::CreatePublicId)
-      .def("LogIn", &ls::LifeStuff::LogIn)
-      .def("LogOut", &ls::LifeStuff::LogOut)
-      .def("MountDrive", &ls::LifeStuff::MountDrive)
-      .def("UnMountDrive", &ls::LifeStuff::UnMountDrive)
-      .def("StartMessagesAndIntros", &ls::LifeStuff::StartMessagesAndIntros)
-      .def("StopMessagesAndIntros", &ls::LifeStuff::StopMessagesAndIntros)
-      .def("CheckPassword", &ls::LifeStuff::CheckPassword)
+       // Credential Operations
+      .def("InsertUserInput", &ls::LifeStuff::InsertUserInput)
+      .def("RemoveUserInput", &ls::LifeStuff::RemoveUserInput)
+      .def("ClearUserInput", &ls::LifeStuff::ClearUserInput)
+      .def("ConfirmUserInput", &ls::LifeStuff::ConfirmUserInput)
       .def("ChangeKeyword", &ls::LifeStuff::ChangeKeyword)
       .def("ChangePin", &ls::LifeStuff::ChangePin)
       .def("ChangePassword", &ls::LifeStuff::ChangePassword)
-//       .def("ChangePublicId", &ls::LifeStuff::ChangePublicId)
-      .def("LeaveLifeStuff", &ls::LifeStuff::LeaveLifeStuff)
 
-      // Contact operations
-      .def("AddContact", &ls::LifeStuff::AddContact)
-      .def("ConfirmContact", &ls::LifeStuff::ConfirmContact)
-      .def("DeclineContact", &ls::LifeStuff::DeclineContact)
-      .def("RemoveContact", &ls::LifeStuff::RemoveContact)
-      .def("ChangeProfilePicture", &ls::LifeStuff::ChangeProfilePicture)
-      .def("GetOwnProfilePicture", &ls::LifeStuff::GetOwnProfilePicture)
-      .def("GetContactProfilePicture", &ls::LifeStuff::GetContactProfilePicture)
-      .def("GetLifestuffCard", &ls::LifeStuff::GetLifestuffCard)
-      .def("SetLifestuffCard", &ls::LifeStuff::SetLifestuffCard)
-      .def("GetContacts", &ls::LifeStuff::GetContacts, get_contacts_overloads())
-      .def("PublicIdsList", &ls::LifeStuff::PublicIdsList)
+      // User Behaviour
+      .def("CreateUser", &ls::LifeStuff::CreateUser, create_user_overloads())
+      .def("LogIn", &ls::LifeStuff::LogIn)
+      .def("LogOut", &ls::LifeStuff::LogOut)
 
-      // Messaging
-      .def("SendChatMessage", &ls::LifeStuff::SendChatMessage)
-      .def("SendFile", &ls::LifeStuff::SendFile)
-      .def("AcceptSentFile", &ls::LifeStuff::AcceptSentFile, accept_sent_file_overloads())
-      .def("RejectSentFile", &ls::LifeStuff::RejectSentFile)
+      // Virtual Drive
+      .def("MountDrive", &ls::LifeStuff::MountDrive)
+      .def("UnMountDrive", &ls::LifeStuff::UnMountDrive)
 
-      // Filesystem
-      .def("ReadHiddenFile", &ls::LifeStuff::ReadHiddenFile)
-      .def("WriteHiddenFile", &ls::LifeStuff::WriteHiddenFile)
-      .def("DeleteHiddenFile", &ls::LifeStuff::DeleteHiddenFile)
-      .def("SearchHiddenFiles", &ls::LifeStuff::SearchHiddenFiles)
-
-      // getters
-      .def("state", &ls::LifeStuff::state)
-      .def("logged_in_state", &ls::LifeStuff::logged_in_state)
-      .def("mount_path", &ls::LifeStuff::mount_path);
+      // Getter
+      .def("logged_in", &ls::LifeStuff::logged_in)
+      .def("mount_path", &ls::LifeStuff::mount_path)
+      .def("owner_path", &ls::LifeStuff::owner_path);
 }
