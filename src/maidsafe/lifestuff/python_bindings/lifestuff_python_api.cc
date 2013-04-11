@@ -27,6 +27,7 @@
 #  pragma warning(disable: 4100 4127 4244)
 #endif
 #include "boost/python.hpp"
+#include "boost/python/call.hpp"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
@@ -59,6 +60,62 @@ namespace bpy = boost::python;
 namespace ls = maidsafe::lifestuff;
 
 namespace {
+
+class LifeStuffPython {
+ public:
+  LifeStuffPython(const ls::Slots& slots)
+   : lifestuff_(slots) {}
+  ~LifeStuffPython() {}
+
+  void InsertUserInput(uint32_t position,
+                       const std::string& character,
+                       ls::InputField input_field) {
+    lifestuff_.InsertUserInput(position, character, input_field);
+  }
+  void RemoveUserInput(uint32_t position, uint32_t length, ls::InputField input_field) {
+    lifestuff_.RemoveUserInput(position, length, input_field);
+  }
+  void ClearUserInput(ls::InputField input_field) { lifestuff_.ClearUserInput(input_field); }
+  bool ConfirmUserInput(ls::InputField input_field) {
+    return lifestuff_.ConfirmUserInput(input_field);
+  }
+
+  void CreateUser(const std::string& vault_path, PyObject *py_callback) {
+    ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
+                                                      ls::ProgessCode progesscode) {
+                                    this->ProgressCB(action, progesscode, py_callback);
+                                  });
+    lifestuff_.CreateUser(vault_path, cb);
+  }
+  void LogIn(PyObject *py_callback) {
+    ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
+                                                      ls::ProgessCode progesscode) {
+                                    this->ProgressCB(action, progesscode, py_callback);
+                                  });
+    lifestuff_.LogIn(cb);
+  }
+  void LogOut() { lifestuff_.LogOut(); }
+
+  void MountDrive() { lifestuff_.MountDrive(); }
+  void UnMountDrive() { lifestuff_.UnMountDrive(); }
+
+  void ChangeKeyword() { lifestuff_.ChangeKeyword(); }
+  void ChangePin() { lifestuff_.ChangePin(); }
+  void ChangePassword() { lifestuff_.ChangePassword(); }
+
+  bool logged_in() { return lifestuff_.logged_in(); }
+
+  std::string mount_path() { return lifestuff_.mount_path(); }
+  std::string owner_path() { return lifestuff_.owner_path(); }
+
+ private:
+  void ProgressCB(ls::Action action, ls::ProgessCode progesscode, PyObject *py_callback) {
+    std::cout << "action : " << action << " , progesscode : " << progesscode << std::endl;
+    boost::python::call<void>(py_callback, action, progesscode);
+  }
+
+  ls::LifeStuff lifestuff_;
+};
 
 void SetEmptySlots(maidsafe::lifestuff::Slots* pslots) {
   assert(pslots);
@@ -129,7 +186,6 @@ struct SlotsExtractor {
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Weffc++"
 #endif
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(create_user_overloads, CreateUser, 2, 2)
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
@@ -154,29 +210,29 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
                                       &SlotsExtractor::construct,
                                       bpy::type_id<maidsafe::lifestuff::Slots>());
 
-  bpy::class_<ls::LifeStuff, boost::noncopyable>(
+  bpy::class_<LifeStuffPython, boost::noncopyable>(
       "LifeStuff", bpy::init<ls::Slots>())
 
        // Credential Operations
-      .def("InsertUserInput", &ls::LifeStuff::InsertUserInput)
-      .def("RemoveUserInput", &ls::LifeStuff::RemoveUserInput)
-      .def("ClearUserInput", &ls::LifeStuff::ClearUserInput)
-      .def("ConfirmUserInput", &ls::LifeStuff::ConfirmUserInput)
-      .def("ChangeKeyword", &ls::LifeStuff::ChangeKeyword)
-      .def("ChangePin", &ls::LifeStuff::ChangePin)
-      .def("ChangePassword", &ls::LifeStuff::ChangePassword)
+      .def("InsertUserInput", &LifeStuffPython::InsertUserInput)
+      .def("RemoveUserInput", &LifeStuffPython::RemoveUserInput)
+      .def("ClearUserInput", &LifeStuffPython::ClearUserInput)
+      .def("ConfirmUserInput", &LifeStuffPython::ConfirmUserInput)
+      .def("ChangeKeyword", &LifeStuffPython::ChangeKeyword)
+      .def("ChangePin", &LifeStuffPython::ChangePin)
+      .def("ChangePassword", &LifeStuffPython::ChangePassword)
 
       // User Behaviour
-      .def("CreateUser", &ls::LifeStuff::CreateUser, create_user_overloads())
-      .def("LogIn", &ls::LifeStuff::LogIn)
-      .def("LogOut", &ls::LifeStuff::LogOut)
+      .def("CreateUser", &LifeStuffPython::CreateUser)
+      .def("LogIn", &LifeStuffPython::LogIn)
+      .def("LogOut", &LifeStuffPython::LogOut)
 
       // Virtual Drive
-      .def("MountDrive", &ls::LifeStuff::MountDrive)
-      .def("UnMountDrive", &ls::LifeStuff::UnMountDrive)
+      .def("MountDrive", &LifeStuffPython::MountDrive)
+      .def("UnMountDrive", &LifeStuffPython::UnMountDrive)
 
       // Getter
-      .def("logged_in", &ls::LifeStuff::logged_in)
-      .def("mount_path", &ls::LifeStuff::mount_path)
-      .def("owner_path", &ls::LifeStuff::owner_path);
+      .def("logged_in", &LifeStuffPython::logged_in)
+      .def("mount_path", &LifeStuffPython::mount_path)
+      .def("owner_path", &LifeStuffPython::owner_path);
 }
