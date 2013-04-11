@@ -198,27 +198,21 @@ TEST_F(UserInputTest, BEH_PasswordInsertRemove) {
 
 TEST_F(UserInputTest, BEH_InvalidKeyword) {
   EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(0, "k", kKeyword));
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(1, "e", kKeyword));
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(2, "y", kKeyword));
+  EXPECT_EQ(kSuccess, lifestuff_->RemoveUserInput(0, 1, kKeyword));
 
   EXPECT_FALSE(lifestuff_->ConfirmUserInput(kKeyword));
 }
 
 TEST_F(UserInputTest, BEH_InvalidPin) {
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(0, "0", kPin));
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(1, "1", kPin));
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(2, "2", kPin));
-
   EXPECT_FALSE(lifestuff_->ConfirmUserInput(kPin));
 
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(3, "3", kPin));
-  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(4, "4", kPin));
-
-  EXPECT_FALSE(lifestuff_->ConfirmUserInput(kPin));
-
-  EXPECT_EQ(kSuccess, lifestuff_->RemoveUserInput(4, 1, kPin));
+  EXPECT_EQ(kSuccess, lifestuff_->InsertUserInput(0, "1", kPin));
 
   EXPECT_TRUE(lifestuff_->ConfirmUserInput(kPin));
+
+  EXPECT_EQ(kSuccess, lifestuff_->RemoveUserInput(0, 1, kPin));
+
+  EXPECT_FALSE(lifestuff_->ConfirmUserInput(kPin));
 }
 
 TEST_F(UserInputTest, BEH_InvalidConfirmationPassword) {
