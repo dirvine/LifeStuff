@@ -37,19 +37,6 @@ enum Action {
   kChangePassword
 };
 
-enum ReturnCode {
-  kSuccess = 0,
-  kFail,
-  kOutOfMemory,
-  kUninitialised,
-  kNetworkFailure,
-  kStartupFailure,
-  kShutdownFailure,
-  kMountFailed,
-  kUnmountFailed,
-  kUnknownError
-};
-
 enum ProgessCode {
   kInitialiseProcess = 0,
   kCreatingUserCredentials,
@@ -62,8 +49,6 @@ enum ProgessCode {
   kStoringUserCredentials,
   kRetrievingUserCredentials
 };
-
-typedef std::string UTF8Char;
 
 // New version update...
 typedef std::function<void(const std::string&)> UpdateAvailableFunction;

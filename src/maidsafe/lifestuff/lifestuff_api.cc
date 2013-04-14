@@ -11,9 +11,6 @@
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
-#include "boost/filesystem/fstream.hpp"  // remove these...
-#include "boost/filesystem/operations.hpp"
-
 #include "maidsafe/lifestuff/lifestuff_impl.h"
 
 namespace maidsafe {
@@ -24,15 +21,15 @@ LifeStuff::LifeStuff(const Slots& slots)
 
 LifeStuff::~LifeStuff() {}
 
-ReturnCode LifeStuff::InsertUserInput(uint32_t position, const UTF8Char& character, InputField input_field) {
-  return lifestuff_impl_->InsertUserInput(position, character, input_field);
+void LifeStuff::InsertUserInput(uint32_t position, const std::string& characters, InputField input_field) {
+  return lifestuff_impl_->InsertUserInput(position, characters, input_field);
 }
 
-ReturnCode LifeStuff::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
+void LifeStuff::RemoveUserInput(uint32_t position, uint32_t length, InputField input_field) {
   return lifestuff_impl_->RemoveUserInput(position, length, input_field);
 }
 
-ReturnCode LifeStuff::ClearUserInput(InputField input_field) {
+void LifeStuff::ClearUserInput(InputField input_field) {
   return lifestuff_impl_->ClearUserInput(input_field);
 }
 
@@ -40,36 +37,35 @@ bool LifeStuff::ConfirmUserInput(InputField input_field) {
   return lifestuff_impl_->ConfirmUserInput(input_field);
 }
 
-ReturnCode LifeStuff::CreateUser(const std::string& vault_path,
-                                 ReportProgressFunction& report_progress) {
+void LifeStuff::CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress) {
   return lifestuff_impl_->CreateUser(vault_path, report_progress);
 }
 
-ReturnCode LifeStuff::LogIn(ReportProgressFunction& report_progress) {
+void LifeStuff::LogIn(ReportProgressFunction& report_progress) {
   return lifestuff_impl_->LogIn(report_progress);
 }
 
-ReturnCode LifeStuff::LogOut() {
+void LifeStuff::LogOut() {
   return lifestuff_impl_->LogOut();
 }
 
-ReturnCode LifeStuff::MountDrive() {
+void LifeStuff::MountDrive() {
   return lifestuff_impl_->MountDrive();
 }
 
-ReturnCode LifeStuff::UnMountDrive() {
+void LifeStuff::UnMountDrive() {
   return lifestuff_impl_->UnMountDrive();
 }
 
-ReturnCode LifeStuff::ChangeKeyword() {
+void LifeStuff::ChangeKeyword() {
   return lifestuff_impl_->ChangeKeyword();
 }
 
-ReturnCode LifeStuff::ChangePin() {
+void LifeStuff::ChangePin() {
   return lifestuff_impl_->ChangePin();
 }
 
-ReturnCode LifeStuff::ChangePassword() {
+void LifeStuff::ChangePassword() {
   return lifestuff_impl_->ChangePassword();
 }
 

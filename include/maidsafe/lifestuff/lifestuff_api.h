@@ -26,21 +26,21 @@ class LifeStuff {
   LifeStuff(const Slots& slots);
   ~LifeStuff();
 
-  ReturnCode InsertUserInput(uint32_t position, const UTF8Char& character, InputField input_field);
-  ReturnCode RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
-  ReturnCode ClearUserInput(InputField input_field);
+  void InsertUserInput(uint32_t position, const std::string& characters, InputField input_field);
+  void RemoveUserInput(uint32_t position, uint32_t length, InputField input_field);
+  void ClearUserInput(InputField input_field);
   bool ConfirmUserInput(InputField input_field);
 
-  ReturnCode CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress);
-  ReturnCode LogIn(ReportProgressFunction& report_progress);
-  ReturnCode LogOut();
+  void CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress);
+  void LogIn(ReportProgressFunction& report_progress);
+  void LogOut();
 
-  ReturnCode MountDrive();
-  ReturnCode UnMountDrive();
+  void MountDrive();
+  void UnMountDrive();
 
-  ReturnCode ChangeKeyword();
-  ReturnCode ChangePin();
-  ReturnCode ChangePassword();
+  void ChangeKeyword();
+  void ChangePin();
+  void ChangePassword();
 
   bool logged_in() const;
 

@@ -47,19 +47,19 @@ class ClientMaid {
   ClientMaid(Session& session, const Slots& slots);
   ~ClientMaid() {}
 
-  ReturnCode CreateUser(const Keyword& keyword,
-                        const Pin& pin,
-                        const Password& password,
-                        const boost::filesystem::path& vault_path,
-                        ReportProgressFunction& report_progress);
+  void CreateUser(const Keyword& keyword,
+                  const Pin& pin,
+                  const Password& password,
+                  const boost::filesystem::path& vault_path,
+                  ReportProgressFunction& report_progress);
 
-  ReturnCode LogIn(const Keyword& keyword,
-                   const Pin& pin,
-                   const Password& password,
-                   ReportProgressFunction& report_progress);
-  ReturnCode LogOut();
-  ReturnCode MountDrive();
-  ReturnCode UnMountDrive();
+  void LogIn(const Keyword& keyword,
+             const Pin& pin,
+             const Password& password,
+             ReportProgressFunction& report_progress);
+  void LogOut();
+  void MountDrive();
+  void UnMountDrive();
 
   void ChangeKeyword(const Keyword& old_keyword,
                      const Keyword& new_keyword,
@@ -90,8 +90,8 @@ class ClientMaid {
   template<typename Fob> void DeleteFob(const typename Fob::name_type& fob);
   template<typename Fob> Fob GetFob(const typename Fob::name_type& fob);
 
-  ReturnCode PutFreeFobs();
-  ReturnCode PutPaidFobs();
+  void PutFreeFobs();
+  void PutPaidFobs();
 
   void PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunctor& give_key);
 
