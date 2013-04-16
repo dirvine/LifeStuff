@@ -29,6 +29,9 @@ typedef std::function<void(maidsafe::nfs::Reply)> ReplyFunction;
 struct Free;
 struct Paid;
 
+const char kCharRegex[] = ".*";
+const char kDigitRegex[] = "\\d";
+
 namespace detail {
 
   template <typename Duty>

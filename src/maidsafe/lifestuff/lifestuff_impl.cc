@@ -17,8 +17,6 @@ namespace lifestuff {
 namespace {
 
 const int kRetryLimit(10);
-const char kCharRegex[] = ".*";
-const char kDigitRegex[] = "\\d";
 
 }  // unnamed namespace
 
