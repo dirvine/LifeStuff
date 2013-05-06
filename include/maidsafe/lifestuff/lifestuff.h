@@ -37,7 +37,7 @@ enum Action {
   kChangePassword
 };
 
-enum ProgessCode {
+enum ProgressCode {
   kInitialiseProcess = 0,
   kCreatingUserCredentials,
   kJoiningNetwork,
@@ -57,7 +57,7 @@ typedef std::function<void(int32_t)> NetworkHealthFunction;
 // Safe to quit...
 typedef std::function<void(bool)> OperationsPendingFunction;
 // Report progress...
-typedef std::function<void(Action, ProgessCode)> ReportProgressFunction;
+typedef std::function<void(Action, ProgressCode)> ReportProgressFunction;
 
 struct Slots {
   UpdateAvailableFunction update_available;
