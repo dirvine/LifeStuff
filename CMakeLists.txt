@@ -1,6 +1,6 @@
 #==============================================================================#
 #                                                                              #
-#  Copyright (c) 2011 MaidSafe.net limited                                     #
+#  Copyright (c) 2012 MaidSafe.net limited                                     #
 #                                                                              #
 #  The following source code is property of MaidSafe.net limited and is not    #
 #  meant for external use.  The use of this code is governed by the license    #
@@ -13,209 +13,240 @@
 #==============================================================================#
 
 
-SET(MS_PROJECT_NAME lifestuff)
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4 FATAL_ERROR)
-MESSAGE("================================================================================\n")
+cmake_minimum_required(VERSION 2.8.7 FATAL_ERROR)
+project(lifestuff)
 
-GET_FILENAME_COMPONENT(CMAKE_BUILD_TYPE_DIR ${CMAKE_BINARY_DIR} NAME)
+set(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+file(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
+include(../../cmake_modules/maidsafe_standard_setup.cmake)
 
-# Variable MSVC is not set until after "PROJECT" command below
-IF(CMAKE_BUILD_TYPE_DIR MATCHES "Win_MSVC")
-  SET(CMAKE_BUILD_TYPE_DIR Release)
-ELSEIF(CMAKE_BUILD_TYPE_DIR MATCHES "kdev")
-  SET(CMAKE_BUILD_TYPE_DIR Debug)
-  SET(KDEV 1)
-ENDIF()
-
-IF(NOT ${CMAKE_C_COMPILER_WORKS})
-  MESSAGE(FATAL_ERROR "No generator previously specified.\nTo see a full list of generators, run:\n\tcmake --help\n")
-ENDIF()
-
-# This "PROJECT" command resets CMAKE_BUILD_TYPE, hence it's copied from CMAKE_BUILD_TYPE_DIR which is set above.
-IF((CMAKE_BUILD_TYPE_DIR MATCHES "Release") OR (DEFINED ${KDEV}))
-  PROJECT(${MS_PROJECT_NAME})
-ELSE()
-  STRING(TOLOWER ${CMAKE_BUILD_TYPE_DIR} MS_PROJECT_NAME_APPENDIX)
-  PROJECT(${MS_PROJECT_NAME}_${MS_PROJECT_NAME_APPENDIX})
-ENDIF()
-
-SET(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_DIR} CACHE INTERNAL "Except for MSVC, the build type is set by running cmake from the appropriate build subdirectory e.g. for a Debug build, \"cd build/Linux/Debug && cmake ../../..\"." FORCE)
-
-
-###################################################################################################
-# MaidSafe Common, Private, Encrypt, DHT, Drive, PKI and Passport library search                  #
-###################################################################################################
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/build)
-INCLUDE(maidsafe_find_common)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Private)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Encrypt)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Drive)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-PKI)
-ADD_MAIDSAFE_LIBRARY(MaidSafe-Passport)
-IF(NOT LOCAL_TARGETS_ONLY)
-  ADD_MAIDSAFE_LIBRARY(MaidSafe-Transport)
-  ADD_MAIDSAFE_LIBRARY(MaidSafe-DHT)
-  ADD_MAIDSAFE_LIBRARY(MaidSafe-PD)
-ENDIF()
+include_directories(${common_SOURCE_DIR}/include)
+include_directories(${private_SOURCE_DIR}/include)
+include_directories(${encrypt_SOURCE_DIR}/include)
+include_directories(${drive_SOURCE_DIR}/include)
+include_directories(${passport_SOURCE_DIR}/include)
+include_directories(${rudp_SOURCE_DIR}/include)
+include_directories(${routing_SOURCE_DIR}/include)
+include_directories(${pd_SOURCE_DIR}/include)
 
 
 ###################################################################################################
 # Callback File System / Fuse library search                                                      #
 ###################################################################################################
-IF(WIN32)
-  INCLUDE(maidsafe_find_cbfs)
-  SET(INCLUDE_DIRS ${INCLUDE_DIRS} ${Cbfs_INCLUDE_DIR})
-  SET(LIBS_DIRS ${LIBS_DIRS} ${Cbfs_LIBRARY_DIR})
-  SET(LIBS_DIRS_DEBUG ${LIBS_DIRS_DEBUG} ${Cbfs_LIBRARY_DIR})
-  SET(Fuse_LIBRARY ${Cbfs_LIBRARY})
-ENDIF()
-
-
-###################################################################################################
-# Standard setup                                                                                  #
-###################################################################################################
-SET(PROTO_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
-FILE(GLOB_RECURSE PROTO_FILES RELATIVE ${PROTO_SOURCE_DIR} "${PROTO_SOURCE_DIR}/maidsafe/*.proto")
-INCLUDE(maidsafe_standard_setup)
-HANDLE_VERSIONS(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h)
-
+if(WIN32 OR APPLE)
+  include_directories(${DRIVE_THIRD_PARTY_INCLUDES})
+endif()
 
 ###################################################################################################
 # Set up all files as GLOBs                                                                       #
 ###################################################################################################
-####    CODE    ####
-FILE(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/*.h")
-SET(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR})
+set(PATH_TO_INCLUDE ${PROJECT_SOURCE_DIR}/include/maidsafe/lifestuff)
+set(PATH_TO_SRC ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
+set(PATH_TO_DETAIL ${PATH_TO_SRC}/detail)
+set(PATH_TO_TESTS ${PATH_TO_SRC}/tests)
 
-SET(STYLE_ALL ${ALL_FILES_LIFESTUFF_DIR})
-LIST(REMOVE_ITEM STYLE_ALL "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.h"
-                           "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc")
-SOURCE_GROUP("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
-SOURCE_GROUP("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
+####    CODE    ####
+file(GLOB SOURCE_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_api.cc"
+                                     "${PATH_TO_SRC}/lifestuff_impl.cc"
+                                     "${PATH_TO_SRC}/rcs_helper.cc")
+file(GLOB HEADER_FILES_LIFESTUFF_DIR "${PATH_TO_SRC}/lifestuff_impl.h"
+                                     "${PATH_TO_SRC}/rcs_helper.h")
+file(GLOB API_FILES_LIFESTUFF_DIR "${PATH_TO_INCLUDE}/lifestuff_api.h")
+set(ALL_FILES_LIFESTUFF_DIR ${SOURCE_FILES_LIFESTUFF_DIR} ${HEADER_FILES_LIFESTUFF_DIR} ${API_FILES_LIFESTUFF_DIR})
+
+file(GLOB SOURCE_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.cc")
+file(GLOB HEADER_FILES_DETAIL_DIR "${PATH_TO_DETAIL}/*.h")
+set(ALL_FILES_DETAIL_DIR ${SOURCE_FILES_DETAIL_DIR}
+                         ${HEADER_FILES_DETAIL_DIR}
+                         "${PATH_TO_INCLUDE}/lifestuff.h"
+                         "${PATH_TO_INCLUDE}/return_codes.h")
+
+set(STYLE_ALL ${ALL_FILES_DETAIL_DIR} ${ALL_FILES_LIFESTUFF_DIR})
+list(REMOVE_ITEM STYLE_ALL "${PATH_TO_DETAIL}/data_atlas.pb.h"
+                           "${PATH_TO_DETAIL}/data_atlas.pb.cc")
+
+source_group("LifeStuff Source Files" FILES ${SOURCE_FILES_LIFESTUFF_DIR})
+source_group("LifeStuff Header Files" FILES ${HEADER_FILES_LIFESTUFF_DIR})
+source_group("LifeStuff API Files" FILES ${API_FILES_LIFESTUFF_DIR}
+                                         "${PATH_TO_INCLUDE}/lifestuff.h"
+                                         "${PATH_TO_INCLUDE}/return_codes.h")
+source_group("LifeStuff Detail Source Files" FILES ${SOURCE_FILES_DETAIL_DIR})
+source_group("LifeStuff Detail Header Files" FILES ${HEADER_FILES_DETAIL_DIR})
 
 ####    TESTS    ####
-FILE(GLOB SOURCE_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.cc")
-FILE(GLOB HEADER_FILES_LIFESTUFF_TESTS_DIR "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/*.h")
-SET(ALL_FILES_LIFESTUFF_TESTS_DIR ${SOURCE_FILES_LIFESTUFF_TESTS_DIR} ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
-SOURCE_GROUP("Tests Source Files" FILES ${SOURCE_FILES_LIFESTUFF_TESTS_DIR})
-SOURCE_GROUP("Tests Header Files" FILES ${HEADER_FILES_LIFESTUFF_TESTS_DIR})
+set(TESTS_MAIN_CC "${PATH_TO_TESTS}/tests_main.cc")
+set(CLIENT_CONTROLLER_TEST_CC "${PATH_TO_TESTS}/credentials_test.cc")
+set(PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/public_id_test.cc"
+                      "${PATH_TO_TESTS}/message_handler_test.cc")
+set(STORAGE_TEST_CC "${PATH_TO_TESTS}/storage_test.cc")
+set(ROUTINGS_HANDLER_TEST_CC "${PATH_TO_TESTS}/routings_handler_test.cc")
+set(API_USER_CREDENTIALS_TEST_CC "${PATH_TO_TESTS}/api/api_user_credentials_test.cc"
+                                 "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_PUBLIC_ID_TEST_CC "${PATH_TO_TESTS}/api/api_public_id_test.cc"
+                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_VIRTUAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/api/api_virtual_drive_test.cc"
+                          "${PATH_TO_TESTS}/api/api_test_resources.cc")
+set(API_REAL_DRIVE_TEST_CC "${PATH_TO_TESTS}/api/api_real_drive_test.cc")
+set(LIFESTUFF_TESTS_CC "${PATH_TO_TESTS}/contacts_test.cc"
+                       "${PATH_TO_TESTS}/session_test.cc"
+                       "${PATH_TO_TESTS}/utils_test.cc")
+set(TEST_UTILS_CC "${PATH_TO_TESTS}/test_utils.cc")
+set(TEST_UTILS_H "${PATH_TO_TESTS}/test_utils.h")
+set(TEST_UTILS_FILES ${TEST_UTILS_CC} ${TEST_UTILS_H})
 
-SET(TESTS_MAIN_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/tests_main.cc")
-SET(AUTHENTICATION_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/authentication_test.cc")
-SET(CLIENT_CONTROLLER_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/client_controller_test.cc")
-SET(PUBLIC_ID_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/public_id_test.cc"
-                      "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/message_handler_test.cc")
-SET(USER_STORAGE_TEST_CC "${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/tests/user_storage_test.cc")
-
-LIST(REMOVE_ITEM ALL_FILES_LIFESTUFF_TESTS_DIR ${CLIENT_MAIN_CC}
-                                               ${AUTHENTICATION_TEST_CC}
-                                               ${CLIENT_CONTROLLER_TEST_CC}
-                                               ${PUBLIC_ID_TEST_CC}
-                                               ${USER_STORAGE_TEST_CC})
+source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
+                                        ${CLIENT_CONTROLLER_TEST_CC}
+                                        ${PUBLIC_ID_TEST_CC}
+                                        ${STORAGE_TEST_CC}
+                                        ${ROUTINGS_HANDLER_TEST_CC}
+                                        ${API_USER_CREDENTIALS_TEST_CC}
+                                        ${API_PUBLIC_ID_TEST_CC}
+                                        ${API_VIRTUAL_DRIVE_TEST_CC}
+                                        ${API_REAL_DRIVE_TEST_CC}
+                                        ${LIFESTUFF_TESTS_CC}
+                                        ${NETWORK_HELPER_CC}
+                                        ${TEST_UTILS_CC})
 
 
 ###################################################################################################
 # Define MaidSafe libraries and executables                                                       #
 ###################################################################################################
-MS_ADD_STATIC_LIBRARY(lifestuff_local ${ALL_FILES_LIFESTUFF_DIR})
-MS_ADD_EXECUTABLE(TESTlifestuff_local Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTauthentication_local Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTclientcontroller_local Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTpublic_id_local Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-MS_ADD_EXECUTABLE(TESTuser_storage_local Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
-TARGET_LINK_LIBRARIES(lifestuff_local_static maidsafe_drive_static maidsafe_passport_static)
-TARGET_LINK_LIBRARIES(TESTlifestuff_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTauthentication_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTclientcontroller_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTpublic_id_local lifestuff_local_static gtest_static)
-TARGET_LINK_LIBRARIES(TESTuser_storage_local lifestuff_local_static gtest_static)
+ms_add_static_library(lifestuff_detail ${ALL_FILES_DETAIL_DIR})
+if(MAIDSAFE_TESTING)
+  ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_routings_handler "Tests/LifeStuff" ${ROUTINGS_HANDLER_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TESTS_MAIN_CC})
+endif()
 
-IF(NOT LOCAL_TARGETS_ONLY)
-  MS_ADD_STATIC_LIBRARY(${MS_PROJECT_NAME} ${ALL_FILES_LIFESTUFF_DIR})
-  MS_ADD_EXECUTABLE(TESTlifestuff Tests ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${TESTS_MAIN_CC})
-  MS_ADD_EXECUTABLE(TESTauthentication Tests ${AUTHENTICATION_TEST_CC} ${TESTS_MAIN_CC})
-  MS_ADD_EXECUTABLE(TESTclientcontroller Tests ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-  MS_ADD_EXECUTABLE(TESTpublic_id Tests ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-  MS_ADD_EXECUTABLE(TESTuser_storage Tests ${USER_STORAGE_TEST_CC} ${TESTS_MAIN_CC})
-  TARGET_LINK_LIBRARIES(lifestuff_static maidsafe_drive_static maidsafe_passport_static maidsafe_pd_static)
-  TARGET_LINK_LIBRARIES(TESTlifestuff lifestuff_static gtest_static)
-  TARGET_LINK_LIBRARIES(TESTauthentication lifestuff_static gtest_static)
-  TARGET_LINK_LIBRARIES(TESTclientcontroller lifestuff_static gtest_static)
-  TARGET_LINK_LIBRARIES(TESTpublic_id lifestuff_static gtest_static)
-  TARGET_LINK_LIBRARIES(TESTuser_storage lifestuff_static gtest_static)
-ENDIF()
+target_link_libraries(maidsafe_lifestuff_detail maidsafe_drive maidsafe_passport maidsafe_routing ${BoostRegexLibs})
+if(MAIDSAFE_TESTING)
+  target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_routings_handler maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_credentials maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail ${BoostRegexLibs})
+endif()
 
+ms_add_static_library(lifestuff ${ALL_FILES_LIFESTUFF_DIR})
+
+add_library(lifestuff_python_api SHARED ${PATH_TO_SRC}/python_bindings/lifestuff_python_api.cc)
+if(NO_JUST_THREADS AND CMAKE_COMPILER_IS_GNUCXX)
+  target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs} stdc++ )
+elseif(CMAKE_COMPILER_IS_GNUCXX)
+  target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs} stdc++ justthread)
+else()
+  target_link_libraries(lifestuff_python_api maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostPythonLibs})
+endif()
+if(WIN32)
+  set_target_properties(lifestuff_python_api PROPERTIES SUFFIX ".pyd")
+endif()
+set_target_properties(lifestuff_python_api PROPERTIES PREFIX ""
+                                                      DEBUG_POSTFIX ""
+                                                      LABELS Lifestuff
+                                                      FOLDER "MaidSafe/Python Bindings")
+
+add_dependencies(lifestuff_python_api lifestuff_vault lifestuff_mgr pd_key_helper routing_key_helper)
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lifestuff_python_api> ${CMAKE_BINARY_DIR})
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lifestuff_python_api> ${CMAKE_SOURCE_DIR}/tools)
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lifestuff_vault> ${CMAKE_BINARY_DIR})
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:lifestuff_mgr> ${CMAKE_BINARY_DIR})
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:pd_key_helper> ${CMAKE_BINARY_DIR})
+add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:routing_key_helper> ${CMAKE_BINARY_DIR})
+
+if(MAIDSAFE_TESTING)
+  ms_add_executable(TESTlifestuff_api_user_credentials "Tests/LifeStuff" ${API_USER_CREDENTIALS_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_public_id "Tests/LifeStuff" ${API_PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_virtual_drive "Tests/LifeStuff" ${API_VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
+  ms_add_executable(TESTlifestuff_api_real_drive "Tests/LifeStuff" ${API_REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
+endif()
+
+target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_pd maidsafe_lifestuff_detail)
+if(MAIDSAFE_TESTING)
+  target_link_libraries(TESTlifestuff_api_user_credentials maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_user_credentials lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_api_public_id maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_public_id lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_api_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
+  add_dependencies(TESTlifestuff_api_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_api_real_drive maidsafe_drive ${BoostRegexLibs})
+endif()
+
+include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${PROJECT_BINARY_DIR})
+
+rename_outdated_built_exes()
 
 
 ###################################################################################################
 # Set compiler and linker flags                                                                   #
 ###################################################################################################
-INCLUDE(maidsafe_standard_flags)
+include(maidsafe_standard_flags)
 
-ADD_DEFINITIONS(-DLOCAL_TARGETS_ONLY)
+file(GLOB_RECURSE PROTO_SOURCE_FILES "${PATH_TO_SRC}/*.pb.cc")
+ms_disable_warnings(${PROTO_SOURCE_FILES})
 
-IF(MSVC)
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                                PROPERTIES COMPILE_FLAGS "/W0")
-ELSEIF(UNIX)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
-  SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_atlas.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/data_types.pb.cc
-                              ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff_messages.pb.cc
-                                PROPERTIES COMPILE_FLAGS "-w")
-ENDIF()
+if(UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+endif()
 
+if(MAIDSAFE_TESTING)
+  set_target_properties(TESTlifestuff_api_user_credentials TESTlifestuff_api_public_id TESTlifestuff_api_virtual_drive
+                        PROPERTIES COMPILE_DEFINITIONS TOOLS_PATH=${CMAKE_SOURCE_DIR}/tools)
+endif()
 
 ###################################################################################################
 # Tests                                                                                           #
 ###################################################################################################
-ADD_STYLE_TEST(${STYLE_ALL} ${ALL_FILES_LIFESTUFF_TESTS_DIR} ${AUTHENTICATION_TEST_CC} ${CLIENT_CONTROLLER_TEST_CC} ${PUBLIC_ID_TEST_CC} ${USER_STORAGE_TEST_CC})
+if(MAIDSAFE_TESTING)
+  add_style_test(${STYLE_ALL}
+                 ${LIFESTUFF_TESTS_CC}
+                 ${CLIENT_CONTROLLER_TEST_CC}
+                 ${PUBLIC_ID_TEST_CC}
+                 ${STORAGE_TEST_CC}
+                 ${ROUTINGS_HANDLER_TEST_CC}
+                 ${API_USER_CREDENTIALS_TEST_CC}
+                 ${API_PUBLIC_ID_TEST_CC}
+                 ${API_VIRTUAL_DRIVE_TEST_CC}
+                 ${API_REAL_DRIVE_TEST_CC}
+                 ${NETWORK_HELPER_STYLE})
 
-ADD_GTESTS(TESTlifestuff_local)
-ADD_GTESTS(TESTauthentication_local)
-ADD_GTESTS(TESTclientcontroller_local)
-ADD_GTESTS(TESTpublic_id_local)
-ADD_GTESTS(TESTuser_storage_local)
+  add_gtests(TESTlifestuff_general)
+  add_gtests(TESTlifestuff_api_user_credentials)
+  add_gtests(TESTlifestuff_api_public_id)
+  add_gtests(TESTlifestuff_api_virtual_drive)
+  add_gtests(TESTlifestuff_api_real_drive)
 
-TEST_SUMMARY_OUTPUT()
+  label_as_critical_tests(SessionTest.BEH_SetsGetsAndReset
+                          SessionTest.BEH_SessionName
+                          SessionTest.BEH_SerialisationAndParsing
+                          UtilsTest.BEH_WordValidity
+                          UtilsTest.BEH_PinValidity
+                          OneUserApiTest.FUNC_LoggedInState
+                          OneUserApiTest.FUNC_IncorrectLoginLogoutSequences
+                          OneUserApiTest.FUNC_CreateLogoutLoginLogout
+                          OneUserApiTest.FUNC_ChangeCredentials
+                          OneUserApiTest.FUNC_CreateInvalidUsers
+                          OneUserApiTest.FUNC_ChangeCredentialsAndLogOut
+                          OneUserApiTest.FUNC_LogInFromTwoPlaces
+                          OneUserApiTest.FUNC_LogInAfterCreateUser
+                          OneUserApiTest.FUNC_CreatePublicIdCases
+                          OneUserApiTest.FUNC_AddInvalidContact
+                          TwoUsersApiTest.FUNC_SendFileSaveToGivenPath
+                          TwoUsersApiTest.FUNC_SendFileSaveToDefaultLocation
+                          TwoUsersApiTest.FUNC_SendFileAcceptToDeletedDefaultLocation
+                          TwoUsersApiTest.FUNC_SendFileWithRejection
+                          #TwoUsersApiTest.FUNC_RemoveContact
+                          #TwoUsersApiTest.FUNC_RemoveContactAddContact
+                          TwoUsersApiTest.FUNC_AddContactWithMessage
+                          #TwoUsersApiTest.FUNC_AddThenRemoveOfflineUser
+                          TwoUsersApiTest.FUNC_ChangeProfilePicture
+                          )
 
-
-###################################################################################################
-# Install details                                                                                 #
-###################################################################################################
-FINAL_MESSAGE()
-
-SET(JUST_LOCAL "Hello, user. If you should desire to build a local version of the\n")
-SET(JUST_LOCAL "${JUST_LOCAL}libraries and tests, please use -DLOCAL_TARGETS_ONLY=ON\n")
-SET(JUST_LOCAL "${JUST_LOCAL}when running cmake. To switch to both versions, please\n")
-SET(JUST_LOCAL "${JUST_LOCAL}use -DLOCAL_TARGETS_ONLY=OFF\n")
-MESSAGE(${JUST_LOCAL})
-MESSAGE("================================================================================")
-
-RENAME_OUTDATED_BUILT_EXES()
-
-SET(LIFESTUFF_INSTALL_FILES
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/client_controller.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/session.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/user_storage.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/lifestuff.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/message_handler.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/public_id.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/return_codes.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/version.h
-      ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h)
-
-MS_INSTALL_LIBS(lifestuff_local_static)
-IF(NOT LOCAL_TARGETS_ONLY)
-  MS_INSTALL_LIBS(lifestuff_static)
-ENDIF()
-MS_INSTALL_HEADERS(lifestuff ${LIFESTUFF_INSTALL_FILES})
-MS_INSTALL_EXPORT()
+  add_project_experimental()
+  test_summary_output()
+endif()

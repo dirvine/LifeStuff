@@ -1,15 +1,7 @@
 /*
 * ============================================================================
 *
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  none
-* Version:      1.0
-* Created:      2009-08-13-01.01.27
-* Revision:     none
-* Compiler:     gcc
-* Author:       Team
-* Company:      maidsafe.net limited
+* Copyright [2011] maidsafe.net limited
 *
 * The following source code is property of maidsafe.net limited and is not
 * meant for external use.  The use of this code is governed by the license
@@ -22,8 +14,17 @@
 * ============================================================================
 */
 
-#include "maidsafe/common/test.h"
 
-int main(int argc, char** argv) {
-  return maidsafe::test::ExecuteMain(argc, argv);
-}
+#ifndef MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
+#define MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_
+
+#ifdef __MSVC__
+#  pragma warning(push)
+#  pragma warning(disable: 4127 4244 4267)
+#endif
+#include "maidsafe/lifestuff/detail/data_atlas.pb.h"
+#ifdef __MSVC__
+#  pragma warning(pop)
+#endif
+
+#endif  // MAIDSAFE_LIFESTUFF_DETAIL_DATA_ATLAS_PB_H_

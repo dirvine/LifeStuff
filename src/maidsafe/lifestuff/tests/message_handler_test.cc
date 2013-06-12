@@ -14,9 +14,10 @@
 * ============================================================================
 */
 
-#include "maidsafe/lifestuff/message_handler.h"
+#include "maidsafe/lifestuff/detail/message_handler.h"
 
 #include "maidsafe/common/asio_service.h"
+#include "maidsafe/common/log.h"
 #include "maidsafe/common/test.h"
 #include "maidsafe/common/utils.h"
 
@@ -24,22 +25,17 @@
 #include "maidsafe/private/chunk_actions/appendable_by_all_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_pb.h"
 #include "maidsafe/private/chunk_actions/chunk_action_authority.h"
-#include "maidsafe/private/chunk_actions/chunk_types.h"
+#include "maidsafe/private/chunk_actions/chunk_id.h"
 #include "maidsafe/private/chunk_store/remote_chunk_store.h"
 
-#ifndef LOCAL_TARGETS_ONLY
-#include "maidsafe/pd/client/client_container.h"
-#endif
-
-#include "maidsafe/lifestuff/contacts.h"
-#include "maidsafe/lifestuff/log.h"
-#include "maidsafe/lifestuff/public_id.h"
+#include "maidsafe/lifestuff/lifestuff.h"
 #include "maidsafe/lifestuff/return_codes.h"
-#include "maidsafe/lifestuff/session.h"
-#include "maidsafe/lifestuff/utils.h"
-#include "maidsafe/lifestuff/ye_olde_signal_to_callback_converter.h"
+#include "maidsafe/lifestuff/detail/contacts.h"
+#include "maidsafe/lifestuff/detail/data_atlas_pb.h"
+#include "maidsafe/lifestuff/detail/public_id.h"
+#include "maidsafe/lifestuff/detail/session.h"
+#include "maidsafe/lifestuff/detail/utils.h"
 
-namespace args = std::placeholders;
 namespace ba = boost::asio;
 namespace bptime = boost::posix_time;
 namespace bs2 = boost::signals2;
@@ -52,16 +48,18 @@ namespace lifestuff {
 
 namespace test {
 
+const NonEmptyString kInvite("Be my friend?");
+
 class MessageHandlerTest : public testing::Test {
  public:
   MessageHandlerTest()
       : test_dir_(maidsafe::test::CreateTestPath()),
-        session1_(new Session),
-        session2_(new Session),
-        session3_(new Session),
-        converter1_(new YeOldeSignalToCallbackConverter),
-        converter2_(new YeOldeSignalToCallbackConverter),
-        converter3_(new YeOldeSignalToCallbackConverter),
+        session1_(),
+        session2_(),
+        session3_(),
+        asio_service1_(10),
+        asio_service2_(10),
+        asio_service3_(10),
         remote_chunk_store1_(),
         remote_chunk_store2_(),
         remote_chunk_store3_(),
@@ -71,261 +69,263 @@ class MessageHandlerTest : public testing::Test {
         message_handler1_(),
         message_handler2_(),
         message_handler3_(),
-        asio_service1_(),
-        asio_service2_(),
-        asio_service3_(),
         public_username1_("User 1 " + RandomAlphaNumericString(8)),
         public_username2_("User 2 " + RandomAlphaNumericString(8)),
         public_username3_("User 3 " + RandomAlphaNumericString(8)),
         received_public_username_(),
-#ifndef LOCAL_TARGETS_ONLY
-        client_container1_(),
-        client_container2_(),
-        client_container3_(),
-#endif
+        received_message_(),
         interval_(3),
-        multiple_messages_(5) {}
+        multiple_messages_(5),
+        invitations_(0) {}
 
-  bool NewContactSlot(const std::string &/*own_public_username*/,
-                      const std::string &other_public_username,
-                      bool accept_new_contact) {
+  void NewContactSlot(const NonEmptyString&,
+                      const NonEmptyString& other_public_username,
+                      const std::string& message,
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var,
+                      bool* done) {
+    boost::mutex::scoped_lock lock(*mutex);
     received_public_username_ = other_public_username;
-    return accept_new_contact;
+    received_message_ = NonEmptyString(message);
+    *done = true;
+    cond_var->notify_one();
   }
 
-  void NewMessageSlot(const pca::Message &signal_message,
-                      pca::Message *slot_message,
-                      volatile bool *invoked) {
-    *slot_message = signal_message;
-    *invoked = true;
+  void NewContactCountSlot(const NonEmptyString& /*own_public_username*/,
+                           const NonEmptyString& other_public_username,
+                           boost::mutex* mutex,
+                           boost::condition_variable* cond_var,
+                           bool* done) {
+    boost::mutex::scoped_lock lock(*mutex);
+    received_public_username_ = other_public_username;
+    ++invitations_;
+    if (invitations_ == 2U) {
+      *done = true;
+      cond_var->notify_one();
+    }
   }
 
-  void SeveralMessagesSlot(const pca::Message &signal_message,
-                           std::vector<pca::Message> *messages,
-                           volatile bool *invoked,
-                           size_t *count) {
-    messages->push_back(signal_message);
-    if (messages->size() == *count)
-      *invoked = true;
+  void NewMessageSlot(const NonEmptyString& own_public_username,
+                      const NonEmptyString& other_public_username,
+                      const NonEmptyString& message,
+                      const NonEmptyString& timestamp,
+                      InboxItem* slot_message,
+                      boost::mutex* mutex,
+                      boost::condition_variable* cond_var,
+                      bool* done) {
+    boost::mutex::scoped_lock lock(*mutex);
+    slot_message->receiver_public_id = own_public_username;
+    slot_message->sender_public_id = other_public_username;
+    slot_message->content.push_back(message);
+    slot_message->item_type = kChat;
+    slot_message->timestamp = timestamp;
+    *done = true;
+    cond_var->notify_one();
+  }
+
+  void SeveralMessagesSlot(const NonEmptyString& own_public_username,
+                           const NonEmptyString& other_public_username,
+                           const NonEmptyString& message,
+                           const NonEmptyString& timestamp,
+                           std::vector<InboxItem>* messages,
+                           boost::mutex* mutex,
+                           boost::condition_variable* cond_var,
+                           size_t* count,
+                           bool* done) {
+    boost::mutex::scoped_lock lock(*mutex);
+    InboxItem slot_message;
+    slot_message.receiver_public_id = own_public_username;
+    slot_message.sender_public_id = other_public_username;
+    slot_message.content.push_back(message);
+    slot_message.item_type = kChat;
+    slot_message.timestamp = timestamp;
+    messages->push_back(slot_message);
+    if (messages->size() == *count) {
+      *done = true;
+      cond_var->notify_all();
+    }
   }
 
  protected:
   void SetUp() {
-    session1_->ResetSession();
-    session2_->ResetSession();
-    session3_->ResetSession();
-    asio_service1_.Start(10);
-    asio_service2_.Start(10);
-    asio_service3_.Start(10);
+    asio_service1_.Start();
+    asio_service2_.Start();
+    asio_service3_.Start();
 
-#ifdef LOCAL_TARGETS_ONLY
-    remote_chunk_store1_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service1_.service());
-    remote_chunk_store2_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service2_.service());
-    remote_chunk_store3_ = pcs::CreateLocalChunkStore(*test_dir_,
-                                                      asio_service3_.service());
-#else
-    client_container1_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container1_.get() != nullptr);
-    remote_chunk_store1_.reset(new pcs::RemoteChunkStore(
-        client_container1_->chunk_store(),
-        client_container1_->chunk_manager(),
-        client_container1_->chunk_action_authority()));
-    client_container2_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container2_.get() != nullptr);
-    remote_chunk_store2_.reset(new pcs::RemoteChunkStore(
-        client_container2_->chunk_store(),
-        client_container2_->chunk_manager(),
-        client_container2_->chunk_action_authority()));
-    client_container3_ = SetUpClientContainer(*test_dir_);
-    ASSERT_TRUE(client_container3_.get() != nullptr);
-    remote_chunk_store3_.reset(new pcs::RemoteChunkStore(
-        client_container3_->chunk_store(),
-        client_container3_->chunk_manager(),
-        client_container3_->chunk_action_authority()));
-#endif
+    std::string dir1(RandomAlphaNumericString(8));
+    remote_chunk_store1_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir1 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir1 / "lock",
+                                                                    asio_service1_.service());
+    std::string dir2(RandomAlphaNumericString(8));
+    remote_chunk_store2_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir2 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir2 / "lock",
+                                                                    asio_service2_.service());
+    std::string dir3(RandomAlphaNumericString(8));
+    remote_chunk_store3_ = priv::chunk_store::CreateLocalChunkStore(*test_dir_ / dir3 / "buffer",
+                                                                    *test_dir_ / "simulation",
+                                                                    *test_dir_ / dir3 / "lock",
+                                                                    asio_service2_.service());
 
-    remote_chunk_store1_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter1_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store1_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter1_.get(),
-                  args::_1, args::_2));
-    public_id1_.reset(new PublicId(remote_chunk_store1_,
-                                   converter1_,
-                                   session1_,
-                                   asio_service1_.service()));
-    message_handler1_.reset(new MessageHandler(remote_chunk_store1_,
-                                               converter1_,
-                                               session1_,
-                                               asio_service1_.service()));
+    public_id1_ = std::make_shared<PublicId>(*remote_chunk_store1_,
+                                             session1_,
+                                             asio_service1_.service());
+    message_handler1_ = std::make_shared<MessageHandler>(*remote_chunk_store1_,
+                                                         session1_,
+                                                         asio_service1_.service());
 
-    remote_chunk_store2_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter2_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store2_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter2_.get(),
-                  args::_1, args::_2));
-    public_id2_.reset(new PublicId(remote_chunk_store2_,
-                                   converter2_,
-                                   session2_,
-                                   asio_service2_.service()));
-    message_handler2_.reset(new MessageHandler(remote_chunk_store2_,
-                                               converter2_,
-                                               session2_,
-                                               asio_service2_.service()));
+    public_id2_ = std::make_shared<PublicId>(*remote_chunk_store2_,
+                                             session2_,
+                                             asio_service2_.service());
+    message_handler2_ = std::make_shared<MessageHandler>(*remote_chunk_store2_,
+                                                         session2_,
+                                                         asio_service2_.service());
 
-    remote_chunk_store3_->sig_chunk_stored()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Stored, converter3_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store3_->sig_chunk_deleted()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Deleted, converter3_.get(),
-                  args::_1, args::_2));
-    remote_chunk_store3_->sig_chunk_modified()->connect(
-        std::bind(&YeOldeSignalToCallbackConverter::Modified, converter3_.get(),
-                  args::_1, args::_2));
-    public_id3_.reset(new PublicId(remote_chunk_store3_,
-                                   converter3_,
-                                   session3_,
-                                   asio_service3_.service()));
-    message_handler3_.reset(new MessageHandler(remote_chunk_store3_,
-                                               converter3_,
-                                               session3_,
-                                               asio_service3_.service()));
+    public_id3_ = std::make_shared<PublicId>(*remote_chunk_store3_,
+                                             session3_,
+                                             asio_service3_.service());
+    message_handler3_ = std::make_shared<MessageHandler>(*remote_chunk_store3_,
+                                                         session3_,
+                                                         asio_service3_.service());
   }
 
   void TearDown() {
     asio_service1_.Stop();
     asio_service2_.Stop();
     asio_service3_.Stop();
+    remote_chunk_store1_->WaitForCompletion();
+    remote_chunk_store2_->WaitForCompletion();
+    remote_chunk_store3_->WaitForCompletion();
   }
 
-  bool MessagesEqual(const pca::Message &left,
-                     const pca::Message &right) const {
-    bool b(left.type() == right.type() &&
-           left.id() == right.id() &&
-           left.parent_id() == right.parent_id() &&
-           left.has_subject() == right.has_subject() &&
-           left.subject() == right.subject() &&
-           left.content_size() == right.content_size());
-    if (left.has_timestamp() && right.has_timestamp())
-      b = b && (left.timestamp() == right.timestamp());
-    return b;
+  bool MessagesEqual(const InboxItem& left, const InboxItem& right) const {
+    if (left.item_type != right.item_type) {
+      LOG(kError) << "Different type.";
+      return false;
+    }
+    if (left.content.size() != right.content.size()) {
+      LOG(kError) << "Different content size.";
+      return false;
+    }
+    if (left.receiver_public_id != right.receiver_public_id) {
+      LOG(kError) << "Different receiver.";
+      return false;
+    }
+    if (left.sender_public_id != right.sender_public_id) {
+      LOG(kError) << "Different sender.";
+      return false;
+    }
+    if (left.timestamp != right.timestamp) {
+      LOG(kError) << "Different timestamp -left: " << left.timestamp.string()
+                  << ", right: " << right.timestamp.string();
+      return false;
+    }
+
+    return true;
+  }
+
+  InboxItem CreateMessage(const NonEmptyString& sender, const NonEmptyString& receiver) {
+    InboxItem sent;
+    sent.sender_public_id = sender;
+    sent.receiver_public_id = receiver;
+    sent.content.push_back(NonEmptyString("content"));
+    sent.timestamp = NonEmptyString(IsoTimeWithMicroSeconds());
+    return sent;
   }
 
   std::shared_ptr<fs::path> test_dir_;
-  std::shared_ptr<Session> session1_, session2_, session3_;
-  std::shared_ptr<YeOldeSignalToCallbackConverter> converter1_,
-                                                   converter2_,
-                                                   converter3_;
-  std::shared_ptr<pcs::RemoteChunkStore> remote_chunk_store1_,
-                                         remote_chunk_store2_,
-                                         remote_chunk_store3_;
-  std::shared_ptr<PublicId> public_id1_, public_id2_, public_id3_;
-  std::shared_ptr<MessageHandler> message_handler1_,
-                                  message_handler2_,
-                                  message_handler3_;
-
+  Session session1_, session2_, session3_;
   AsioService asio_service1_, asio_service2_, asio_service3_;
+  std::shared_ptr<priv::chunk_store::RemoteChunkStore> remote_chunk_store1_,
+                                                       remote_chunk_store2_,
+                                                       remote_chunk_store3_;
+  std::shared_ptr<PublicId> public_id1_, public_id2_, public_id3_;
+  std::shared_ptr<MessageHandler> message_handler1_, message_handler2_, message_handler3_;
 
-  std::string public_username1_, public_username2_, public_username3_,
-              received_public_username_;
-#ifndef LOCAL_TARGETS_ONLY
-  ClientContainerPtr client_container1_, client_container2_, client_container3_;
-#endif
+  NonEmptyString public_username1_, public_username2_, public_username3_, received_public_username_,
+              received_message_;
   bptime::seconds interval_;
-  size_t multiple_messages_;
+  size_t multiple_messages_, invitations_;
 
  private:
   explicit MessageHandlerTest(const MessageHandlerTest&);
   MessageHandlerTest &operator=(const MessageHandlerTest&);
 };
 
-TEST_F(MessageHandlerTest, FUNC_SignalConnections) {
-  pca::Message received;
-  volatile bool invoked(false);
-  bs2::connection connection(message_handler1_->ConnectToSignal(
-                                 static_cast<pca::Message::ContentType>(
-                                     pca::Message::ContentType_MIN - 1),
-                                 std::bind(&MessageHandlerTest::NewMessageSlot,
-                                           this, args::_1, &received,
-                                           &invoked)));
-  ASSERT_FALSE(connection.connected());
-  connection = message_handler1_->ConnectToSignal(
-                   static_cast<pca::Message::ContentType>(
-                       pca::Message::ContentType_MAX + 1),
-                   std::bind(&MessageHandlerTest::NewMessageSlot,
-                             this, args::_1, &received, &invoked));
-  ASSERT_FALSE(connection.connected());
-
-  for (int n(pca::Message::ContentType_MIN);
-       n <= pca::Message::ContentType_MAX;
-       ++n) {
-    connection.disconnect();
-    connection = message_handler1_->ConnectToSignal(
-                     static_cast<pca::Message::ContentType>(n),
-                     std::bind(&MessageHandlerTest::NewMessageSlot,
-                               this, args::_1, &received, &invoked));
-    ASSERT_TRUE(connection.connected());
-  }
-}
-
 TEST_F(MessageHandlerTest, FUNC_ReceiveOneMessage) {
   // Create users who both accept new contacts
-  ASSERT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
-  ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
+  EXPECT_EQ(kSuccess, public_id1_->CreatePublicId(public_username1_, true));
+  EXPECT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
-  // Connect a slot which will reject the new contact
-  public_id1_->new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
-  ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_username2_, public_username1_));
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const std::string& message,
+           const NonEmptyString& /*timestamp*/) {
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
+      });
+  EXPECT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
+  EXPECT_EQ(kSuccess,
+            public_id2_->AddContact(public_username2_, public_username1_, kInvite.string()));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
 
-  Sleep(interval_ * 2);
-  ASSERT_EQ(public_username2_, received_public_username_);
+  EXPECT_EQ(public_username2_, received_public_username_);
+  const ContactsHandlerPtr contacts_handler(session1_.contacts_handler(public_username1_));
+  ASSERT_NE(nullptr, contacts_handler.get());
   Contact received_contact;
-  ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_username1_]->ContactInfo(
-                received_public_username_,
-                &received_contact));
+  EXPECT_EQ(kSuccess, contacts_handler->ContactInfo(received_public_username_, &received_contact));
+
+  InboxItem received;
+  done = false;
+  message_handler2_->ConnectToChatSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& message,
+           const NonEmptyString& timestamp) {
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
+      });
+  EXPECT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
+
+  InboxItem sent(CreateMessage(public_username1_, public_username2_));
+  EXPECT_EQ(kSuccess, message_handler1_->Send(sent));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+
+  EXPECT_TRUE(MessagesEqual(sent, received));
+
+  bptime::ptime sent_time(bptime::from_iso_string(sent.timestamp.string())),
+                received_time(bptime::from_iso_string(sent.timestamp.string()));
+  EXPECT_FALSE(sent_time.is_not_a_date_time() || sent_time.is_special());
+  EXPECT_FALSE(received_time.is_not_a_date_time() || received_time.is_special());
+  EXPECT_EQ(sent_time.time_of_day(), received_time.time_of_day());
+  EXPECT_EQ(sent_time.date(), received_time.date());
+  EXPECT_EQ(sent_time.zone_abbrev(), received_time.zone_abbrev());
+  EXPECT_EQ(sent_time.zone_as_posix_string(), received_time.zone_as_posix_string());
+  EXPECT_EQ(sent_time.zone_name(), received_time.zone_name());
+
   public_id1_->StopCheckingForNewContacts();
-  Sleep(interval_ * 2);
-
-  pca::Message received;
-  volatile bool invoked(false);
-  message_handler2_->ConnectToSignal(
-      pca::Message::kNormal,
-      std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, &received, &invoked));
-  ASSERT_EQ(kSuccess,
-            message_handler2_->StartCheckingForNewMessages(interval_));
-
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username1_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
-
-  ASSERT_EQ(kSuccess,
-            message_handler1_->Send(public_username1_,
-                                    public_username2_,
-                                    sent));
-
-  while (!invoked)
-    Sleep(bptime::milliseconds(100));
-
-  ASSERT_TRUE(MessagesEqual(sent, received));
+  message_handler2_->StopCheckingForNewMessages();
 }
 
 TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
@@ -334,94 +334,109 @@ TEST_F(MessageHandlerTest, FUNC_ReceiveMultipleMessages) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
 
   // Connect a slot which will reject the new contact
-  public_id1_->new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  public_id1_->ConnectToNewContactSignal(
+        [&] (const NonEmptyString& own_public_id,
+             const NonEmptyString& contact_public_id,
+             const std::string& message,
+             const NonEmptyString& /*timestamp*/) {
+          MessageHandlerTest::NewContactSlot(own_public_id,
+                                             contact_public_id,
+                                             message,
+                                             &mutex,
+                                             &cond_var,
+                                             &done);
+        });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
   ASSERT_EQ(kSuccess,
-            public_id2_->SendContactInfo(public_username2_, public_username1_));
-
-  Sleep(interval_ * 2);
-  ASSERT_EQ(public_username2_, received_public_username_);
-  Contact received_contact;
-  ASSERT_EQ(kSuccess,
-            session1_->contact_handler_map()[public_username1_]->ContactInfo(
-                received_public_username_,
-                &received_contact));
-  public_id1_->StopCheckingForNewContacts();
-  Sleep(interval_ * 2);
-
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username1_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
-
-  for (size_t n(0); n < multiple_messages_; ++n) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>(n)));
-    ASSERT_EQ(kSuccess,
-              message_handler1_->Send(public_username1_,
-                                     public_username2_,
-                                     sent));
+            public_id2_->AddContact(public_username2_, public_username1_, kInvite.string()));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
   }
 
-  std::vector<pca::Message> received_messages;
-  volatile bool done(false);
-  bs2::connection connection(message_handler2_->ConnectToSignal(
-                                 pca::Message::kNormal,
-                                 std::bind(
-                                     &MessageHandlerTest::SeveralMessagesSlot,
-                                     this,
-                                     args::_1,
-                                     &received_messages,
-                                     &done,
-                                     &multiple_messages_)));
-  ASSERT_EQ(kSuccess,
-            message_handler2_->StartCheckingForNewMessages(interval_));
-  while (!done)
-    Sleep(bptime::milliseconds(100));
+  ASSERT_EQ(public_username2_, received_public_username_);
+  const ContactsHandlerPtr contacts_handler(session1_.contacts_handler(public_username1_));
+  ASSERT_NE(nullptr, contacts_handler.get());
+  Contact received_contact;
+  ASSERT_EQ(kSuccess, contacts_handler->ContactInfo(received_public_username_, &received_contact));
+
+  InboxItem sent(CreateMessage(public_username1_, public_username2_));
+  for (size_t n(0); n < multiple_messages_; ++n) {
+    sent.timestamp = crypto::Hash<crypto::SHA512>(boost::lexical_cast<std::string>(n));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
+  }
+
+  std::vector<InboxItem> received_messages;
+  done = false;
+  bs2::connection connection(
+      message_handler2_->ConnectToChatSignal(
+          [&] (const NonEmptyString& own_public_id,
+               const NonEmptyString& contact_public_id,
+               const NonEmptyString& message,
+               const NonEmptyString& timestamp) {
+            MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                    contact_public_id,
+                                                    message,
+                                                    timestamp,
+                                                    &received_messages,
+                                                    &mutex,
+                                                    &cond_var,
+                                                    &multiple_messages_,
+                                                    &done);
+          }));
+  ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+
 
   connection.disconnect();
   message_handler2_->StopCheckingForNewMessages();
   ASSERT_EQ(multiple_messages_, received_messages.size());
   for (size_t a(0); a < multiple_messages_; ++a) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>(a)));
+    sent.timestamp = crypto::Hash<crypto::SHA512>(boost::lexical_cast<std::string>(a));
     ASSERT_TRUE(MessagesEqual(sent, received_messages[a]));
   }
 
-  done = false;
   multiple_messages_ = 1;
   for (size_t a(0); a < multiple_messages_ * 5; ++a) {
-    sent.set_timestamp(crypto::Hash<crypto::SHA512>(
-                           boost::lexical_cast<std::string>("n")));
-    ASSERT_EQ(kSuccess,
-              message_handler1_->Send(public_username1_,
-                                     public_username2_,
-                                     sent));
-    DLOG(ERROR) << "Sent " << a;
+    sent.timestamp = crypto::Hash<crypto::SHA512>(boost::lexical_cast<std::string>("n"));
+    ASSERT_EQ(kSuccess, message_handler1_->Send(sent));
+    LOG(kError) << "Sent " << a;
   }
 
   // If same message is sent, it should be reported only once
   received_messages.clear();
-  connection = message_handler2_->ConnectToSignal(
-                   pca::Message::kNormal,
-                   std::bind(&MessageHandlerTest::SeveralMessagesSlot,
-                             this,
-                             args::_1,
-                             &received_messages,
-                             &done,
-                             &multiple_messages_));
-  ASSERT_EQ(kSuccess,
-            message_handler2_->StartCheckingForNewMessages(interval_));
-  while (!done)
-    Sleep(bptime::milliseconds(100));
+  done = false;
+  connection = message_handler2_->ConnectToChatSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& message,
+           const NonEmptyString& timestamp) {
+        MessageHandlerTest::SeveralMessagesSlot(own_public_id,
+                                                contact_public_id,
+                                                message,
+                                                timestamp,
+                                                &received_messages,
+                                                &mutex,
+                                                &cond_var,
+                                                &multiple_messages_,
+                                                &done);
+      });
+  ASSERT_EQ(kSuccess, message_handler2_->StartCheckingForNewMessages(interval_));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
 
+  connection.disconnect();
   message_handler2_->StopCheckingForNewMessages();
   ASSERT_EQ(multiple_messages_, received_messages.size());
+  public_id1_->StopCheckingForNewContacts();
 }
 
 TEST_F(MessageHandlerTest, BEH_RemoveContact) {
@@ -429,75 +444,239 @@ TEST_F(MessageHandlerTest, BEH_RemoveContact) {
   ASSERT_EQ(kSuccess, public_id2_->CreatePublicId(public_username2_, true));
   ASSERT_EQ(kSuccess, public_id3_->CreatePublicId(public_username3_, true));
 
-  public_id1_->new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false), done2(false), done3(false);
+  public_id1_->ConnectToContactConfirmedSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& /*timestamp*/) {
+        MessageHandlerTest::NewContactCountSlot(own_public_id,
+                                                contact_public_id,
+                                                &mutex,
+                                                &cond_var,
+                                                &done);
+      });
   ASSERT_EQ(kSuccess, public_id1_->StartCheckingForNewContacts(interval_));
-  public_id2_->new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+  public_id2_->ConnectToNewContactSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const std::string& message,
+           const NonEmptyString& /*timestamp*/) {
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done2);
+      });
   ASSERT_EQ(kSuccess, public_id2_->StartCheckingForNewContacts(interval_));
-  public_id3_->new_contact_signal()->connect(
-      std::bind(&MessageHandlerTest::NewContactSlot,
-                this, args::_1, args::_2, true));
+  public_id3_->ConnectToNewContactSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const std::string& message,
+           const NonEmptyString& /*timestamp*/) {
+        MessageHandlerTest::NewContactSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           &mutex,
+                                           &cond_var,
+                                           &done3);
+      });
   ASSERT_EQ(kSuccess, public_id3_->StartCheckingForNewContacts(interval_));
 
   ASSERT_EQ(kSuccess,
-            public_id1_->SendContactInfo(public_username1_, public_username2_));
+            public_id1_->AddContact(public_username1_, public_username2_, kInvite.string()));
   ASSERT_EQ(kSuccess,
-            public_id1_->SendContactInfo(public_username1_, public_username3_));
-  Sleep(interval_ * 2);
-  ASSERT_EQ(kSuccess,
-            public_id2_->ConfirmContact(public_username2_, public_username1_));
-  ASSERT_EQ(kSuccess,
-            public_id3_->ConfirmContact(public_username3_, public_username1_));
-  Sleep(interval_ * 2);
+            public_id1_->AddContact(public_username1_, public_username3_, kInvite.string()));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done2 && done3; }));  // NOLINT (Dan)
+  }
 
-  pca::Message received;
-  volatile bool invoked(false);
-  message_handler1_->ConnectToSignal(
-      pca::Message::kNormal,
-      std::bind(&MessageHandlerTest::NewMessageSlot,
-                this, args::_1, &received, &invoked));
-  ASSERT_EQ(kSuccess,
-            message_handler1_->StartCheckingForNewMessages(interval_));
+  ASSERT_EQ(kSuccess, public_id2_->ConfirmContact(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, public_id3_->ConfirmContact(public_username3_, public_username1_));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
 
-  pca::Message sent;
-  sent.set_type(pca::Message::kNormal);
-  sent.set_id("id");
-  sent.set_parent_id("parent_id");
-  sent.set_sender_public_username(public_username2_);
-  sent.set_subject("subject");
-  sent.add_content(std::string("content"));
+  InboxItem received;
+  done = false;
+  message_handler1_->ConnectToChatSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& message,
+           const NonEmptyString& timestamp) {
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
+      });
+  ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
 
-  ASSERT_EQ(kSuccess,
-            message_handler2_->Send(public_username2_,
-                                    public_username1_,
-                                    sent));
-  while (!invoked)
-    Sleep(bptime::milliseconds(100));
+  InboxItem sent(CreateMessage(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, message_handler2_->Send(sent));
+
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
   ASSERT_TRUE(MessagesEqual(sent, received));
 
-  public_id1_->RemoveContact(public_username1_, public_username2_);
+  NonEmptyString remove("removing"), timestamp("now");
+  public_id1_->RemoveContact(public_username1_,
+                             public_username2_,
+                             remove.string(),
+                             timestamp,
+                             true);
   Sleep(interval_ * 2);
 
-  received.Clear();
-  ASSERT_EQ(priv::kModifyFailure,
-            message_handler2_->Send(public_username2_,
-                                    public_username1_,
-                                    sent));
-  Sleep(interval_ * 2);
+  received = InboxItem();
+  ASSERT_NE(kSuccess, message_handler2_->Send(sent));
   ASSERT_FALSE(MessagesEqual(sent, received));
 
-  invoked = false;
-  sent.set_sender_public_username(public_username3_);
-  ASSERT_EQ(kSuccess,
-            message_handler3_->Send(public_username3_,
-                                    public_username1_,
-                                    sent));
-  while (!invoked)
-    Sleep(bptime::milliseconds(100));
+  done = false;
+  sent.sender_public_id = public_username3_;
+  ASSERT_EQ(kSuccess, message_handler3_->Send(sent));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    EXPECT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
   ASSERT_TRUE(MessagesEqual(sent, received));
+  message_handler1_->StopCheckingForNewMessages();
+  public_id3_->StopCheckingForNewContacts();
+  public_id2_->StopCheckingForNewContacts();
+  public_id1_->StopCheckingForNewContacts();
+}
+
+void NotificationFunction(const NonEmptyString&,
+                          const NonEmptyString&,
+                          boost::mutex& mutex,
+                          boost::condition_variable& condition_variable,
+                          bool& done) {
+    boost::mutex::scoped_lock lock(mutex);
+    done = true;
+    condition_variable.notify_one();
+}
+
+int ConnectTwoPublicIds(PublicId& public_id1,
+                        PublicId& public_id2,
+                        const NonEmptyString& id1,
+                        const NonEmptyString& id2,
+                        const bptime::seconds interval) {
+  int result(public_id1.CreatePublicId(id1, true));
+  if (result != kSuccess)
+    return -1;
+  result = public_id2.CreatePublicId(id2, true);
+  if (result != kSuccess)
+    return -2;
+
+  result = public_id2.AddContact(id2, id1, kInvite.string());
+
+
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  public_id1.ConnectToNewContactSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const std::string& /*message*/,
+           const NonEmptyString& /*timestamp*/) {
+        NotificationFunction(own_public_id,
+                             contact_public_id,
+                             std::ref(mutex),
+                             std::ref(cond_var),
+                             std::ref(done));
+      });
+  result = public_id1.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return -3;
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock, interval * 2, [&done] ()->bool { return done; }))  // NOLINT (Dan)
+      return -41;
+  }
+  if (!done)
+    return -42;
+  public_id1.StopCheckingForNewContacts();
+  if (result != kSuccess)
+    return -5;
+
+  result = public_id1.ConfirmContact(id1, id2);
+  if (result != kSuccess)
+    return -6;
+
+  done = false;
+  public_id2.ConnectToContactConfirmedSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& /*timestamp*/) {
+        NotificationFunction(own_public_id,
+                             contact_public_id,
+                             std::ref(mutex),
+                             std::ref(cond_var),
+                             std::ref(done));
+      });
+  result = public_id2.StartCheckingForNewContacts(interval);
+  if (result != kSuccess)
+    return -7;
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    if (!cond_var.timed_wait(lock, interval * 2, [&done] ()->bool { return done; }))  // NOLINT (Dan)
+      return -81;
+  }
+  if (!done)
+    return -82;
+
+  public_id2.StopCheckingForNewContacts();
+
+  return kSuccess;
+}
+
+TEST_F(MessageHandlerTest, FUNC_DeletePublicIdUserPerception) {
+  ASSERT_EQ(kSuccess, ConnectTwoPublicIds(*public_id1_,
+                                          *public_id2_,
+                                          public_username1_,
+                                          public_username2_,
+                                          interval_));
+
+  InboxItem received;
+  boost::mutex mutex;
+  boost::condition_variable cond_var;
+  bool done(false);
+  message_handler1_->ConnectToChatSignal(
+      [&] (const NonEmptyString& own_public_id,
+           const NonEmptyString& contact_public_id,
+           const NonEmptyString& message,
+           const NonEmptyString& timestamp) {
+        MessageHandlerTest::NewMessageSlot(own_public_id,
+                                           contact_public_id,
+                                           message,
+                                           timestamp,
+                                           &received,
+                                           &mutex,
+                                           &cond_var,
+                                           &done);
+      });
+  ASSERT_EQ(kSuccess, message_handler1_->StartCheckingForNewMessages(interval_));
+
+  InboxItem sent(CreateMessage(public_username2_, public_username1_));
+  ASSERT_EQ(kSuccess, message_handler2_->Send(sent));
+  {
+    boost::mutex::scoped_lock lock(mutex);
+    ASSERT_TRUE(cond_var.timed_wait(lock, interval_ * 2, [&] ()->bool { return done; }));  // NOLINT (Dan)
+  }
+
+  ASSERT_TRUE(MessagesEqual(sent, received));
+  message_handler1_->StopCheckingForNewMessages();
+
+  ASSERT_EQ(kSuccess, public_id1_->DeletePublicId(public_username1_));
+  ASSERT_NE(kSuccess, message_handler2_->Send(sent));
 }
 
 }  // namespace test
