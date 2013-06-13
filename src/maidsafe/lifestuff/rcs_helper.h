@@ -17,40 +17,40 @@
 #ifndef MAIDSAFE_LIFESTUFF_RCS_HELPER_H_
 #define MAIDSAFE_LIFESTUFF_RCS_HELPER_H_
 
-#include <memory>
-#include <string>
-#include <vector>
-#include <utility>
-
-#include "boost/asio.hpp"
-#include "boost/filesystem/path.hpp"
-
-
-namespace fs = boost::filesystem;
-
-namespace maidsafe {
-
-namespace priv { namespace chunk_store { class RemoteChunkStore; } }
-
-namespace pcs = maidsafe::priv::chunk_store;
-
-namespace pd { class Node; }
-
-namespace lifestuff {
-
-std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
-    const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
-    std::shared_ptr<pd::Node>& node,
-    const std::function<void(const int&)>& network_health_function);
-
-std::shared_ptr<pd::Node> SetupNode(
-    const fs::path& base_dir,
-    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
-    const std::function<void(const int&)>& network_health_function);
-
-}  // namespace lifestuff
-
-}  // namespace maidsafe
+//#include <memory>
+//#include <string>
+//#include <vector>
+//#include <utility>
+//
+//#include "boost/asio.hpp"
+//#include "boost/filesystem/path.hpp"
+//
+//
+//namespace fs = boost::filesystem;
+//
+//namespace maidsafe {
+//
+//namespace priv { namespace chunk_store { class RemoteChunkStore; } }
+//
+//namespace pcs = maidsafe::priv::chunk_store;
+//
+//namespace pd { class Node; }
+//
+//namespace lifestuff {
+//
+//std::shared_ptr<pcs::RemoteChunkStore> BuildChunkStore(
+//    const fs::path& base_dir,
+//    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
+//    std::shared_ptr<pd::Node>& node,
+//    const std::function<void(const int&)>& network_health_function);
+//
+//std::shared_ptr<pd::Node> SetupNode(
+//    const fs::path& base_dir,
+//    const std::vector<std::pair<std::string, uint16_t> >& endpoints,  // NOLINT (Dan)
+//    const std::function<void(const int&)>& network_health_function);
+//
+//}  // namespace lifestuff
+//
+//}  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_RCS_HELPER_H_

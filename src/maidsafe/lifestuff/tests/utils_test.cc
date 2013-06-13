@@ -132,22 +132,22 @@ TEST(UtilsTest, BEH_GetNameInPath) {
   int file_count(120);
   for (int n(1); n < file_count; ++n) {
     generated_name = GetNameInPath(*test_dir, file_name);
-    ASSERT_EQ(file_name + " (" + IntToString(n) + ")", generated_name);
+    ASSERT_EQ(file_name + " (" + std::to_string(n) + ")", generated_name);
     fs::copy_file(*test_dir / file_name, *test_dir / generated_name, ec);
     ASSERT_EQ(0, ec.value());
 
     generated_name = GetNameInPath(*test_dir, extension_name);
-    ASSERT_EQ(file_name + " (" + IntToString(n) + ").txt", generated_name);
+    ASSERT_EQ(file_name + " (" + std::to_string(n) + ").txt", generated_name);
     fs::copy_file(*test_dir / file_name, *test_dir / generated_name, ec);
     ASSERT_EQ(0, ec.value());
 
     generated_name = GetNameInPath(*test_dir, dir_name);
-    ASSERT_EQ(dir_name + " (" + IntToString(n) + ")", generated_name);
+    ASSERT_EQ(dir_name + " (" + std::to_string(n) + ")", generated_name);
     fs::create_directory(*test_dir / generated_name, ec);
     ASSERT_EQ(0, ec.value());
 
     generated_name = GetNameInPath(*test_dir, extension_dir);
-    ASSERT_EQ(dir_name + " (" + IntToString(n) + ").txt", generated_name);
+    ASSERT_EQ(dir_name + " (" + std::to_string(n) + ").txt", generated_name);
     fs::create_directory(*test_dir / generated_name, ec);
     ASSERT_EQ(0, ec.value());
   }

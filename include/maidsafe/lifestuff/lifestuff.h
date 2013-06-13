@@ -1,66 +1,71 @@
-/*
-* ============================================================================
-*
-* Copyright [2009] maidsafe.net limited
-*
-* Description:  Definition of system-wide constants/enums/structs
-* Version:      1.0
-* Created:      2009-01-29-00.15.50
-* Revision:     none
-* Compiler:     gcc
-* Author:       Fraser Hutchison (fh), fraser.hutchison@maidsafe.net
-* Company:      maidsafe.net limited
-*
-* The following source code is property of maidsafe.net limited and is not
-* meant for external use.  The use of this code is governed by the license
-* file LICENSE.TXT found in the root of this directory and also on
-* www.maidsafe.net.
-*
-* You are not free to copy, amend or otherwise use this source code without
-* the explicit written permission of the board of directors of maidsafe.net.
-*
-* ============================================================================
-*/
+/***************************************************************************************************
+ *  Copyright 2013 MaidSafe.net limited                                                            *
+ *                                                                                                 *
+ *  The following source code is property of MaidSafe.net limited and is not meant for external    *
+ *  use.  The use of this code is governed by the licence file licence.txt found in the root of    *
+ *  this directory and also on www.maidsafe.net.                                                   *
+ *                                                                                                 *
+ *  You are not free to copy, amend or otherwise use this source code without the explicit         *
+ *  written permission of the board of directors of MaidSafe.net.                                  *
+ **************************************************************************************************/
 
 #ifndef MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
 #define MAIDSAFE_LIFESTUFF_LIFESTUFF_H_
 
 #include <cstdint>
-#include <functional>
-#include <map>
 #include <string>
-#include <utility>
-#include <vector>
-
-#include "boost/filesystem/path.hpp"
-
-#include "maidsafe/common/types.h"
+#include <functional>
 
 namespace maidsafe {
-
 namespace lifestuff {
 
-enum DefConLevels { kDefCon1 = 1, kDefCon2, kDefCon3 };
-enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
-enum ContactPresence { kOffline, kOnline };
-enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
-
-enum ContactStatus {
-  kAll = 0x00,
-  kUninitialised = 0x01,
-  kRequestSent = 0x02,
-  kPendingResponse = 0x04,
-  kConfirmed = 0x08,
-  kBlocked = 0x10
+enum InputField {
+  kPin = 0,
+  kKeyword,
+  kPassword,
+  kConfirmationPin,
+  kConfirmationKeyword,
+  kConfirmationPassword,
+  kCurrentPassword
 };
 
-enum LoggedInState {
-  kBaseState = 0x00,
-  kCredentialsLoggedIn = 0x01,
-  kDriveMounted = 0x02,
-  kMessagesAndIntrosStarted = 0x04
+enum Action {
+  kCreateUser = 0,
+  kLogin,
+  kChangeKeyword,
+  kChangePin,
+  kChangePassword
 };
 
+enum ProgressCode {
+  kInitialiseProcess = 0,
+  kCreatingUserCredentials,
+  kJoiningNetwork,
+  kInitialisingClientComponents,
+  kCreatingVault,
+  kStartingVault,
+  kVerifyingMount,
+  kVerifyingUnmount,
+  kStoringUserCredentials,
+  kRetrievingUserCredentials
+};
+
+// New version update...
+typedef std::function<void(const std::string&)> UpdateAvailableFunction;
+// Network health...
+typedef std::function<void(int32_t)> NetworkHealthFunction;
+// Safe to quit...
+typedef std::function<void(bool)> OperationsPendingFunction;
+// Report progress...
+typedef std::function<void(Action, ProgressCode)> ReportProgressFunction;
+
+struct Slots {
+  UpdateAvailableFunction update_available;
+  NetworkHealthFunction network_health;
+  OperationsPendingFunction operations_pending;
+};
+
+/// Constants
 const size_t kMaxChatMessageSize(1 * 1024 * 1024);
 const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
 const uint8_t kThreads(5);
@@ -69,135 +74,147 @@ const size_t kMinWordSize(5);
 const size_t kMaxWordSize(30);
 const size_t kMaxPublicIdSize(30);
 const size_t kPinSize(4);
+
 const std::string kLiteralOnline("kOnline");
 const std::string kLiteralOffline("kOffline");
-const NonEmptyString kBlankProfilePicture("BlankPicture");
+const std::string kBlankProfilePicture("BlankPicture");
 const std::string kAppHomeDirectory(".lifestuff");
-const std::string kMyStuff("My Stuff");
+const std::string kOwner("Owner");
 const std::string kDownloadStuff("Accepted Files");
-
 const std::string kHiddenFileExtension(".ms_hidden");
 
-/// General
-typedef std::function<void(const NonEmptyString&, const NonEmptyString&, const NonEmptyString&)>
-        ThreeStringsFunction;
-typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
-                           const NonEmptyString&,
-                           const NonEmptyString&,
-                           const NonEmptyString&)>
-        FourStringsFunction;
-typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
-                           const NonEmptyString&,
-                           const NonEmptyString&,
-                           const NonEmptyString&,
-                           const NonEmptyString&)>
-        FiveStringsFunction;
 
-typedef std::function<void(int)> VoidFunctionOneInt;  // NOLINT (Dan)
-typedef std::function<void(bool)> VoidFunctionOneBool;  // NOLINT (Dan)
-typedef std::map<std::string, int> StringIntMap;
-typedef std::map<NonEmptyString, std::string> SocialInfoMap;
-typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
-typedef std::function<bool(const NonEmptyString&, std::string&)> ValidatedMessageFunction;
-
-
-/// Chat
-// Own public ID, Contact public ID, Message, Timestamp
-typedef FourStringsFunction ChatFunction;
-
-/// File transfer
-// Own public ID, Contact public ID, Timestamp
-typedef ThreeStringsFunction FileTransferFailureFunction;
-// Own public ID, Contact public ID, File name, File ID, Timestamp
-typedef FiveStringsFunction FileTransferSuccessFunction;
-
-/// Contact info
-// Own & other public ID, Timestamp
-typedef ThreeStringsFunction ContactConfirmationFunction;
-// Own & other public ID, Timestamp
-typedef ThreeStringsFunction ContactProfilePictureFunction;
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const NonEmptyString&,          // Timestamp
-                           ContactPresence presence)>      // online/offline
-        ContactPresenceFunction;
-// Own public ID, Contact public ID, Message, Timestamp
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const std::string&,             // Message
-                           const NonEmptyString&)> ContactDeletionReceivedFunction;
-// Own public ID, Contact public ID, Message, Timestamp  // For when deletion has been processed
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const std::string&,             // Message
-                           const NonEmptyString&)> ContactDeletionFunction;
-// Own & other public ID, Message, Timestamp
-typedef std::function<void(const NonEmptyString&,          // Own public ID
-                           const NonEmptyString&,          // Contact public ID
-                           const std::string&,             // Message
-                           const NonEmptyString&)> NewContactFunction;
-// Lifestuff Card change: Own & other public ID, Timestamp
-typedef ThreeStringsFunction LifestuffCardUpdateFunction;
-
-/// New version update
-typedef std::function<void(NonEmptyString)> UpdateAvailableFunction;  // NOLINT (Dan)
-
-/// Network health
-typedef std::function<void(const int&)> NetworkHealthFunction;  // NOLINT (Dan)
-
-/// Quitting
-typedef std::function<void()> ImmediateQuitRequiredFunction;
-
-enum class Operation : int {
-  kCreateUser = -1,
-  kLogIn = -2,
-  kLogOut = -3
-};
-
-enum class SubTask : int {
-  kInitialiseAnonymousComponents = -1001,
-  kCreateUserCredentials = -1002,
-  kCreateVault = -1003,
-  kInitialiseClientComponents = -1004,
-  kRetrieveUserCredentials = -1005,
-  kStoreUserCredentials = -1006,
-  kWaitForNetworkOperations = -1007,
-  kCleanUp = -1008
-};
-
-typedef std::function<void(Operation, SubTask)> OperationProgressFunction;
-
-struct Slots {
-  Slots() : chat_slot(),
-            file_success_slot(),
-            file_failure_slot(),
-            new_contact_slot(),
-            confirmed_contact_slot(),
-            profile_picture_slot(),
-            contact_presence_slot(),
-            contact_deletion_slot(),
-            lifestuff_card_update_slot(),
-            network_health_slot(),
-            immediate_quit_required_slot(),
-            update_available_slot(),
-            operation_progress_slot() {}
-  ChatFunction chat_slot;
-  FileTransferSuccessFunction file_success_slot;
-  FileTransferFailureFunction file_failure_slot;
-  NewContactFunction new_contact_slot;
-  ContactConfirmationFunction confirmed_contact_slot;
-  ContactProfilePictureFunction profile_picture_slot;
-  ContactPresenceFunction contact_presence_slot;
-  ContactDeletionFunction contact_deletion_slot;
-  LifestuffCardUpdateFunction lifestuff_card_update_slot;
-  NetworkHealthFunction network_health_slot;
-  ImmediateQuitRequiredFunction immediate_quit_required_slot;
-  UpdateAvailableFunction update_available_slot;
-  OperationProgressFunction operation_progress_slot;
-};
+//struct LifeStuffReturn {
+//  // constructed based on exception.error_code() then get translated into LifeStuff ReturnCode
+//  ReturnCode return_code;
+//  char* msg;  // exception.what()
+//};
+//
+//enum ContactOrder { kAlphabetical, kPopular, kLastContacted };
+//
+///// Contact Related Return Types
+//typedef uint16_t ContactRank;
+//enum ContactPresence { kOffline, kOnline };
+//enum ContactStatus {
+//  kAll = 0x00,
+//  kUninitialised = 0x01,
+//  kRequestSent = 0x02,
+//  kPendingResponse = 0x04,
+//  kConfirmed = 0x08,
+//  kBlocked = 0x10,
+//  kSpamer = 0x20
+//};
+//typedef std::map<NonEmptyString, std::pair<ContactStatus, ContactPresence> > ContactMap;
+//
+///// State Related Return Types
+//enum LifeStuffState { kZeroth, kInitialised, kConnected, kLoggedIn };
+//enum LoggedInState {
+//  kBaseState = 0x00,
+//  kCredentialsLoggedIn = 0x01,
+//  kDriveMounted = 0x02,
+//  kMessagesAndIntrosStarted = 0x04
+//};
+//
+///// Share levels
+//enum ShareLevel {
+//  kOwner = 0,
+//  kGroup,
+//  kWorld
+//};
+//
+///// Constants
+//const size_t kMaxChatMessageSize(1 * 1024 * 1024);
+//const uint32_t kFileRecontructionLimit(20 * 1024 * 1024);
+//const uint8_t kThreads(5);
+//const uint8_t kSecondsInterval(5);
+//const size_t kMinWordSize(5);
+//const size_t kMaxWordSize(30);
+//const size_t kMaxPublicIdSize(30);
+//const size_t kPinSize(4);
+//const std::string kLiteralOnline("kOnline");
+//const std::string kLiteralOffline("kOffline");
+//const NonEmptyString kBlankProfilePicture("BlankPicture");
+//const std::string kAppHomeDirectory(".lifestuff");
+//const std::string kMyStuff("My Stuff");
+//const std::string kDownloadStuff("Accepted Files");
+//const std::string kHiddenFileExtension(".ms_hidden");
+//
+///// Operation Result
+//// success or failure for SendMsg, ShareElement, AddContact, ShareVault and SendFile
+//enum class LifeStuffOperation : int {
+//  kAddContact = 1,
+//  kSendMsg,
+//  kSendFile,
+//  kShareElement,
+//  kShareVault
+//};
+//
+//// Own public ID, Contact public ID, LifeStuffOpertion, request_id, result
+//typedef std::function<void(const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           LifeStuffOperation,
+//                           const NonEmptyString&,
+//                           int)> OpertionResultFunction;
+//
+///// Message Received : notification, chat and email
+//// Own public ID, Contact public ID, request_id, Message, Timestamp
+//typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&)> MsgFunction;
+//
+///// Element shared
+//// Own public ID, Contact public ID, request_id, element_path, data_map_hash, Timestamp
+//typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&)> ElementShareFunction;
+//
+///// File transfer
+//// Own public ID, Contact public ID, request_id, file_name, data_map_hash, Timestamp
+//typedef ElementShareFunction FileTransferFunction;
+//
+///// Vault shared
+//struct VaultUsageInfo {
+//  NonEmptyString id;
+//  uint64_t size_in_KB;
+//  uint64_t free_space_in_KB;
+//  int rank;
+//  // include owner id(s)?
+//};
+//
+//// Own public ID, Contact public ID, request_id, vault_info, Timestamp
+//typedef std::function<void(const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const VaultUsageInfo&,
+//                           const NonEmptyString&)> VaultShareFunction;
+//
+///// Contact
+//// Own public ID, Contact public ID, request_id, introduction_msg, Timestamp
+//typedef std::function<void(const NonEmptyString&,  // NOLINT (Fraser)
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&,
+//                           const NonEmptyString&)> ContactRequestFunction;
+//
+//// Own public ID, Contact public ID, Timestamp, contact_presence
+//typedef std::function<void(const NonEmptyString&,          // Own public ID
+//                           const NonEmptyString&,          // Contact public ID
+//                           const NonEmptyString&,          // Timestamp
+//                           ContactPresence presence)>      // online/offline
+//        ContactPresenceFunction;
+//
+//// Own public ID, Contact public ID, Message, Timestamp
+//typedef std::function<void(const NonEmptyString&,          // Own public ID
+//                           const NonEmptyString&,          // Contact public ID
+//                           const std::string&,             // Message
+//                           const NonEmptyString&)> ContactDeletionFunction;
 
 }  // namespace lifestuff
-
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_LIFESTUFF_H_

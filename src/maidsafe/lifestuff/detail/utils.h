@@ -17,109 +17,113 @@
 #ifndef MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 #define MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_
 
-#include <condition_variable>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <vector>
-
-#include "boost/lexical_cast.hpp"
-#include "boost/filesystem/path.hpp"
-
-#include "maidsafe/common/rsa.h"
-#include "maidsafe/common/utils.h"
-
-#include "maidsafe/private/chunk_actions/chunk_id.h"
-#include "maidsafe/private/utils/fob.h"
-
-namespace fs = boost::filesystem;
+#include "maidsafe/passport/passport.h"
+#include "maidsafe/nfs/client_utils.h"
+#include "maidsafe/lifestuff/detail/session.h"
 
 namespace maidsafe {
-
-namespace encrypt { struct DataMap; }
-
 namespace lifestuff {
 
-enum InboxItemType {
-  kChat,
-  kFileTransfer,
-  kContactPresence,
-  kContactProfilePicture,
+typedef std::function<void(maidsafe::nfs::Reply)> ReplyFunction;
 
-  // Max
-  kMaxInboxItemType = kContactProfilePicture
-};
+struct Free;
+struct Paid;
 
-struct InboxItem {
-  explicit InboxItem(InboxItemType inbox_item_type = kChat);
+const char kCharRegex[] = ".*";
+const char kDigitRegex[] = "\\d";
 
-  InboxItemType item_type;
-  NonEmptyString sender_public_id;
-  NonEmptyString receiver_public_id;
-  std::vector<NonEmptyString> content;
-  NonEmptyString timestamp;
-};
+namespace detail {
 
-struct OperationResults {
-  OperationResults(std::mutex& mutex_in,
-                   std::condition_variable& conditional_variable_in,
-                   std::vector<int>& individual_results_in)
-      : mutex(mutex_in),
-        conditional_variable(conditional_variable_in),
-        individual_results(individual_results_in) {}
-  std::mutex& mutex;
-  std::condition_variable& conditional_variable;
-  std::vector<int>& individual_results;
-};
+  template <typename Duty>
+  struct PutFobs {
+    typedef maidsafe::nfs::ClientMaidNfs ClientNfs;
+    typedef passport::Passport Passport;
 
-NonEmptyString CreatePin();
+    void operator()(ClientNfs&, Passport&, ReplyFunction&) {}
+  };
 
-int CheckKeywordValidity(const NonEmptyString& keyword);
-int CheckPinValidity(const NonEmptyString& pin);
-int CheckPasswordValidity(const NonEmptyString& password);
+  template <typename Input>
+  struct InsertUserInput {
+    typedef std::unique_ptr<Input> InputPtr;
 
-int CheckPublicIdValidity(const NonEmptyString& public_id);
+    void operator()(InputPtr& input, uint32_t position, const std::string& characters) {
+      if (!input)
+        input.reset(new Input());
+      input->Insert(position, characters);
+      return;
+    }
+  };
 
-fs::path CreateTestDirectory(fs::path const& parent, std::string* tail);
-int CreateTestFile(fs::path const& parent, int size_in_mb, std::string* file_name);
-int CreateSmallTestFile(fs::path const& parent, int size_in_kb, std::string* file_name);
+  template <typename Input>
+  struct RemoveUserInput {
+    typedef std::unique_ptr<Input> InputPtr;
 
-int AssessJointResult(const std::vector<int>& results);
-void OperationCallback(bool result, OperationResults& results, int index);
+    void operator()(InputPtr& input, uint32_t position, uint32_t length) {
+      if (!input)
+        ThrowError(CommonErrors::uninitialised);
+      input->Remove(position, length);
+      return;
+    }
+  };
 
-NonEmptyString ComposeModifyAppendableByAll(const asymm::PrivateKey& signing_key,
-                                            const bool appendability);
-NonEmptyString AppendableIdValue(const Fob& data, bool accepts_new_contacts);
-NonEmptyString SignaturePacketValue(const Fob& keys);
+  template <typename Input>
+  struct ClearUserInput {
+    typedef std::unique_ptr<Input> InputPtr;
 
-priv::ChunkId ComposeSignaturePacketName(const Identity& name);
-priv::ChunkId MaidsafeContactIdName(const NonEmptyString& public_id);
-priv::ChunkId SignaturePacketName(const Identity& name);
-priv::ChunkId AppendableByAllName(const Identity& name);
-priv::ChunkId ModifiableName(const Identity& name);
+    void operator()(InputPtr& input) {
+      if (input)
+        input->Clear();
+      return;
+    }
+  };
 
-encrypt::DataMap ParseSerialisedDataMap(const NonEmptyString& serialised_data_map);
+  template <typename Input>
+  struct ConfirmUserInput {
+    typedef std::unique_ptr<Input> InputPtr;
 
-std::string PutFilenameData(const std::string& file_name);
-void GetFilenameData(const std::string& content,
-                     std::string& file_name,
-                     std::string& serialised_data_map);
-std::string GetNameInPath(const fs::path& save_path, const std::string& file_name);
-int CopyDir(const fs::path& source, const fs::path& dest);
-int CopyDirectoryContent(const fs::path& from, const fs::path& to);
-bool VerifyOrCreatePath(const fs::path& path);
+     bool operator()(InputPtr& input) {
+      if (!input)
+        return false;
+      return input->IsValid(boost::regex(kCharRegex));
+    }
 
-std::string IsoTimeWithMicroSeconds();
+    bool operator()(InputPtr& input, InputPtr& confirmation_input) {
+      if (!input || !confirmation_input)
+        return false;
+      if (!input->IsFinalised())
+        input->Finalise();
+      if (!confirmation_input->IsFinalised())
+        confirmation_input->Finalise();
+      if (input->string() != confirmation_input->string()) {
+        return false;
+      }
+      return true;
+    }
 
-NonEmptyString MessagePointToPoint(const NonEmptyString& unwrapped_message,
-                                   const asymm::PublicKey& recipient_public_key,
-                                   const asymm::PrivateKey& sender_private_key);
-bool PointToPointMessageValid(const NonEmptyString& wrapped_message,
-                              const asymm::PublicKey& sender_public_key,
-                              const asymm::PrivateKey& receiver_private_key,
-                              std::string& final_message);
+    bool operator()(InputPtr& input, InputPtr& confirmation_input, InputPtr& current_input, const Session& session) {
+      if (!current_input)
+        return false;
+      if (!current_input->IsFinalised())
+        current_input->Finalise();
+      if (input) {
+        input->Finalise();
+        if (!confirmation_input)
+          return false;
+        confirmation_input->Finalise();
+        if (input->string() != confirmation_input->string()
+            || session.password().string() != current_input->string())
+          return false;
+      } else {
+        if (session.password().string() != current_input->string())
+          return false;
+      }
+      return true;
+    }
+  };
+
+}  // namespace detail
+
 }  // namespace lifestuff
-
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_DETAIL_UTILS_H_

@@ -27,11 +27,13 @@
 #  pragma warning(disable: 4100 4127 4244)
 #endif
 #include "boost/python.hpp"
+#include "boost/python/call.hpp"
 #ifdef __MSVC__
 #  pragma warning(pop)
 #endif
 
 #include "maidsafe/common/log.h"
+#include "maidsafe/common/types.h"
 
 #include "maidsafe/lifestuff/lifestuff_api.h"
 
@@ -59,41 +61,71 @@ namespace ls = maidsafe::lifestuff;
 
 namespace {
 
+class LifeStuffPython {
+ public:
+  LifeStuffPython(const ls::Slots& slots)
+   : lifestuff_(slots) {}
+  ~LifeStuffPython() {}
+
+  void InsertUserInput(uint32_t position,
+                       const std::string& character,
+                       ls::InputField input_field) {
+    lifestuff_.InsertUserInput(position, character, input_field);
+  }
+  void RemoveUserInput(uint32_t position, uint32_t length, ls::InputField input_field) {
+    lifestuff_.RemoveUserInput(position, length, input_field);
+  }
+  void ClearUserInput(ls::InputField input_field) { lifestuff_.ClearUserInput(input_field); }
+  bool ConfirmUserInput(ls::InputField input_field) {
+    return lifestuff_.ConfirmUserInput(input_field);
+  }
+
+  void CreateUser(const std::string& vault_path, PyObject *py_callback) {
+    ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
+                                                      ls::ProgessCode progesscode) {
+                                    this->ProgressCB(action, progesscode, py_callback);
+                                  });
+    lifestuff_.CreateUser(vault_path, cb);
+  }
+  void LogIn(PyObject *py_callback) {
+    ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
+                                                      ls::ProgessCode progesscode) {
+                                    this->ProgressCB(action, progesscode, py_callback);
+                                  });
+    lifestuff_.LogIn(cb);
+  }
+  void LogOut() { lifestuff_.LogOut(); }
+
+  void MountDrive() { lifestuff_.MountDrive(); }
+  void UnMountDrive() { lifestuff_.UnMountDrive(); }
+
+  void ChangeKeyword() { lifestuff_.ChangeKeyword(); }
+  void ChangePin() { lifestuff_.ChangePin(); }
+  void ChangePassword() { lifestuff_.ChangePassword(); }
+
+  bool logged_in() { return lifestuff_.logged_in(); }
+
+  std::string mount_path() { return lifestuff_.mount_path(); }
+  std::string owner_path() { return lifestuff_.owner_path(); }
+
+ private:
+  void ProgressCB(ls::Action action, ls::ProgessCode progesscode, PyObject *py_callback) {
+    std::cout << "action : " << action << " , progesscode : " << progesscode << std::endl;
+    boost::python::call<void>(py_callback, action, progesscode);
+  }
+
+  ls::LifeStuff lifestuff_;
+};
+
 void SetEmptySlots(maidsafe::lifestuff::Slots* pslots) {
   assert(pslots);
-  auto three_strings_func = [](const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&,
-                               const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto three_plus_one_strings_func = [](const maidsafe::NonEmptyString&,
-                                        const maidsafe::NonEmptyString&,
-                                        const std::string&,
-                                        const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto four_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  auto five_strings_func = [](const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&,
-                              const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->chat_slot = four_strings_func;
-  pslots->file_success_slot = five_strings_func;
-  pslots->file_failure_slot = three_strings_func;
-  pslots->new_contact_slot = three_plus_one_strings_func;
-  pslots->confirmed_contact_slot = three_strings_func;
-  pslots->profile_picture_slot = three_strings_func;
-  pslots->contact_presence_slot = [](const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     const maidsafe::NonEmptyString&,
-                                     maidsafe::lifestuff::ContactPresence) {};  // NOLINT
-  pslots->contact_deletion_slot = three_plus_one_strings_func;
-  pslots->lifestuff_card_update_slot = three_strings_func;
-  pslots->network_health_slot = [](const int&) {};  // NOLINT
-  pslots->immediate_quit_required_slot = [] {};  // NOLINT
-  pslots->update_available_slot = [](const maidsafe::NonEmptyString&) {};  // NOLINT
-  pslots->operation_progress_slot = [](maidsafe::lifestuff::Operation,
-                                       maidsafe::lifestuff::SubTask) {};  // NOLINT
+  auto string_callback = [](const std::string&) {};  // NOLINT
+  auto int32_callback = [](int32_t) {};  // NOLINT
+  auto bool_callback = [](bool) {};  // NOLINT
+
+  pslots->update_available = string_callback;
+  pslots->network_health = int32_callback;
+  pslots->operations_pending = bool_callback;
 }
 
 struct PathConverter {
@@ -154,9 +186,6 @@ struct SlotsExtractor {
 #  pragma GCC diagnostic push
 #  pragma GCC diagnostic ignored "-Weffc++"
 #endif
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(create_user_overloads, CreateUser, 3, 4)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(get_contacts_overloads, GetContacts, 1, 2)
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(accept_sent_file_overloads, AcceptSentFile, 1, 3)
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
 #endif
@@ -181,52 +210,29 @@ BOOST_PYTHON_MODULE(lifestuff_python_api) {
                                       &SlotsExtractor::construct,
                                       bpy::type_id<maidsafe::lifestuff::Slots>());
 
-  bpy::class_<ls::LifeStuff>(
-      "LifeStuff", bpy::init<ls::Slots, boost::filesystem::path>())
+  bpy::class_<LifeStuffPython, boost::noncopyable>(
+      "LifeStuff", bpy::init<ls::Slots>())
 
-      // Credential operations
-      .def("CreateUser", &ls::LifeStuff::CreateUser, create_user_overloads())
-      .def("CreatePublicId", &ls::LifeStuff::CreatePublicId)
-      .def("LogIn", &ls::LifeStuff::LogIn)
-      .def("LogOut", &ls::LifeStuff::LogOut)
-      .def("MountDrive", &ls::LifeStuff::MountDrive)
-      .def("UnMountDrive", &ls::LifeStuff::UnMountDrive)
-      .def("StartMessagesAndIntros", &ls::LifeStuff::StartMessagesAndIntros)
-      .def("StopMessagesAndIntros", &ls::LifeStuff::StopMessagesAndIntros)
-      .def("CheckPassword", &ls::LifeStuff::CheckPassword)
-      .def("ChangeKeyword", &ls::LifeStuff::ChangeKeyword)
-      .def("ChangePin", &ls::LifeStuff::ChangePin)
-      .def("ChangePassword", &ls::LifeStuff::ChangePassword)
-//       .def("ChangePublicId", &ls::LifeStuff::ChangePublicId)
-      .def("LeaveLifeStuff", &ls::LifeStuff::LeaveLifeStuff)
+       // Credential Operations
+      .def("InsertUserInput", &LifeStuffPython::InsertUserInput)
+      .def("RemoveUserInput", &LifeStuffPython::RemoveUserInput)
+      .def("ClearUserInput", &LifeStuffPython::ClearUserInput)
+      .def("ConfirmUserInput", &LifeStuffPython::ConfirmUserInput)
+      .def("ChangeKeyword", &LifeStuffPython::ChangeKeyword)
+      .def("ChangePin", &LifeStuffPython::ChangePin)
+      .def("ChangePassword", &LifeStuffPython::ChangePassword)
 
-      // Contact operations
-      .def("AddContact", &ls::LifeStuff::AddContact)
-      .def("ConfirmContact", &ls::LifeStuff::ConfirmContact)
-      .def("DeclineContact", &ls::LifeStuff::DeclineContact)
-      .def("RemoveContact", &ls::LifeStuff::RemoveContact)
-      .def("ChangeProfilePicture", &ls::LifeStuff::ChangeProfilePicture)
-      .def("GetOwnProfilePicture", &ls::LifeStuff::GetOwnProfilePicture)
-      .def("GetContactProfilePicture", &ls::LifeStuff::GetContactProfilePicture)
-      .def("GetLifestuffCard", &ls::LifeStuff::GetLifestuffCard)
-      .def("SetLifestuffCard", &ls::LifeStuff::SetLifestuffCard)
-      .def("GetContacts", &ls::LifeStuff::GetContacts, get_contacts_overloads())
-      .def("PublicIdsList", &ls::LifeStuff::PublicIdsList)
+      // User Behaviour
+      .def("CreateUser", &LifeStuffPython::CreateUser)
+      .def("LogIn", &LifeStuffPython::LogIn)
+      .def("LogOut", &LifeStuffPython::LogOut)
 
-      // Messaging
-      .def("SendChatMessage", &ls::LifeStuff::SendChatMessage)
-      .def("SendFile", &ls::LifeStuff::SendFile)
-      .def("AcceptSentFile", &ls::LifeStuff::AcceptSentFile, accept_sent_file_overloads())
-      .def("RejectSentFile", &ls::LifeStuff::RejectSentFile)
+      // Virtual Drive
+      .def("MountDrive", &LifeStuffPython::MountDrive)
+      .def("UnMountDrive", &LifeStuffPython::UnMountDrive)
 
-      // Filesystem
-      .def("ReadHiddenFile", &ls::LifeStuff::ReadHiddenFile)
-      .def("WriteHiddenFile", &ls::LifeStuff::WriteHiddenFile)
-      .def("DeleteHiddenFile", &ls::LifeStuff::DeleteHiddenFile)
-      .def("SearchHiddenFiles", &ls::LifeStuff::SearchHiddenFiles)
-
-      // getters
-      .def("state", &ls::LifeStuff::state)
-      .def("logged_in_state", &ls::LifeStuff::logged_in_state)
-      .def("mount_path", &ls::LifeStuff::mount_path);
+      // Getter
+      .def("logged_in", &LifeStuffPython::logged_in)
+      .def("mount_path", &LifeStuffPython::mount_path)
+      .def("owner_path", &LifeStuffPython::owner_path);
 }
