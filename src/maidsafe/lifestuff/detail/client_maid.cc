@@ -177,8 +177,8 @@ void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Passwo
 
 void ClientMaid::DeleteSession(const Keyword& keyword, const Pin& pin) {
   Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
-  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
-  Mid mid(mid_future.get());
+  auto mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
+  Mid mid(*mid_future.get());
   passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
   Tmid::name_type tmid_name(passport::DecryptTmidName(keyword, pin, encrypted_tmid_name));
   DeleteFob<Tmid>(tmid_name);
@@ -187,12 +187,12 @@ void ClientMaid::DeleteSession(const Keyword& keyword, const Pin& pin) {
 
 void ClientMaid::GetSession(const Keyword& keyword, const Pin& pin, const Password& password) {
   Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
-  std::future<Mid> mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
-  Mid mid(mid_future.get());
+  auto mid_future(maidsafe::nfs::Get<Mid>(*client_nfs_, mid_name));
+  Mid mid(*mid_future.get());
   passport::EncryptedTmidName encrypted_tmid_name(mid.encrypted_tmid_name());
   Tmid::name_type tmid_name(passport::DecryptTmidName(keyword, pin, encrypted_tmid_name));
-  std::future<Tmid> tmid_future(maidsafe::nfs::Get<Tmid>(*client_nfs_, tmid_name));
-  Tmid tmid(tmid_future.get());
+  auto tmid_future(maidsafe::nfs::Get<Tmid>(*client_nfs_, tmid_name));
+  Tmid tmid(*tmid_future.get());
   passport::EncryptedSession encrypted_session(tmid.encrypted_session());
   NonEmptyString serialised_session(passport::DecryptSession(
                                       keyword, pin, password, encrypted_session));
@@ -304,8 +304,8 @@ void ClientMaid::PublicKeyRequest(const NodeId& node_id, const GivePublicKeyFunc
   if (client_nfs_) {
     typedef passport::PublicPmid PublicPmid;
     PublicPmid::name_type pmid_name(Identity(node_id.string()));
-    std::future<PublicPmid> pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
-    give_key(pmid_future.get().public_key());
+    auto pmid_future(maidsafe::nfs::Get<PublicPmid>(*client_nfs_, pmid_name));
+    give_key(pmid_future.get()->public_key());
   } else {
     ThrowError(CommonErrors::uninitialised);
   }
