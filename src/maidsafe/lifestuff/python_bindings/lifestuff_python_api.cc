@@ -82,15 +82,15 @@ class LifeStuffPython {
 
   void CreateUser(const std::string& vault_path, PyObject *py_callback) {
     ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
-                                                      ls::ProgessCode progesscode) {
-                                    this->ProgressCB(action, progesscode, py_callback);
+                                                      ls::ProgressCode progresscode) {
+                                    this->ProgressCB(action, progresscode, py_callback);
                                   });
     lifestuff_.CreateUser(vault_path, cb);
   }
   void LogIn(PyObject *py_callback) {
     ls::ReportProgressFunction cb([this, py_callback](ls::Action action,
-                                                      ls::ProgessCode progesscode) {
-                                    this->ProgressCB(action, progesscode, py_callback);
+                                                      ls::ProgressCode progresscode) {
+                                    this->ProgressCB(action, progresscode, py_callback);
                                   });
     lifestuff_.LogIn(cb);
   }
@@ -109,9 +109,9 @@ class LifeStuffPython {
   std::string owner_path() { return lifestuff_.owner_path(); }
 
  private:
-  void ProgressCB(ls::Action action, ls::ProgessCode progesscode, PyObject *py_callback) {
-    std::cout << "action : " << action << " , progesscode : " << progesscode << std::endl;
-    boost::python::call<void>(py_callback, action, progesscode);
+  void ProgressCB(ls::Action action, ls::ProgressCode progresscode, PyObject *py_callback) {
+    std::cout << "action : " << action << " , progresscode : " << progresscode << std::endl;
+    boost::python::call<void>(py_callback, action, progresscode);
   }
 
   ls::LifeStuff lifestuff_;
