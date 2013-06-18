@@ -19,6 +19,8 @@
 namespace maidsafe {
 namespace lifestuff {
 
+// Type passed to user input functions in LifeStuff class to determine which variable(s) to
+// process.
 enum InputField {
   kPin = 0,
   kKeyword,
@@ -29,6 +31,8 @@ enum InputField {
   kCurrentPassword
 };
 
+// Used in conjunction with ProgressCode to report execution state during various function calls
+// via the ReportProgressFunction function, see definition below.
 enum Action {
   kCreateUser = 0,
   kLogin,
@@ -36,7 +40,7 @@ enum Action {
   kChangePin,
   kChangePassword
 };
-
+// See above discussion for Action.
 enum ProgressCode {
   kInitialiseProcess = 0,
   kCreatingUserCredentials,
@@ -50,21 +54,25 @@ enum ProgressCode {
   kRetrievingUserCredentials
 };
 
-// New version update...
+// New version update.
 typedef std::function<void(const std::string&)> UpdateAvailableFunction;
-// Network health...
+// Network health.
 typedef std::function<void(int32_t)> NetworkHealthFunction;
-// Safe to quit...
+// Safe to quit.
 typedef std::function<void(bool)> OperationsPendingFunction;
-// Report progress...
-typedef std::function<void(Action, ProgressCode)> ReportProgressFunction;
 
+// Slots are used to provide useful information back to the client application.
 struct Slots {
   UpdateAvailableFunction update_available;
   NetworkHealthFunction network_health;
   OperationsPendingFunction operations_pending;
 };
 
+// Some methods may take some time to complete, e.g. Login. The ReportProgressFunction is used to
+// relay back to the client application the current execution state.
+typedef std::function<void(Action, ProgressCode)> ReportProgressFunction;
+
+// Some internally used constants.
 const std::string kAppHomeDirectory(".lifestuff");
 const std::string kOwner("Owner");
 

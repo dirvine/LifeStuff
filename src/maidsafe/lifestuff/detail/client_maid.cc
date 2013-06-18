@@ -154,11 +154,11 @@ boost::filesystem::path ClientMaid::owner_path() {
 
 const Slots& ClientMaid::CheckSlots(const Slots& slots) {
   if (!slots.update_available)
-    throw std::invalid_argument("missing update_available function");
+    ThrowError(CommonErrors::uninitialised);
   if (!slots.network_health)
-    throw std::invalid_argument("missing network_health function");
+    ThrowError(CommonErrors::uninitialised);
   if (!slots.operations_pending)
-    throw std::invalid_argument("missing operations_pending function");
+    ThrowError(CommonErrors::uninitialised);
   return slots;
 }
 
