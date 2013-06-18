@@ -35,7 +35,8 @@ class LifeStuff {
   // Note: Secure string classes for managing user input are provided by the input types Keyword,
   // Pin and Password defined in the MaidSafe-Passport project,
   // http://maidsafe.github.io/MaidSafe-Passport/. The following four methods throw
-  // CommonErrors::unknown for undefined 'input_field' type.
+  // CommonErrors::unknown for undefined 'input_field' type, otherwise propogate exceptions
+  // unhandled.
 
   // Creates and/or inserts a string of 'characters' at position 'position' in the input type,
   // keyword, pin, password, etc., determined by 'input_field', see LifeStuff.h for the
