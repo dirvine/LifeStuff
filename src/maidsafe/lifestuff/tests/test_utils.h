@@ -27,9 +27,7 @@ namespace fs = boost::filesystem;
 namespace bptime = boost::posix_time;
 
 namespace maidsafe {
-
 namespace lifestuff {
-
 namespace test {
 
 enum TestOperationCode { kCopy, kRead, kCompare };
@@ -74,9 +72,7 @@ uint32_t CreateTestTreeStructure(const fs::path &base_path,
 void CopyRecursiveDirectory(const fs::path &src, const fs::path &dest);
 
 }  // namespace test
-
 }  // namespace lifestuff
-
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_TESTS_TEST_UTILS_H_

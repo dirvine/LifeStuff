@@ -47,37 +47,15 @@ glob_dir(LifestuffDetail ${LifestuffSourcesDir}/detail "LifeStuff Detail")
 
 ####    TESTS    ####
 set(TESTS_MAIN_CC ${LifestuffSourcesDir}/tests/tests_main.cc)
-set(CLIENT_CONTROLLER_TEST_CC ${LifestuffSourcesDir}/tests/credentials_test.cc)
-set(PUBLIC_ID_TEST_CC ${LifestuffSourcesDir}/tests/public_id_test.cc
-                      ${LifestuffSourcesDir}/tests/message_handler_test.cc)
-set(STORAGE_TEST_CC ${LifestuffSourcesDir}/tests/storage_test.cc)
-set(ROUTINGS_HANDLER_TEST_CC ${LifestuffSourcesDir}/tests/routings_handler_test.cc)
-set(API_USER_CREDENTIALS_TEST_CC ${LifestuffSourcesDir}/tests/api/api_user_credentials_test.cc
-                                 ${LifestuffSourcesDir}/tests/api/api_test_resources.cc)
-set(API_PUBLIC_ID_TEST_CC ${LifestuffSourcesDir}/tests/api/api_public_id_test.cc
-                          ${LifestuffSourcesDir}/tests/api/api_test_resources.cc)
-set(API_VIRTUAL_DRIVE_TEST_CC ${LifestuffSourcesDir}/tests/api/api_virtual_drive_test.cc
-                          ${LifestuffSourcesDir}/tests/api/api_test_resources.cc)
-set(API_REAL_DRIVE_TEST_CC ${LifestuffSourcesDir}/tests/api/api_real_drive_test.cc)
-set(API_USER_INPUT_TEST_CC ${LifestuffSourcesDir}/tests/api/api_user_input_test.cc)
-set(LIFESTUFF_TESTS_CC ${LifestuffSourcesDir}/tests/contacts_test.cc
-                       ${LifestuffSourcesDir}/tests/session_test.cc
-                       ${LifestuffSourcesDir}/tests/utils_test.cc)
+set(USER_STORAGE_TEST_CC ${LifestuffSourcesDir}/tests/user_storage_test.cc)
+set(USER_INPUT_TEST_CC ${LifestuffSourcesDir}/tests/user_input_test.cc)
 set(TEST_UTILS_CC ${LifestuffSourcesDir}/tests/test_utils.cc)
 set(TEST_UTILS_H ${LifestuffSourcesDir}/tests/test_utils.h)
 set(TEST_UTILS_FILES ${TEST_UTILS_CC} ${TEST_UTILS_H})
 
 source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
-                                        ${CLIENT_CONTROLLER_TEST_CC}
-                                        ${PUBLIC_ID_TEST_CC}
-                                        ${STORAGE_TEST_CC}
-                                        ${ROUTINGS_HANDLER_TEST_CC}
-                                        ${API_USER_CREDENTIALS_TEST_CC}
-                                        ${API_PUBLIC_ID_TEST_CC}
-                                        ${API_VIRTUAL_DRIVE_TEST_CC}
-                                        ${API_REAL_DRIVE_TEST_CC}
-                                        ${API_USER_INPUT_TEST_CC}
-                                        ${LIFESTUFF_TESTS_CC}
+                                        ${USER_STORAGE_TEST_CC}
+                                        ${USER_INPUT_TEST_CC}
                                         ${NETWORK_HELPER_CC}
                                         ${TEST_UTILS_CC})
 
@@ -87,28 +65,20 @@ source_group("Tests Source Files" FILES ${TESTS_MAIN_CC}
 #==================================================================================================#
 ms_add_static_library(lifestuff_detail ${LifestuffDetailAllFiles})
 if(MaidsafeTesting)
-  ms_add_executable(TESTlifestuff_general "Tests/LifeStuff" ${LIFESTUFF_TESTS_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_routings_handler "Tests/LifeStuff" ${ROUTINGS_HANDLER_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_credentials "Tests/LifeStuff" ${CLIENT_CONTROLLER_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_public_id "Tests/LifeStuff" ${PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_storage "Tests/LifeStuff" ${STORAGE_TEST_CC} ${TEST_UTILS_FILES} ${TESTS_MAIN_CC})
-  ms_add_executable(TESTlifestuff_api_user_input "Tests/LifeStuff" ${API_USER_INPUT_TEST_CC} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_storage "Tests/LifeStuff" ${USER_STORAGE_TEST_CC} ${TEST_UTILS_FILES} ${TESTS_MAIN_CC})
+  ms_add_executable(TESTlifestuff_user_input "Tests/LifeStuff" ${USER_INPUT_TEST_CC} ${TESTS_MAIN_CC})
 endif()
 
 target_link_libraries(maidsafe_lifestuff_detail maidsafe_lifestuff_manager maidsafe_drive maidsafe_passport maidsafe_routing ${BoostRegexLibs})
 if(MaidsafeTesting)
-  target_link_libraries(TESTlifestuff_general maidsafe_lifestuff_detail ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_routings_handler maidsafe_lifestuff_detail ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_credentials maidsafe_lifestuff_detail ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_public_id maidsafe_lifestuff_detail ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_storage maidsafe_lifestuff_detail ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_api_user_input maidsafe_lifestuff ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_user_storage maidsafe_lifestuff_detail ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_user_input maidsafe_lifestuff ${BoostRegexLibs})
 endif()
 
 ms_add_static_library(lifestuff ${LifestuffAllFiles})
 
 if(MaidsafeTesting)
-  target_link_libraries(TESTlifestuff_api_user_input maidsafe_lifestuff ${BoostRegexLibs})
+  target_link_libraries(TESTlifestuff_user_input maidsafe_lifestuff ${BoostRegexLibs})
 endif()
 
 add_library(lifestuff_python_api SHARED ${LifestuffSourcesDir}/python_bindings/lifestuff_python_api.cc)
@@ -133,23 +103,7 @@ add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAN
 #add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:vault_key_helper> ${CMAKE_BINARY_DIR})
 #add_custom_command(TARGET lifestuff_python_api POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:routing_key_helper> ${CMAKE_BINARY_DIR})
 
-if(MaidsafeTesting)
-  ms_add_executable(TESTlifestuff_api_user_credentials "Tests/LifeStuff" ${API_USER_CREDENTIALS_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_api_public_id "Tests/LifeStuff" ${API_PUBLIC_ID_TEST_CC} ${TESTS_MAIN_CC} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_api_virtual_drive "Tests/LifeStuff" ${API_VIRTUAL_DRIVE_TEST_CC} ${TESTS_MAIN_CC} ${TEST_UTILS_FILES} ${NETWORK_HELPER_FILES})
-  ms_add_executable(TESTlifestuff_api_real_drive "Tests/LifeStuff" ${API_REAL_DRIVE_TEST_CC} ${TEST_UTILS_FILES})
-endif()
-
 target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_vault maidsafe_lifestuff_detail maidsafe_lifestuff_manager)
-if(MAIDSAFE_TESTING)
-  target_link_libraries(TESTlifestuff_api_user_credentials maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_api_user_credentials lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_api_public_id maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_api_public_id lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_api_virtual_drive maidsafe_lifestuff maidsafe_lifestuff_manager ${BoostIostreamsLibs} ${BoostRegexLibs})
-  add_dependencies(TESTlifestuff_api_virtual_drive lifestuff_vault pd_key_helper lifestuff_mgr ${BoostRegexLibs})
-  target_link_libraries(TESTlifestuff_api_real_drive maidsafe_drive ${BoostRegexLibs})
-endif()
 
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${PROJECT_BINARY_DIR})
@@ -164,11 +118,6 @@ include(standard_flags)
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-effc++")
-endif()
-
-if(MaidsafeTesting)
-  set_target_properties(TESTlifestuff_api_user_credentials TESTlifestuff_api_public_id TESTlifestuff_api_virtual_drive
-                        PROPERTIES COMPILE_DEFINITIONS TOOLS_PATH=${CMAKE_SOURCE_DIR}/tools)
 endif()
 
 #==================================================================================================#
@@ -200,38 +149,7 @@ endif()
 #==================================================================================================#
 if(MaidsafeTesting)
   add_style_test()
-  add_gtests(TESTlifestuff_general)
-  add_gtests(TESTlifestuff_api_user_credentials)
-  add_gtests(TESTlifestuff_api_public_id)
-  add_gtests(TESTlifestuff_api_virtual_drive)
-  add_gtests(TESTlifestuff_api_real_drive)
-
-  label_as_critical_tests(SessionTest.BEH_SetsGetsAndReset
-                          SessionTest.BEH_SessionName
-                          SessionTest.BEH_SerialisationAndParsing
-                          UtilsTest.BEH_WordValidity
-                          UtilsTest.BEH_PinValidity
-                          OneUserApiTest.FUNC_LoggedInState
-                          OneUserApiTest.FUNC_IncorrectLoginLogoutSequences
-                          OneUserApiTest.FUNC_CreateLogoutLoginLogout
-                          OneUserApiTest.FUNC_ChangeCredentials
-                          OneUserApiTest.FUNC_CreateInvalidUsers
-                          OneUserApiTest.FUNC_ChangeCredentialsAndLogOut
-                          OneUserApiTest.FUNC_LogInFromTwoPlaces
-                          OneUserApiTest.FUNC_LogInAfterCreateUser
-                          OneUserApiTest.FUNC_CreatePublicIdCases
-                          OneUserApiTest.FUNC_AddInvalidContact
-                          TwoUsersApiTest.FUNC_SendFileSaveToGivenPath
-                          TwoUsersApiTest.FUNC_SendFileSaveToDefaultLocation
-                          TwoUsersApiTest.FUNC_SendFileAcceptToDeletedDefaultLocation
-                          TwoUsersApiTest.FUNC_SendFileWithRejection
-                          #TwoUsersApiTest.FUNC_RemoveContact
-                          #TwoUsersApiTest.FUNC_RemoveContactAddContact
-                          TwoUsersApiTest.FUNC_AddContactWithMessage
-                          #TwoUsersApiTest.FUNC_AddThenRemoveOfflineUser
-                          TwoUsersApiTest.FUNC_ChangeProfilePicture
-                          )
-
+  label_as_critical_tests()
   add_project_experimental()
   test_summary_output()
 endif()

@@ -201,19 +201,14 @@ TEST_F(UserInputTest, BEH_PasswordInsertRemove) {
 TEST_F(UserInputTest, BEH_InvalidKeyword) {
   EXPECT_NO_THROW(lifestuff_->InsertUserInput(0, "k", kKeyword));
   EXPECT_NO_THROW(lifestuff_->RemoveUserInput(0, 1, kKeyword));
-
   EXPECT_FALSE(lifestuff_->ConfirmUserInput(kKeyword));
 }
 
 TEST_F(UserInputTest, BEH_InvalidPin) {
   EXPECT_FALSE(lifestuff_->ConfirmUserInput(kPin));
-
   EXPECT_NO_THROW(lifestuff_->InsertUserInput(0, "1", kPin));
-
   EXPECT_TRUE(lifestuff_->ConfirmUserInput(kPin));
-
   EXPECT_NO_THROW(lifestuff_->RemoveUserInput(0, 1, kPin));
-
   EXPECT_FALSE(lifestuff_->ConfirmUserInput(kPin));
 }
 

@@ -51,34 +51,9 @@ class UserStorage {
   void MountDrive(ClientNfs& client_nfs, Session& session);
   void UnMountDrive(Session& session);
 
-  bool ParseAndSaveDataMap(const NonEmptyString& file_name,
-                           const NonEmptyString& serialised_data_map,
-                           std::string& data_map_hash);
-  bool GetSavedDataMap(const NonEmptyString& data_map_hash,
-                       std::string& serialised_data_map,
-                       std::string& file_name);
-  int GetDataMap(const fs::path& absolute_path, std::string* serialised_data_map);
-  int InsertDataMap(const fs::path& absolute_path, const NonEmptyString& serialised_data_map);
-
-  int GetNotes(const fs::path& absolute_path, std::vector<std::string>* notes);
-  int AddNote(const fs::path& absolute_path, const std::string& note);
-
-  int ReadHiddenFile(const fs::path& absolute_path, std::string* content);
-  int WriteHiddenFile(const fs::path& absolute_path,
-                      const NonEmptyString& content,
-                      bool overwrite_existing);
-  int DeleteHiddenFile(const fs::path& absolute_path);
-  int SearchHiddenFiles(const fs::path& absolute_path,
-                        std::vector<std::string>* results);
-  int GetHiddenFileDataMap(const boost::filesystem::path& absolute_path, std::string* data_map);
-
-  std::string ConstructFile(const NonEmptyString& serialised_data_map);
-
   boost::filesystem::path mount_path();
   boost::filesystem::path owner_path();
   bool mount_status();
-
-  bs2::connection ConnectToDriveChanged(drive::DriveChangedSlotPtr slot) const;
 
  private:
   UserStorage &operator=(const UserStorage&);
