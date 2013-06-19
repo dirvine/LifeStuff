@@ -20,8 +20,14 @@ namespace maidsafe {
 namespace lifestuff {
 
 // LifeStuff provides a convenient interface for client applications wishing to make use of the
-// novinet network, http://novinet.com/. Further details and links can be found at
-// http://maidsafe.github.io/LifeStuff/.
+// novinet network, http://novinet.com/. Further details and links for LifeStuff can be found at
+// http://maidsafe.github.io/LifeStuff/. During user account creation, asymmetrically encrypted,
+// using RSA, uniquely identifiable data, derived from user input, is stored on the network. It is
+// important to note that in order to subsequently retrieve and decrypt the generated data for an
+// account, on login, the exact user input supplied to create the account must be passed, otherwise
+// the account will be inaccessible. To stress, no user supplied input is ever transmitted or
+// stored on the network, it is therefore important not only to create strong user details but also
+// to remember them.
 
 class LifeStuffImpl;
 

@@ -169,7 +169,7 @@ void ClientMaid::PutSession(const Keyword& keyword, const Pin& pin, const Passwo
   Tmid tmid(encrypted_session, session_.passport().Get<Antmid>(true));
   passport::EncryptedTmidName encrypted_tmid_name(passport::EncryptTmidName(
                                                     keyword, pin, tmid.name()));
-  Mid::name_type mid_name(Mid::GenerateName(keyword, pin));
+  Mid::name_type mid_name(passport::MidName(keyword, pin));
   Mid mid(mid_name, encrypted_tmid_name, session_.passport().Get<Anmid>(true));
   PutFob<Tmid>(tmid);
   PutFob<Mid>(mid);
