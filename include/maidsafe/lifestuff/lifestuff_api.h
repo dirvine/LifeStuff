@@ -21,19 +21,19 @@ namespace lifestuff {
 
 // LifeStuff provides a convenient interface for client applications wishing to make use of the
 // novinet network, http://novinet.com/. Further details and links for LifeStuff can be found at
-// http://maidsafe.github.io/LifeStuff/. During user account creation, asymmetrically encrypted,
-// using RSA, uniquely identifiable data, derived from user input, is stored on the network. It is
-// important to note that in order to subsequently retrieve and decrypt the generated data for an
-// account, on login, the exact user input supplied to create the account must be passed, otherwise
-// the account will be inaccessible. To stress, no user supplied input is ever transmitted or
-// stored on the network, it is therefore important not only to create strong user details but also
-// to remember them.
+// http://maidsafe.github.io/LifeStuff/. During user account creation, RSA asymmetric encryption
+// is applied to user input, producing uniquely identifiable data that is stored on the network.
+// It is important to note that in order to subsequently retrieve and decrypt the generated data
+// for an account, on login, the exact user input supplied to create the account must be passed,
+// otherwise the account will be inaccessible. Restated, no user supplied input is ever transmitted
+// or stored on the network, so that no mechanism is in place for it's recovery, it is therefore
+// important not only to create strong user details, but also to remember them.
 
 class LifeStuffImpl;
 
 class LifeStuff {
  public:
-  // Lifestuff constructor, refer to discussion in Lifestuff.h for Slots. Throws
+  // LifeStuff constructor, refer to discussion in lifestuff.h for Slots. Throws
   // CommonErrors::uninitialised if any 'slots' member has not been initialised.
   explicit LifeStuff(const Slots& slots);
   ~LifeStuff();
@@ -45,7 +45,7 @@ class LifeStuff {
   // unhandled.
 
   // Creates and/or inserts a string of 'characters' at position 'position' in the input type,
-  // keyword, pin, password, etc., determined by 'input_field', see LifeStuff.h for the
+  // keyword, pin, password, etc., determined by 'input_field', see lifestuff.h for the
   // definition of InputField. Implicitly accepts Unicode characters converted to std::string.
   void InsertUserInput(uint32_t position, const std::string& characters, InputField input_field);
   // Removes the sequence of characters starting at position 'position' and ending at position
@@ -58,11 +58,11 @@ class LifeStuff {
 
   // Creates new user credentials, derived from input keyword, pin and password, that are
   // subsequently retrieved from the network during login. Also sets up a new vault associated
-  // with those credentials. Refer to details in Lifestuff.h about ReportProgressFunction.
+  // with those credentials. Refer to details in lifestuff.h about ReportProgressFunction.
   // If an exception is thrown during the call, attempts cleanup then rethrows the exception.
   void CreateUser(const std::string& vault_path, ReportProgressFunction& report_progress);
   // Recovers session details subject to validation from input keyword, pin and password, and
-  // starts the appropriate vault. Refer to details in Lifestuff.h about ReportProgressFunction.
+  // starts the appropriate vault. Refer to details in lifestuff.h about ReportProgressFunction.
   // If an exception is thrown during the call, attempts cleanup then rethrows the exception.
   void LogIn(ReportProgressFunction& report_progress);
   // Stops the vault associated with the session and unmounts the virtual drive where applicable.
