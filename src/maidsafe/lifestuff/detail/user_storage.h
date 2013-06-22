@@ -15,7 +15,11 @@
 #include "boost/filesystem/path.hpp"
 
 #ifdef WIN32
-#  include "maidsafe/drive/win_drive.h"
+#  ifdef HAVE_CBFS
+#    include "maidsafe/drive/win_drive.h"
+#  else
+#    include "maidsafe/drive/dummy_win_drive.h"
+#  endif
 #else
 #  include "maidsafe/drive/unix_drive.h"
 #endif
@@ -29,14 +33,20 @@
 #include "maidsafe/lifestuff/detail/session.h"
 #include "maidsafe/lifestuff/detail/utils.h"
 
-#ifdef WIN32
-  typedef maidsafe::drive::CbfsDriveInUserSpace MaidDrive;
-#else
-  typedef maidsafe::drive::FuseDriveInUserSpace MaidDrive;
-#endif
 
 namespace maidsafe {
+
 namespace lifestuff {
+
+#ifdef WIN32
+#  ifdef HAVE_CBFS
+typedef drive::CbfsDriveInUserSpace MaidDrive;
+#  else
+typedef drive::DummyWinDriveInUserSpace MaidDrive;
+#  endif
+#else
+typedef drive::FuseDriveInUserSpace MaidDrive;
+#endif
 
 class UserStorage {
  public:
@@ -72,6 +82,7 @@ class UserStorage {
 };
 
 }  // namespace lifestuff
+
 }  // namespace maidsafe
 
 #endif  // MAIDSAFE_LIFESTUFF_DETAIL_USER_STORAGE_H_

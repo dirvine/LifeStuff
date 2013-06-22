@@ -26,10 +26,6 @@ include_directories(${private_SOURCE_DIR}/include)
 include_directories(${rudp_SOURCE_DIR}/include)
 include_directories(${routing_SOURCE_DIR}/include)
 include_directories(${nfs_SOURCE_DIR}/include)
-
-###################################################################################################
-# Callback File System / Fuse library search                                                      #
-###################################################################################################
 include_directories(${encrypt_SOURCE_DIR}/include)
 include_directories(${drive_SOURCE_DIR}/include)
 if(WIN32 OR APPLE)
@@ -117,7 +113,10 @@ rename_outdated_built_exes()
 include(standard_flags)
 if(UNIX)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-stack-protector")
+elseif(Cbfs_FOUND)
+  add_definitions(-DHAVE_CBFS)
 endif()
+
 
 #==================================================================================================#
 # Set Windows Registry Keys for WPF UI                                                             #
@@ -142,6 +141,7 @@ if(WIN32)
   execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeIncludeDir" "${lifestuff_SOURCE_DIR}/include")
   execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeLibDir" "${maidsafe_BINARY_DIR}/Release")
 endif()
+
 
 #==================================================================================================#
 # Tests                                                                                            #
