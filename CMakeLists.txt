@@ -119,27 +119,42 @@ endif()
 
 
 #==================================================================================================#
-# Set Windows Registry Keys for WPF UI                                                             #
+# Write LifeStuff paths into WPF UI's CustomProperties.props file                                  #
 #==================================================================================================#
-
-### Do NOT Switch \\ for / in the following lines
-if(WIN32)
-  set(REGISTRY_PATH "HKEY_CURRENT_USER\\Software\\MaidSafe\\LibPaths")
-  if(CMAKE_CL_64)
-    set(REGISTRY_PATH "${REGISTRY_PATH}\\x64")
+if(WIN32 AND UI_WPF_ROOT_DIR)
+  unset(UiWpfProps CACHE)
+  find_file(UiWpfProps NAMES CustomProperties.props
+              PATHS ${UI_WPF_ROOT_DIR}/Native.LifeStuff.Wrapper
+              DOC "Path to LifeStuff-UI-Windows CustomProperties.props file."]
+              NO_DEFAULT_PATH)
+  if(UiWpfProps)
+    file(READ ${UiWpfProps} PropsContents)
+    get_dependencies(maidsafe_lifestuff OptimizedDependencies DebugDependencies)
+    string(REPLACE "/" "\\\\" OptimizedDependencies "${OptimizedDependencies}")
+    string(REPLACE "/" "\\\\" DebugDependencies "${DebugDependencies}")
+    string(REPLACE "/" "\\\\" IncludesPath "${PROJECT_SOURCE_DIR}/include")
+    if(${TargetArchitecture} STREQUAL "x86_64")
+      set(Arch x64)
+    elseif(${TargetArchitecture} STREQUAL "i386")
+      set(Arch x86)
+    else()
+      message(FATAL_ERROR "\nUnknown target architecture.  Should be \"x86_64\" or \"i386\" but is \"${TargetArchitecture}\"")
+    endif()
+    string(REGEX REPLACE "<NativeLibs${Arch}Debug>.*</NativeLibs${Arch}Debug>" "<NativeLibs${Arch}Debug>${DebugDependencies}</NativeLibs${Arch}Debug>" PropsContents "${PropsContents}")
+    string(REGEX REPLACE "<NativeLibs${Arch}Release>.*</NativeLibs${Arch}Release>" "<NativeLibs${Arch}Release>${OptimizedDependencies}</NativeLibs${Arch}Release>" PropsContents "${PropsContents}")
+    string(REGEX REPLACE "<NativeIncludes>.*</NativeIncludes>" "<NativeIncludes>${IncludesPath}</NativeIncludes>" PropsContents "${PropsContents}")
+    # Don't always overwrite the original file; use a temp copy and 'configure_file' to avoid copying if they're the same
+    set(TempCopyUiWpfProps ${CMAKE_BINARY_DIR}/UI-Windows-CustomProperties.props)
+    file(WRITE ${TempCopyUiWpfProps} "${PropsContents}")
+    configure_file(${TempCopyUiWpfProps} ${UiWpfProps} COPYONLY)
   else()
-    set(REGISTRY_PATH "${REGISTRY_PATH}\\x86")
+    set(WarningMessage "\nUI_WPF_ROOT_DIR has been specified as \"${UI_WPF_ROOT_DIR}\", but ")
+    set(WarningMessage "${WarningMessage}${UI_WPF_ROOT_DIR}\\Native.LifeStuff.Wrapper\\CustomProperties.props ")
+    set(WarningMessage "${WarningMessage}doesn't exist.\nEither pass the correct path using\n  cmake . ")
+    set(WarningMessage "${WarningMessage}-DUI_WPF_ROOT_DIR=\"<Path to LifeStuff-UI-Windows root directory>\"\n")
+    set(WarningMessage "${WarningMessage}or unset UI_WPF_ROOT_DIR in the cache using\n  cmake . -UUI_WPF_ROOT_DIR")
+    message(WARNING "${WarningMessage}")
   endif()
-  # Debug Paths
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;CbfsLib" "${Cbfs_LIBRARY_DEBUG}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;JustThreadLib" "${JustThread_LIBRARY_DEBUG}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;NativeIncludeDir" "${lifestuff_SOURCE_DIR}/include")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Debug;NativeLibDir" "${maidsafe_BINARY_DIR}/Debug")
-  # Release Paths
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;CbfsLib" "${Cbfs_LIBRARY}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;JustThreadLib" "${JustThread_LIBRARY}")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeIncludeDir" "${lifestuff_SOURCE_DIR}/include")
-  execute_process(COMMAND ${CMAKE_COMMAND} -E write_regv "${REGISTRY_PATH}\\Release;NativeLibDir" "${maidsafe_BINARY_DIR}/Release")
 endif()
 
 
