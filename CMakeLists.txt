@@ -122,6 +122,7 @@ endif()
 # Write LifeStuff paths into WPF UI's CustomProperties.props file                                  #
 #==================================================================================================#
 if(WIN32 AND UI_WPF_ROOT_DIR)
+  cmake_minimum_required(VERSION 2.8.11 FATAL_ERROR)
   unset(UiWpfProps CACHE)
   find_file(UiWpfProps NAMES CustomProperties.props
               PATHS ${UI_WPF_ROOT_DIR}/Native.LifeStuff.Wrapper
@@ -132,7 +133,7 @@ if(WIN32 AND UI_WPF_ROOT_DIR)
     get_dependencies(maidsafe_lifestuff OptimizedDependencies DebugDependencies)
     string(REPLACE "/" "\\\\" OptimizedDependencies "${OptimizedDependencies}")
     string(REPLACE "/" "\\\\" DebugDependencies "${DebugDependencies}")
-    string(REPLACE "/" "\\\\" IncludesPath "${PROJECT_SOURCE_DIR}/include")
+    string(REPLACE "/" "\\\\" IncludesPath "\"${PROJECT_SOURCE_DIR}/include\"")
     if(${TargetArchitecture} STREQUAL "x86_64")
       set(Arch x64)
     elseif(${TargetArchitecture} STREQUAL "i386")
