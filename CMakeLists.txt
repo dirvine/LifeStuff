@@ -46,8 +46,7 @@ set(LifestuffSourcesDir ${PROJECT_SOURCE_DIR}/src/maidsafe/lifestuff)
 glob_dir(Lifestuff ${LifestuffSourcesDir} LifeStuff)
 glob_dir(LifestuffDetail ${LifestuffSourcesDir}/detail "LifeStuff Detail")
 
-
-####    TESTS    ####
+# Tests
 set(TESTS_MAIN_CC ${LifestuffSourcesDir}/tests/tests_main.cc)
 set(USER_STORAGE_TEST_CC ${LifestuffSourcesDir}/tests/user_storage_test.cc)
 set(USER_INPUT_TEST_CC ${LifestuffSourcesDir}/tests/user_input_test.cc)
@@ -110,7 +109,65 @@ target_link_libraries(maidsafe_lifestuff maidsafe_private maidsafe_vault maidsaf
 include_directories(${PYTHON_INCLUDE_DIRS})
 include_directories(${PROJECT_BINARY_DIR})
 
+
 rename_outdated_built_exes()
+
+
+#==================================================================================================#
+# Export detail                                                                                    #
+#==================================================================================================#
+set(ExportFile ${CMAKE_BINARY_DIR}/maidsafe_export.cmake)
+export(TARGETS maidsafe_lifestuff
+               maidsafe_lifestuff_detail
+               maidsafe_lifestuff_manager
+               maidsafe_vault
+               maidsafe_nfs
+               maidsafe_routing
+               maidsafe_rudp
+               maidsafe_drive
+               maidsafe_encrypt
+               maidsafe_passport
+               maidsafe_private
+               maidsafe_common
+               maidsafe_network_viewer
+               leveldb
+               cryptopp
+               protobuf
+               protoc
+               gmock
+               gtest
+               FILE
+               ${ExportFile})
+file(APPEND ${ExportFile} "\n\n# Path to MaidSafe super-project root\n")
+file(APPEND ${ExportFile} "set(maidsafe_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")\n\n")
+file(APPEND ${ExportFile} "# Add module path to CMAKE_MODULE_PATH\n")
+file(APPEND ${ExportFile} "set(CMAKE_MODULE_PATH \"${maidsafe_SOURCE_DIR}/cmake_modules\")\n\n")
+file(APPEND ${ExportFile} "# Handle inclusion of just::thread\n")
+file(APPEND ${ExportFile} "set(USE_JUST_THREADS ${USE_JUST_THREADS})\n")
+file(APPEND ${ExportFile} "include(maidsafe_find_just_thread)\n\n")
+file(APPEND ${ExportFile} "# Include paths\n")
+file(APPEND ${ExportFile} "include_directories(\"${lifestuff_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${vault_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${nfs_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${routing_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${rudp_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${drive_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${encrypt_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${passport_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${private_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "include_directories(\"${common_SOURCE_DIR}/include\")\n")
+file(APPEND ${ExportFile} "if(WIN32 OR APPLE)\n")
+file(APPEND ${ExportFile} "  include_directories(\"${DriveThirdPartyIncludes}\")\n")
+file(APPEND ${ExportFile} "endif()\n")
+file(APPEND ${ExportFile} "include_directories(SYSTEM \"${maidsafe_SOURCE_DIR}/src/third_party_libs\")  # for cryptopp\n")
+file(APPEND ${ExportFile} "include_directories(SYSTEM \"${BoostSourceDir}\")\n")
+file(APPEND ${ExportFile} "include_directories(SYSTEM \"${maidsafe_SOURCE_DIR}/src/third_party_libs/protobuf/src\")\n")
+file(APPEND ${ExportFile} "include_directories(SYSTEM \"${maidsafe_SOURCE_DIR}/src/third_party_libs/googlemock/gtest/include\")\n")
+file(APPEND ${ExportFile} "include_directories(SYSTEM \"${maidsafe_SOURCE_DIR}/src/third_party_libs/googlemock/include\")\n\n")
+file(APPEND ${ExportFile} "# Set postfixes\n")
+file(APPEND ${ExportFile} "set(CMAKE_DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})\n")
+file(APPEND ${ExportFile} "set(CMAKE_RELWITHDEBINFO_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})\n")
+file(APPEND ${ExportFile} "set(CMAKE_MINSIZEREL_POSTFIX ${CMAKE_MINSIZEREL_POSTFIX})\n\n")
 
 
 #==================================================================================================#
