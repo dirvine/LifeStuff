@@ -61,16 +61,16 @@ void LifeStuff::UnMountDrive() {
   return lifestuff_impl_->UnMountDrive();
 }
 
-void LifeStuff::ChangeKeyword() {
-  return lifestuff_impl_->ChangeKeyword();
+void LifeStuff::ChangeKeyword(ReportProgressFunction& report_progress) {
+  return lifestuff_impl_->ChangeKeyword(report_progress);
 }
 
-void LifeStuff::ChangePin() {
-  return lifestuff_impl_->ChangePin();
+void LifeStuff::ChangePin(ReportProgressFunction& report_progress) {
+  return lifestuff_impl_->ChangePin(report_progress);
 }
 
-void LifeStuff::ChangePassword() {
-  return lifestuff_impl_->ChangePassword();
+void LifeStuff::ChangePassword(ReportProgressFunction& report_progress) {
+  return lifestuff_impl_->ChangePassword(report_progress);
 }
 
 bool LifeStuff::logged_in() const {

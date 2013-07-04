@@ -41,9 +41,9 @@ class LifeStuffImpl {
   void MountDrive();
   void UnMountDrive();
 
-  void ChangeKeyword();
-  void ChangePin();
-  void ChangePassword();
+  void ChangeKeyword(ReportProgressFunction& report_progress);
+  void ChangePin(ReportProgressFunction& report_progress);
+  void ChangePassword(ReportProgressFunction& report_progress);
 
   bool logged_in() const;
 

@@ -68,14 +68,17 @@ class ClientMaid {
   void ChangeKeyword(const Keyword& old_keyword,
                      const Keyword& new_keyword,
                      const Pin& pin,
-                     const Password& password);
+                     const Password& password,
+                     ReportProgressFunction& report_progress);
   void ChangePin(const Keyword& keyword,
                  const Pin& old_pin,
                  const Pin& new_pin,
-                 const Password& password);
+                 const Password& password,
+                 ReportProgressFunction& report_progress);
   void ChangePassword(const Keyword& keyword,
                       const Pin& pin,
-                      const Password& new_password);
+                      const Password& new_password,
+                      ReportProgressFunction& report_progress);
 
   boost::filesystem::path mount_path();
   boost::filesystem::path owner_path();

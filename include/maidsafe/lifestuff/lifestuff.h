@@ -55,7 +55,8 @@ enum ProgressCode {
   kVerifyingMount,
   kVerifyingUnmount,
   kStoringUserCredentials,
-  kRetrievingUserCredentials
+  kRetrievingUserCredentials,
+  kConfirmingUserInput
 };
 
 // New version update.

@@ -187,10 +187,15 @@ void LifeStuffImpl::UnMountDrive() {
   client_maid_.UnMountDrive();
 }
 
-void LifeStuffImpl::ChangeKeyword() {
+void LifeStuffImpl::ChangeKeyword(ReportProgressFunction& report_progress) {
+  report_progress(kChangeKeyword, kConfirmingUserInput);
   if (!ConfirmUserInput(kCurrentPassword))
     ThrowError(CommonErrors::invalid_parameter);
-  client_maid_.ChangeKeyword(session_.keyword(), *keyword_, session_.pin(), session_.password());
+  client_maid_.ChangeKeyword(session_.keyword(),
+                             *keyword_,
+                             session_.pin(),
+                             session_.password(),
+                             report_progress);
   session_.set_keyword(*keyword_);
   keyword_.reset();
   confirmation_keyword_.reset();
@@ -198,10 +203,15 @@ void LifeStuffImpl::ChangeKeyword() {
   return;
 }
 
-void LifeStuffImpl::ChangePin() {
+void LifeStuffImpl::ChangePin(ReportProgressFunction& report_progress) {
+  report_progress(kChangePin, kConfirmingUserInput);
   if (!ConfirmUserInput(kCurrentPassword))
     ThrowError(CommonErrors::invalid_parameter);
-  client_maid_.ChangePin(session_.keyword(), session_.pin(), *pin_, session_.password());
+  client_maid_.ChangePin(session_.keyword(),
+                         session_.pin(),
+                         *pin_,
+                         session_.password(),
+                         report_progress);
   session_.set_pin(*pin_);
   pin_.reset();
   confirmation_pin_.reset();
@@ -209,10 +219,11 @@ void LifeStuffImpl::ChangePin() {
   return;
 }
 
-void LifeStuffImpl::ChangePassword() {
+void LifeStuffImpl::ChangePassword(ReportProgressFunction& report_progress) {
+  report_progress(kChangePassword, kConfirmingUserInput);
   if (!ConfirmUserInput(kCurrentPassword))
     ThrowError(CommonErrors::invalid_parameter);
-  client_maid_.ChangePassword(session_.keyword(), session_.pin(), *password_);
+  client_maid_.ChangePassword(session_.keyword(), session_.pin(), *password_, report_progress);
   session_.set_password(*password_);
   password_.reset();
   confirmation_password_.reset();

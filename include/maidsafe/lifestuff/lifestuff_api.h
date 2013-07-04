@@ -78,9 +78,9 @@ class LifeStuff {
   void UnMountDrive();
 
   // The following methods can be used to change a user's credentials.
-  void ChangeKeyword();
-  void ChangePin();
-  void ChangePassword();
+  void ChangeKeyword(ReportProgressFunction& report_progress);
+  void ChangePin(ReportProgressFunction& report_progress);
+  void ChangePassword(ReportProgressFunction& report_progress);
 
   // Returns whether user is logged in or not.
   bool logged_in() const;
