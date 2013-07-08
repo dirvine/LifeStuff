@@ -91,9 +91,9 @@ class LifeStuffPython {
   void MountDrive() { lifestuff_.MountDrive(); }
   void UnMountDrive() { lifestuff_.UnMountDrive(); }
 
-  void ChangeKeyword() { lifestuff_.ChangeKeyword(); }
-  void ChangePin() { lifestuff_.ChangePin(); }
-  void ChangePassword() { lifestuff_.ChangePassword(); }
+  void ChangeKeyword() { /*lifestuff_.ChangeKeyword();*/ }  // FIXME (Qi)
+  void ChangePin() { /*lifestuff_.ChangePin();*/ }  // FIXME (Qi)
+  void ChangePassword() { /*lifestuff_.ChangePassword();*/ }  // FIXME (Qi)
 
   bool logged_in() { return lifestuff_.logged_in(); }
 
